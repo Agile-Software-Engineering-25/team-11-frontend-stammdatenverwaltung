@@ -1,3 +1,7 @@
+# This is the Repo for the Stammdatenverwaltung from team 11.
+
+
+# Informations from the frontend template for the project:
 This is a template project. Fork it and customize it to your needs.
 
 This project contains example use cases for all technologies listed below. (It is not pretty but that is not the point)
