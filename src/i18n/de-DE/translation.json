@@ -3,17 +3,19 @@
     "home": {
       "title": "Stammdatenverwaltung",
       "description": "Das ist die Startseite für die Stammdatenverwaltung.",
-      "popup": {
-        "firststep": "Grundlegende Informationen",
-        "secondstep": "Erweiterte Informationen",
-        "openbutton": "Person manuell anlegen",
-        "nextbutton": "Weiter",
-        "closebutton": "Schließen",
-        "finishbutton": "Anlegen abschließen",
-        "backbutton":"Zurück",
-        "content": "Dies ist ein Popup-Inhalt.",
-        "popuptext": "Füllen Sie die folgenden Informationen aus."
+      "create_manuell": "Person manuell anlegen"
+    },
+    "create_user": {
+      "title": "Person manuell anlegen",
+      "description": "Information zur Person",
+      "openbutton": "Person manuell anlegen",
+      "nextbutton": "Weiter",
+      "closebutton": "Anlegen Abbrechen",
+      "finishbutton": "Anlegen abschließen",
+      "backbutton":"Zurück",
+      "text": "Füllen Sie die folgenden Informationen aus.",
+      "choose_role": "Rolle auswählen",
+      "content": "Gebe Sie die erweiterten Informationen ein."
       }
-    }
   }
 }
