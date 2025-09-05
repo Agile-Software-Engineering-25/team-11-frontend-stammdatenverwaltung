@@ -2,7 +2,18 @@
   "pages": {
     "home": {
       "title": "Master Data Management",
-      "description": "This is the homepage for Master Data Management."
+      "description": "This is the homepage for Master Data Management.",
+      "popup": {
+        "firststep": "Basic Information",
+        "secondstep": "Advanced Information",
+        "openbutton": "Create Person Manually",
+        "nextbutton": "Next",
+        "closebutton": "Close",
+        "finishbutton": "Finish Creation",
+        "backbutton":"Back",
+        "content": "This is a popup content.",
+        "popuptext": "Please fill in the following information."
+      }
     }
   }
 }

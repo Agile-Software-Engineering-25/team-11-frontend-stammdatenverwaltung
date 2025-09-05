@@ -2,7 +2,18 @@
   "pages": {
     "home": {
       "title": "Stammdatenverwaltung",
-      "description": "Das ist die Startseite für die Stammdatenverwaltung."
+      "description": "Das ist die Startseite für die Stammdatenverwaltung.",
+      "popup": {
+        "firststep": "Grundlegende Informationen",
+        "secondstep": "Erweiterte Informationen",
+        "openbutton": "Person manuell anlegen",
+        "nextbutton": "Weiter",
+        "closebutton": "Schließen",
+        "finishbutton": "Anlegen abschließen",
+        "backbutton":"Zurück",
+        "content": "Dies ist ein Popup-Inhalt.",
+        "popuptext": "Füllen Sie die folgenden Informationen aus."
+      }
     }
   }
 }
