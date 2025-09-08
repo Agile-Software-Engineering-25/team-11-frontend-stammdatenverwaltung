@@ -22,7 +22,19 @@
     "finishbutton": "Finish Creation",
     "text": "Please fill in the following information.",
     "choose_role": "Choose Role",
-    "content": "Enter the extended information."
+    "content": "Enter the extended information.",
+    "firstname": "First name",
+    "lastname": "Last name",
+    "email": "Email",
+    "phone": "Phone number",
+    "street": "Street",
+    "housenumber": "House number",
+    "zipcode": "Zip code",
+    "city": "City",
+    "country": "Country",
+    "birthdate": "Date of birth",
+    "placeofbirth": "Place of birth",
+    "nationality": "Nationality"
     }
   }
 }

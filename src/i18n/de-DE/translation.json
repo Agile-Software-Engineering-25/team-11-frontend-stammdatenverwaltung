@@ -22,8 +22,21 @@
       "finishbutton": "Anlegen abschließen",
       "text": "Füllen Sie die folgenden Informationen aus.",
       "choose_role": "Rolle auswählen",
-      "content": "Gebe Sie die erweiterten Informationen ein."
-    
+      "content": "Gebe Sie die erweiterten Informationen ein.",
+
+      "firstname": "Vorname",
+      "lastname": "Nachname",
+      "email": "E-Mail",
+      "phone": "Telefonnummer",
+      "street": "Straße",
+      "housenumber": "Hausnummer",
+      "zipcode": "PLZ",
+      "city": "Stadt",
+      "country": "Land",
+      
+      "birthdate": "Geburtsdatum",
+      "placeofbirth": "Geburtsort",
+      "nationality": "Nationalität"
     }
   }
 }
