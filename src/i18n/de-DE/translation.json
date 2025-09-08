@@ -5,17 +5,25 @@
       "description": "Das ist die Startseite für die Stammdatenverwaltung.",
       "create_manuell": "Person manuell anlegen"
     },
-    "create_user": {
+    "create_person_manuell": {
       "title": "Person manuell anlegen",
       "description": "Information zur Person",
       "openbutton": "Person manuell anlegen",
-      "nextbutton": "Weiter",
       "closebutton": "Anlegen Abbrechen",
       "finishbutton": "Anlegen abschließen",
-      "backbutton":"Zurück",
       "text": "Füllen Sie die folgenden Informationen aus.",
       "choose_role": "Rolle auswählen",
       "content": "Gebe Sie die erweiterten Informationen ein."
       }
+  },
+  "components": {
+      "createpersonmanuell":{
+      "closebutton": "Anlegen Abbrechen",
+      "finishbutton": "Anlegen abschließen",
+      "text": "Füllen Sie die folgenden Informationen aus.",
+      "choose_role": "Rolle auswählen",
+      "content": "Gebe Sie die erweiterten Informationen ein."
+    
+    }
   }
 }

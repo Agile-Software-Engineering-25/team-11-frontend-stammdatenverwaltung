@@ -1,11 +1,10 @@
 import { Box, Typography, ButtonGroup, Select, Option } from '@mui/joy';
-import LanguageSelectorComponent from '@components/LanguageSelectorComponent/LanguageSelectorComponent';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import React, { useState } from 'react';
 import Button from '@agile-software/shared-components/src/components/Button/Button';
 
-const Create_User = () => {
+const CreateUser = () => {
   const options = [
     { value: 'eins', label: 'Option 1' },
     { value: 'zwei', label: 'Option 2' },
@@ -15,22 +14,16 @@ const Create_User = () => {
   const navigate = useNavigate();
   const handleClose = () => navigate('/');
   const handleFinish = () => navigate('/');
-  const [selected, setSelected] = useState<string[]>([]);
-  const [showDetails, setShowDetails] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
 
   return (
     <Box sx={{ padding: 2, maxWidth: 700, mx: 'auto' }}>
-      <Typography level="h2">{t('pages.create_user.title')}</Typography>
-      <LanguageSelectorComponent />
-      <Typography level="h4">{t('pages.create_user.description')}</Typography>
-      <Typography>{t('pages.create_user.text')}</Typography>
+
       <Select
-        multiple
-        placeholder={t('pages.create_user.choose_role')}
+        placeholder={t('components.createpersonmanuell.choose_role')}
         value={selected}
         onChange={(_, value) => {
-          setSelected(value as string[]);
-          setShowDetails(true);
+          setSelected(value as string);
         }}
         sx={{ my: 2, minWidth: 240 }}
       >
@@ -40,9 +33,9 @@ const Create_User = () => {
           </Option>
         ))}
       </Select>
-      {showDetails && (
+      {selected && (
         <Box sx={{ mt: 2 }}>
-          <Typography>{t('pages.create_user.content')}</Typography>
+          <Typography>{t('components.createpersonmanuell.content')}</Typography>
         </Box>
       )}
       <ButtonGroup>
@@ -50,17 +43,17 @@ const Create_User = () => {
           onClick={handleClose}
           sx={{ textTransform: 'none' }}
           color="danger">
-          {t('pages.create_user.closebutton')}
+          {t('components.createpersonmanuell.closebutton')}
         </Button>
         <Button
           onClick={handleFinish}
           sx={{ textTransform: 'none' }}
           color="success">
-          {t('pages.create_user.finishbutton')}
+          {t('components.createpersonmanuell.finishbutton')}
         </Button>
       </ButtonGroup>
     </Box>
   );
 };
 
-export default Create_User;
+export default CreateUser;

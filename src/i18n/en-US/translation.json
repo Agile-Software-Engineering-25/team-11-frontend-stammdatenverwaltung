@@ -5,17 +5,24 @@
       "description": "This is the homepage for Master Data Management.",
       "create_manuell": "Create Person Manually"
     },
-    "create_user": {
+    "create_person_manuell": {
       "title": "Create Person Manually",
       "description": "Information about the person",
       "openbutton": "Create Person Manually",
-      "nextbutton": "Next",
       "closebutton": "Abort Creation",
       "finishbutton": "Finish Creation",
-      "backbutton":"Back",
       "text": "Please fill in the following information.",
       "choose_role": "Choose Role",
       "content": "Enter the extended information."
       }
+  },
+  "components": {
+    "createpersonmanuell":{
+    "closebutton": "Abort Creation",
+    "finishbutton": "Finish Creation",
+    "text": "Please fill in the following information.",
+    "choose_role": "Choose Role",
+    "content": "Enter the extended information."
+    }
   }
 }
