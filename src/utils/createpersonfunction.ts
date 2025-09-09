@@ -54,7 +54,7 @@ export function createPerson(data: string[]){
 
   // Dynamische Felder für die Rolle bestimmen
   const dynamicFields = dynamicInputFields(role).fields;
-  const dynamicFieldNames = dynamicFields.map(field => field.name);
+  const dynamicFieldNames = dynamicFields.map((field) => field.name);
 
   // Alle Feldnamen in der richtigen Reihenfolge
   const allFieldNames = [...fixedFieldNames, ...dynamicFieldNames];

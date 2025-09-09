@@ -32,42 +32,49 @@ npm i
 ## File-Structure
 
 ```
-├─ cypress/                             # Cypress end-to-end testing setup
-│   ├─ e2e/                             # Test specifications for user flows
-│   │   └─ home.cy.ts                   # Cypress test for the homepage
-│   ├─ support/                         # Cypress configuration and custom commands
-│   │   ├─ commands.ts                  # Custom Cypress commands
-│   │   └─ e2e.ts                       # Cypress global setup (runs before each test)
-│   ├─ screenshots/                     # Screenshots from failed tests
-│   │   └─ image.png                    # Sample image
-│   ├─ videos/                          # Videos from failed tests
-│   │   └─ home.cy.ts.mp4               # Sample video
-├─ src/                                 # Main application source code
-│   ├─ @custom-types/                   # Custom global TypeScript type declarations
-│   ├─ components/                      # Reusable UI components
-│   │   └─ RoutingComponent/            # Folder for the UserInfoCard component
-│   │       └─ RoutingComponent.tsx     # Implementation of the UserInfoCard component
-│   ├─ hooks/                           # Custom React hooks
-│   ├─ i18n/                            # Internationalization setup and translations
-│   │   ├─ de-DE/                       # German language translations
-│   │   │   └─ translation.json         # German translation strings
-│   │   ├─ en-US/                       # English language translations
-│   │   │   └─ translation.json         # English translation strings
-│   │   └─ index.ts                     # i18n initialization and config
-│   ├─ pages/                           # Top-level route components
-│   │   ├─ Home/                        # Folder for the homepage
-│   │   │   └─ Home.tsx                 # Implementation of the HomePage component
-│   ├─ utils/                           # General utility/helper functions
-│   ├─ App.tsx                          # Root app component, sets up routes/layout
-│   └─ main.tsx                         # Application entry point (ReactDOM.render)
-│   └─ config.ts                        # global application configurations (e.g. backend-base-url)
-├─ cypress.config.ts                    # Cypress configuration file
-├─ eslint.config.js                     # ESLint configuration for linting rules
-├─ package.json                         # Project metadata and dependency definitions
-├─ package-lock.json                    # Exact versions of installed dependencies
-├─ README.md                            # Project documentation and setup instructions
-├─ tsconfig.json                        # Global TypeScript configuration
-└─ vite.config.js                       # Vite bundler and dev server configuration
+├─ cypress/                                     # Cypress end-to-end testing setup
+│   ├─ e2e/                                     # Test specifications for user flows
+│   │   └─ home.cy.ts                           # Cypress test for the homepage
+│   ├─ support/                                 # Cypress configuration and custom commands
+│   │   ├─ commands.ts                          # Custom Cypress commands
+│   │   └─ e2e.ts                               # Cypress global setup (runs before each test)
+│   ├─ screenshots/                             # Screenshots from failed tests
+│   │   └─ image.png                            # Sample image
+│   ├─ videos/                                  # Videos from failed tests
+│   │   └─ home.cy.ts.mp4                       # Sample video
+├─ src/                                         # Main application source code
+│   ├─ @custom-types/                           # Custom global TypeScript type declarations
+│   ├─ components/                              # Reusable UI components
+│   │   ├─ CreatePersonManuelComponent          # Folder for the UI component to add a User/Person manuel
+│   │   │   └─CreatePersonManuelComponent.tsx   # Implementation for the UI component to add a User/Person manuel
+│   │   ├─ RoutingComponent/                    # Folder for the UserInfoCard component
+│   │   │   └─ RoutingComponent.tsx             # Implementation of the UserInfoCard component
+│   │   └─ LanguageSelectorComponent            # Folder for the Language Selector UI component
+│   │       └─ LanguageSelectorComponent.tsx    #Implementation of the LanguageSelectorComponent
+│   ├─ hooks/                                   # Custom React hooks
+│   ├─ i18n/                                    # Internationalization setup and translations
+│   │   ├─ de-DE/                               # German language translations
+│   │   │   └─ translation.json                 # German translation strings
+│   │   ├─ en-US/                               # English language translations
+│   │   │   └─ translation.json                 # English translation strings
+│   │   └─ index.ts                             # i18n initialization and config
+│   ├─ pages/                                   # Top-level route components
+│   │   ├─ Create_Person                        # Folder for the page for the User/Person creation
+│   │   │   └─ Create_Person.tsx                # Implementation of the User/Person creation page
+│   │   ├─ Home/                                # Folder for the homepage
+│   │       └─ Home.tsx                         # Implementation of the HomePage component
+│   ├─ utils/                                   # General utility/helper functions
+│   │   └─createpersonfunction.tsx              # File with all functions for the User/Person creation page
+│   ├─ App.tsx                                  # Root app component, sets up routes/layout
+│   ├─ main.tsx                                 # Application entry point (ReactDOM.render)
+│   └─ config.ts                                # global application configurations (e.g. backend-base-url)
+├─ cypress.config.ts                            # Cypress configuration file
+├─ eslint.config.js                             # ESLint configuration for linting rules
+├─ package.json                                 # Project metadata and dependency definitions
+├─ package-lock.json                            # Exact versions of installed dependencies
+├─ README.md                                    # Project documentation and setup instructions
+├─ tsconfig.json                                # Global TypeScript configuration
+└─ vite.config.js                               # Vite bundler and dev server configuration
 ```
 
 ## Understanding the React Architecture

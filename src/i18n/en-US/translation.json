@@ -9,10 +9,7 @@
       "title": "Create Person Manually",
       "description": "Information about the person",
       "openbutton": "Create Person Manually",
-      "closebutton": "Abort Creation",
-      "finishbutton": "Finish Creation",
       "text": "Please fill in the following information.",
-      "choose_role": "Choose Role",
       "content": "Enter the extended information."
       }
   },

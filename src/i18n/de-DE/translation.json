@@ -9,10 +9,7 @@
       "title": "Person manuell anlegen",
       "description": "Information zur Person",
       "openbutton": "Person manuell anlegen",
-      "closebutton": "Anlegen Abbrechen",
-      "finishbutton": "Anlegen abschließen",
       "text": "Füllen Sie die folgenden Informationen aus.",
-      "choose_role": "Rolle auswählen",
       "content": "Gebe Sie die erweiterten Informationen ein."
       }
   },

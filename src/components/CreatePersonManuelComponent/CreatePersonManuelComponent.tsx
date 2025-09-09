@@ -27,23 +27,6 @@ const initialState = {
   role: '',
 };
 
-const jsonConfig = {
-  fields: [
-    {
-      name: 'matrikelnummer',
-      label: 'Matrikelnummer',
-      type: 'text',
-      required: true,
-    },
-    { name: 'studiengang', label: 'Studiengang', type: 'text', required: true },
-    {
-      name: 'fachsemester',
-      label: 'Fachsemester',
-      type: 'text',
-      required: true,
-    }
-  ]
-};
 
 const requiredFieldsPage1 = [
   'firstname',
