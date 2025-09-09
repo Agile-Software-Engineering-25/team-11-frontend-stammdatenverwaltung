@@ -45,11 +45,11 @@ npm i
 ├─ src/                                         # Main application source code
 │   ├─ @custom-types/                           # Custom global TypeScript type declarations
 │   ├─ components/                              # Reusable UI components
-│   │   ├─ CreatePersonManuelComponent          # Folder for the UI component to add a User/Person manuel
-│   │   │   └─CreatePersonManuelComponent.tsx   # Implementation for the UI component to add a User/Person manuel
+│   │   ├─ CreatePersonManuelComponent/         # Folder for the UI component to add a user/person manually
+│   │   │   └─CreatePersonManuelComponent.tsx   # Implementation for the UI component to add a user/person manually
 │   │   ├─ RoutingComponent/                    # Folder for the UserInfoCard component
 │   │   │   └─ RoutingComponent.tsx             # Implementation of the UserInfoCard component
-│   │   └─ LanguageSelectorComponent            # Folder for the Language Selector UI component
+│   │   └─ LanguageSelectorComponent/           # Folder for the Language Selector UI component
 │   │       └─ LanguageSelectorComponent.tsx    #Implementation of the LanguageSelectorComponent
 │   ├─ hooks/                                   # Custom React hooks
 │   ├─ i18n/                                    # Internationalization setup and translations
@@ -59,7 +59,7 @@ npm i
 │   │   │   └─ translation.json                 # English translation strings
 │   │   └─ index.ts                             # i18n initialization and config
 │   ├─ pages/                                   # Top-level route components
-│   │   ├─ Create_Person                        # Folder for the page for the User/Person creation
+│   │   ├─ Create_Person/                       # Folder for the page for the User/Person creation
 │   │   │   └─ Create_Person.tsx                # Implementation of the User/Person creation page
 │   │   ├─ Home/                                # Folder for the homepage
 │   │       └─ Home.tsx                         # Implementation of the HomePage component
