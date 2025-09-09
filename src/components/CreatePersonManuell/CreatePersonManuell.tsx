@@ -1,9 +1,15 @@
-import { Box, Typography, ButtonGroup, Select, Option } from '@mui/joy';
+/* eslint-disable max-lines-per-function */
+import { Box, ButtonGroup, Select, Option } from '@mui/joy';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import React, { useState } from 'react';
 import Button from '@agile-software/shared-components/src/components/Button/Button';
 import Input from '@agile-software/shared-components/src/components/Input/Input';
+import {
+  dynamicInputFields,
+  getAvailableRoles,
+  createPerson,
+} from '@/utils/createpersonfunction';
 
 const initialState = {
   firstname: '',
@@ -18,30 +24,88 @@ const initialState = {
   zipcode: '',
   country: '',
   nationality: '',
-  role: null as string | null,
+  role: '',
 };
 
+const jsonConfig = {
+  fields: [
+    {
+      name: 'matrikelnummer',
+      label: 'Matrikelnummer',
+      type: 'text',
+      required: true,
+    },
+    { name: 'studiengang', label: 'Studiengang', type: 'text', required: true },
+    {
+      name: 'fachsemester',
+      label: 'Fachsemester',
+      type: 'text',
+      required: true,
+    }
+  ]
+};
+
+const requiredFieldsPage1 = [
+  'firstname',
+  'lastname',
+  'email',
+  'phone',
+  'birthdate',
+  'placeofbirth',
+  'city',
+  'street',
+  'housenumber',
+  'zipcode',
+  'country',
+  'nationality',
+  'role',
+];
+
 const CreateUser = () => {
-  const options = [
-    { value: 'eins', label: 'Student' },
-    { value: 'zwei', label: 'Dozent' },
-    { value: 'drei', label: 'Mitarbeiter' },
-  ];
+  const [step, setStep] = useState(1);
+
+  const [form, setForm] = useState({
+    ...initialState,
+  });
+
+  const dynamicFields = dynamicInputFields(form.role).fields;
+  const isPage1Valid = requiredFieldsPage1.every((field) => !!form[field]);
+  const isPage2Valid = dynamicFields.every(
+    (field) => !field.required || !!form[field.name]
+  );
+
+  const roles = getAvailableRoles();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [form, setForm] = useState(initialState);
 
+  // Funktioniert für alle Felder, auch dynamische
   const handleInputChange =
-    (field: keyof typeof initialState) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
   const handleRoleChange = (_: any, value: string | null) => {
-    setForm((prev) => ({ ...prev, role: value }));
+    setForm((prev) => ({
+      ...prev,
+      role: value ?? '',
+      ...Object.fromEntries(
+        dynamicInputFields(value ?? '').fields.map((field) => [field.name, ''])
+      ),
+    }));
   };
 
   const finish = () => {
+    // Sammle alle Feldnamen in der gewünschten Reihenfolge
+    const allFieldNames = [
+      ...requiredFieldsPage1,
+      ...dynamicFields.map((field) => field.name),
+    ];
+    // Erzeuge das Array mit den Werten in der gleichen Reihenfolge
+    const values = allFieldNames.map((field) => form[field] ?? '');
+
+    // Übergabe an createPerson
+    createPerson(values);
+
     setForm(initialState);
     navigate('/');
   };
@@ -49,120 +113,181 @@ const CreateUser = () => {
     setForm(initialState);
     navigate('/');
   };
-
+  const back = () => {
+    if (step === 2) {
+      setStep(1);
+    } else {
+      setForm(initialState);
+      navigate('/');
+    }
+  };
 
   return (
     <Box sx={{ padding: 2, maxWidth: 700, mx: 'auto' }}>
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Input
-          label={t('components.createpersonmanuell.firstname')}
-          required
-          value={form.firstname}
-          onChange={handleInputChange('firstname')}
-        />
-        <Input
-          label={t('components.createpersonmanuell.lastname')}
-          required
-          value={form.lastname}
-          onChange={handleInputChange('lastname')}
-        />
-      </Box>
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Input
-          label={t('components.createpersonmanuell.email')}
-          required
-          value={form.email}
-          onChange={handleInputChange('email')}
-        />
-        <Input
-          label={t('components.createpersonmanuell.phone')}
-          required
-          value={form.phone}
-          onChange={handleInputChange('phone')}
-        />
-      </Box>
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Input
-          label={t('components.createpersonmanuell.birthdate')}
-          required
-          value={form.birthdate}
-          onChange={handleInputChange('birthdate')}
-        />
-        <Input
-          label={t('components.createpersonmanuell.placeofbirth')}
-          required
-          value={form.placeofbirth}
-          onChange={handleInputChange('placeofbirth')}
-        />
-      </Box>
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Input
-          label={t('components.createpersonmanuell.city')}
-          required
-          value={form.city}
-          onChange={handleInputChange('city')}
-        />
-        <Input
-          label={t('components.createpersonmanuell.street')}
-          required
-          value={form.street}
-          onChange={handleInputChange('street')}
-        />
-      </Box>
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Input
-          label={t('components.createpersonmanuell.housenumber')}
-          required
-          value={form.housenumber}
-          onChange={handleInputChange('housenumber')}
-        />
-        <Input
-          label={t('components.createpersonmanuell.zipcode')}
-          required
-          value={form.zipcode}
-          onChange={handleInputChange('zipcode')}
-        />
-      </Box>
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Input
-          label={t('components.createpersonmanuell.country')}
-          required
-          value={form.country}
-          onChange={handleInputChange('country')}
-        />
-        <Input
-          label={t('components.createpersonmanuell.nationality')}
-          required
-          value={form.nationality}
-          onChange={handleInputChange('nationality')}
-        />
-      </Box>
+      {step === 1 && (
+        <>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Input
+              label={t('components.createpersonmanuell.firstname')}
+              required
+              value={form.firstname}
+              onChange={handleInputChange('firstname')}
+            />
+            <Input
+              label={t('components.createpersonmanuell.lastname')}
+              required
+              value={form.lastname}
+              onChange={handleInputChange('lastname')}
+            />
+          </Box>
+          <Input
+            label={t('components.createpersonmanuell.email')}
+            required
+            value={form.email}
+            onChange={handleInputChange('email')}
+            sx={{ width: '68%' }}
+          />
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Input
+              label={t('components.createpersonmanuell.phone')}
+              required
+              value={form.phone}
+              onChange={handleInputChange('phone')}
+            />
+            <Input
+              label={t('components.createpersonmanuell.birthdate')}
+              required
+              value={form.birthdate}
+              onChange={handleInputChange('birthdate')}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Input
+              label={t('components.createpersonmanuell.placeofbirth')}
+              required
+              value={form.placeofbirth}
+              onChange={handleInputChange('placeofbirth')}
+            />
+            <Input
+              label={t('components.createpersonmanuell.city')}
+              required
+              value={form.city}
+              onChange={handleInputChange('city')}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Input
+              label={t('components.createpersonmanuell.street')}
+              required
+              value={form.street}
+              onChange={handleInputChange('street')}
+            />
+            <Input
+              label={t('components.createpersonmanuell.housenumber')}
+              required
+              value={form.housenumber}
+              onChange={handleInputChange('housenumber')}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Input
+              label={t('components.createpersonmanuell.zipcode')}
+              required
+              value={form.zipcode}
+              onChange={handleInputChange('zipcode')}
+            />
+            <Input
+              label={t('components.createpersonmanuell.country')}
+              required
+              value={form.country}
+              onChange={handleInputChange('country')}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Input
+              label={t('components.createpersonmanuell.nationality')}
+              required
+              value={form.nationality}
+              onChange={handleInputChange('nationality')}
+            />
+          </Box>
+          <Select
+            placeholder={t('components.createpersonmanuell.role')}
+            value={form.role || null}
+            onChange={handleRoleChange}
+            required
+            sx={{ width: '68%', mt: 2 }}
+          >
+            {roles.map((role) => (
+              <Option key={role} value={role}>
+                {role}
+              </Option>
+            ))}
+          </Select>
+        </>
+      )}
 
-      <Select
-        placeholder={t('components.createpersonmanuell.choose_role')}
-        value={form.role}
-        onChange={handleRoleChange}
-        sx={{ my: 2, minWidth: 240 }}
-      >
-        {options.map((option) => (
-          <Option key={option.value} value={option.value}>
-            {option.label}
-          </Option>
-        ))}
-      </Select>
-      {form.role && (
-        <Box sx={{ mt: 2 }}>
-          <Typography>{t('components.createpersonmanuell.content')}</Typography>
+      {step === 2 && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+          {dynamicFields.length === 0 ? (
+            <Box sx={{ mb: 4 }}>
+              {t('components.createpersonmanuell.no_role_specific_fields')}
+            </Box>
+          ) : (
+            dynamicFields.map((field) => (
+              <Input
+                key={field.name}
+                label={field.label}
+                required={field.required}
+                type={field.type}
+                value={form[field.name]}
+                onChange={handleInputChange(field.name)}
+                sx={{ width: '68%' }}
+              />
+            ))
+          )}
         </Box>
       )}
-      <ButtonGroup>
-        <Button onClick={cancel} sx={{ textTransform: 'none' }} color="danger">
-          {t('components.createpersonmanuell.closebutton')}
-        </Button>
-        <Button onClick={finish} sx={{ textTransform: 'none' }} color="success">
-          {t('components.createpersonmanuell.finishbutton')}
-        </Button>
-      </ButtonGroup>
+
+      <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
+        <ButtonGroup>
+          {step === 2 && (
+            <Button
+              onClick={back}
+              sx={{ textTransform: 'none' }}
+              color="danger"
+            >
+              {t('components.createpersonmanuell.backbutton')}
+            </Button>
+          )}
+          <Button
+            onClick={cancel}
+            sx={{ textTransform: 'none' }}
+            color="danger"
+          >
+            {t('components.createpersonmanuell.closebutton')}
+          </Button>
+          {step === 1 ? (
+            <Button
+              onClick={() => setStep(2)}
+              sx={{ textTransform: 'none' }}
+              color="success"
+              disabled={!isPage1Valid}
+            >
+              {t('components.createpersonmanuell.nextbutton')}
+            </Button>
+          ) : (
+            <Button
+              onClick={finish}
+              sx={{ textTransform: 'none' }}
+              color="success"
+              disabled={!isPage2Valid}
+            >
+              {t('components.createpersonmanuell.finishbutton')}
+            </Button>
+          )}
+        </ButtonGroup>
+      </Box>
     </Box>
   );
 };

@@ -20,8 +20,10 @@
     "createpersonmanuell":{
     "closebutton": "Abort Creation",
     "finishbutton": "Finish Creation",
+    "backbutton": "Back",
+    "nextbutton": "Next",
     "text": "Please fill in the following information.",
-    "choose_role": "Choose Role",
+    "role": "Role",
     "content": "Enter the extended information.",
     "firstname": "First name",
     "lastname": "Last name",
@@ -34,7 +36,11 @@
     "country": "Country",
     "birthdate": "Date of birth",
     "placeofbirth": "Place of birth",
-    "nationality": "Nationality"
+    "nationality": "Nationality",
+    "missingfields": "Please fill in all required fields.",
+    "creationerror": "Error creating person. Please try again.",
+    "role_missing": "Please select a role first.",
+    "no_role_specific_fields": "No additional information required for this role."
     }
   }
 }

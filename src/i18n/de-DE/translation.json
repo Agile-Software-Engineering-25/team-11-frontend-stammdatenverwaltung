@@ -19,11 +19,12 @@
   "components": {
       "createpersonmanuell":{
       "closebutton": "Anlegen Abbrechen",
+      "nextbutton": "Weiter",
       "finishbutton": "Anlegen abschließen",
       "text": "Füllen Sie die folgenden Informationen aus.",
-      "choose_role": "Rolle auswählen",
+      "role": "Rolle",
       "content": "Gebe Sie die erweiterten Informationen ein.",
-
+      "backbutton": "Zurück",
       "firstname": "Vorname",
       "lastname": "Nachname",
       "email": "E-Mail",
@@ -33,10 +34,13 @@
       "zipcode": "PLZ",
       "city": "Stadt",
       "country": "Land",
-      
       "birthdate": "Geburtsdatum",
       "placeofbirth": "Geburtsort",
-      "nationality": "Nationalität"
+      "nationality": "Nationalität",
+      "missingfields": "Bitte füllen Sie alle Pflichtfelder aus.",
+      "creationerror": "Fehler beim Anlegen der Person. Bitte versuchen Sie es erneut.",
+      "role_missing": "Bitte wählen Sie zuerst eine Rolle aus.",
+      "no_role_specific_fields": "Für diese Rolle sind keine weiteren Angaben erforderlich."
     }
   }
 }
