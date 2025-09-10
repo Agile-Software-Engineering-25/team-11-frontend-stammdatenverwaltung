@@ -20,6 +20,7 @@
       "finishbutton": "Anlegen abschließen",
       "text": "Füllen Sie die folgenden Informationen aus.",
       "role": "Rolle",
+      "choose_role": "Wählen Sie eine Rolle",
       "content": "Gebe Sie die erweiterten Informationen ein.",
       "backbutton": "Zurück",
       "firstname": "Vorname",

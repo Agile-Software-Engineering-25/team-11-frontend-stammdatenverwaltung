@@ -9,40 +9,18 @@ import {
   dynamicInputFields,
   getAvailableRoles,
   createPerson,
+  getPage1DynamicFields,
 } from '@/utils/createpersonfunction';
 
 const initialState = {
   firstname: '',
   lastname: '',
   email: '',
-  phone: '',
-  birthdate: '',
-  placeofbirth: '',
-  city: '',
-  street: '',
-  housenumber: '',
-  zipcode: '',
-  country: '',
-  nationality: '',
-  role: '',
+  roles: [] as string[],
+  // dynamische Felder werden nach Bedarf ergänzt
 };
 
-
-const requiredFieldsPage1 = [
-  'firstname',
-  'lastname',
-  'email',
-  'phone',
-  'birthdate',
-  'placeofbirth',
-  'city',
-  'street',
-  'housenumber',
-  'zipcode',
-  'country',
-  'nationality',
-  'role',
-];
+const requiredFieldsPage1 = ['firstname', 'lastname', 'email', 'roles'];
 
 const CreateUser = () => {
   const [step, setStep] = useState(1);
@@ -51,13 +29,30 @@ const CreateUser = () => {
     ...initialState,
   });
 
-  const dynamicFields = dynamicInputFields(form.role).fields;
-  const isPage1Valid = requiredFieldsPage1.every((field) => !!form[field]);
+  const roles = getAvailableRoles();
+  const page1DynamicFields = getPage1DynamicFields();
+
+  // Alle dynamischen Felder für alle gewählten Rollen (ohne Duplikate)
+  const dynamicFields = Array.from(
+    new Map(
+      (form.roles as string[]).flatMap((role) =>
+        dynamicInputFields(role).fields.map((field) => [field.name, field])
+      )
+    ).values()
+  );
+
+  const isPage1Valid =
+    requiredFieldsPage1.every((field) => !!form[field]) &&
+    page1DynamicFields.every(
+      (field) => !field.required || !!form[field.name]
+    ) &&
+    Array.isArray(form.roles) &&
+    form.roles.length > 0;
+
   const isPage2Valid = dynamicFields.every(
     (field) => !field.required || !!form[field.name]
   );
 
-  const roles = getAvailableRoles();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -67,24 +62,49 @@ const CreateUser = () => {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
-  const handleRoleChange = (_: any, value: string | null) => {
-    setForm((prev) => ({
-      ...prev,
-      role: value ?? '',
-      ...Object.fromEntries(
-        dynamicInputFields(value ?? '').fields.map((field) => [field.name, ''])
-      ),
-    }));
+  // Mehrfachauswahl für Rollen
+  const handleRoleChange = (_: any, value: string[] | null) => {
+    setForm((prev) => {
+      const rolesArr = value ?? [];
+      // Leere dynamische Felder zurücksetzen, die nicht mehr gebraucht werden
+      const keepFields = new Set(
+        rolesArr.flatMap((role) =>
+          dynamicInputFields(role).fields.map((f) => f.name)
+        )
+      );
+      const cleanedForm = { ...prev };
+      Object.keys(cleanedForm).forEach((key) => {
+        if (
+          !initialState.hasOwnProperty(key) &&
+          !keepFields.has(key) &&
+          !page1DynamicFields.some(f => f.name === key)
+        ) {
+          delete cleanedForm[key];
+        }
+      });
+      return {
+        ...cleanedForm,
+        roles: rolesArr,
+        ...Object.fromEntries(
+          Array.from(keepFields).map((field) => [field, prev[field] ?? ''])
+        ),
+      };
+    });
   };
 
   const finish = () => {
     // Sammle alle Feldnamen in der gewünschten Reihenfolge
     const allFieldNames = [
       ...requiredFieldsPage1,
+      ...page1DynamicFields.map(f => f.name),
       ...dynamicFields.map((field) => field.name),
     ];
     // Erzeuge das Array mit den Werten in der gleichen Reihenfolge
-    const values = allFieldNames.map((field) => form[field] ?? '');
+    const values = allFieldNames.map((field) =>
+      field === 'roles'
+        ? (form.roles as string[]).join(',')
+        : form[field] ?? ''
+    );
 
     // Übergabe an createPerson
     createPerson(values);
@@ -105,11 +125,104 @@ const CreateUser = () => {
     }
   };
 
+  // Hilfsfunktion für 2er-Gruppierung der dynamischen Felder (Seite 1)
+  const renderDynamicFieldsRows = () => {
+    const rows = [];
+    for (let i = 0; i < page1DynamicFields.length; i += 2) {
+      if (page1DynamicFields[i + 1]) {
+        rows.push(
+          <Box
+            key={page1DynamicFields[i].name}
+            sx={{ display: 'flex', gap: 2}}
+          >
+            <Input
+              label={page1DynamicFields[i].label}
+              required={page1DynamicFields[i].required}
+              type={page1DynamicFields[i].type}
+              value={form[page1DynamicFields[i].name] ?? ''}
+              onChange={handleInputChange(page1DynamicFields[i].name)}
+              sx={{ flex: 1 }}
+            />
+            <Input
+              label={page1DynamicFields[i + 1].label}
+              required={page1DynamicFields[i + 1].required}
+              type={page1DynamicFields[i + 1].type}
+              value={form[page1DynamicFields[i + 1].name] ?? ''}
+              onChange={handleInputChange(page1DynamicFields[i + 1].name)}
+              sx={{ flex: 1 }}
+            />
+          </Box>
+        );
+      } else {
+        rows.push(
+          <Box
+            key={page1DynamicFields[i].name}
+            sx={{ display: 'flex', gap: 2, mb: 2 }}
+          >
+            <Input
+              label={page1DynamicFields[i].label}
+              required={page1DynamicFields[i].required}
+              type={page1DynamicFields[i].type}
+              value={form[page1DynamicFields[i].name] ?? ''}
+              onChange={handleInputChange(page1DynamicFields[i].name)}
+              sx={{ flex: 1 }}
+            />
+          </Box>
+        );
+      }
+    }
+    return rows;
+  };
+
+  // Hilfsfunktion für 2er-Gruppierung der dynamischen Rollen-Felder (Seite 2)
+  const renderRoleDynamicFieldsRows = () => {
+    const rows = [];
+    for (let i = 0; i < dynamicFields.length; i += 2) {
+      if (dynamicFields[i + 1]) {
+        rows.push(
+          <Box key={dynamicFields[i].name} sx={{ display: 'flex', gap: 2 }}>
+            <Input
+              label={dynamicFields[i].label}
+              required={dynamicFields[i].required}
+              type={dynamicFields[i].type}
+              value={form[dynamicFields[i].name] ?? ''}
+              onChange={handleInputChange(dynamicFields[i].name)}
+              sx={{ flex: 1 }}
+            />
+            <Input
+              label={dynamicFields[i + 1].label}
+              required={dynamicFields[i + 1].required}
+              type={dynamicFields[i + 1].type}
+              value={form[dynamicFields[i + 1].name] ?? ''}
+              onChange={handleInputChange(dynamicFields[i + 1].name)}
+              sx={{ flex: 1 }}
+            />
+          </Box>
+        );
+      } else {
+        rows.push(
+          <Box key={dynamicFields[i].name} sx={{ display: 'flex', gap: 2 }}>
+            <Input
+              label={dynamicFields[i].label}
+              required={dynamicFields[i].required}
+              type={dynamicFields[i].type}
+              value={form[dynamicFields[i].name] ?? ''}
+              onChange={handleInputChange(dynamicFields[i].name)}
+              sx={{ flex: 1 }}
+            />
+            <Box sx={{ flex: 1 }} />
+          </Box>
+        );
+      }
+    }
+    return rows;
+  };
+
   return (
     <Box sx={{ padding: 2, maxWidth: 700, mx: 'auto' }}>
       {step === 1 && (
         <>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2}}>
             <Input
               label={t('components.createpersonmanuell.firstname')}
               required
@@ -123,111 +236,45 @@ const CreateUser = () => {
               onChange={handleInputChange('lastname')}
             />
           </Box>
-          <Input
-            label={t('components.createpersonmanuell.email')}
-            required
-            value={form.email}
-            onChange={handleInputChange('email')}
-            sx={{ width: '68%' }}
-          />
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box>
             <Input
-              label={t('components.createpersonmanuell.phone')}
+              label={t('components.createpersonmanuell.email')}
               required
-              value={form.phone}
-              onChange={handleInputChange('phone')}
-            />
-            <Input
-              label={t('components.createpersonmanuell.birthdate')}
-              required
-              value={form.birthdate}
-              onChange={handleInputChange('birthdate')}
+              value={form.email}
+              onChange={handleInputChange('email')}
+              sx={{ width: '68%' }}
             />
           </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Input
-              label={t('components.createpersonmanuell.placeofbirth')}
+          {/* Dynamische Felder für Seite 1 in 2er-Zeilen */}
+          {renderDynamicFieldsRows()}
+          <Box sx={{ mt: -2 }}>
+            <label>{t('components.createpersonmanuell.role')} </label>
+            <Select
+              multiple
+              placeholder={t('components.createpersonmanuell.choose_role')}
+              value={form.roles}
+              onChange={handleRoleChange}
               required
-              value={form.placeofbirth}
-              onChange={handleInputChange('placeofbirth')}
-            />
-            <Input
-              label={t('components.createpersonmanuell.city')}
-              required
-              value={form.city}
-              onChange={handleInputChange('city')}
-            />
+              sx={{ width: '68%' }}
+            >
+              {roles.map((role) => (
+                <Option key={role} value={role}>
+                  {role}
+                </Option>
+              ))}
+            </Select>
           </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Input
-              label={t('components.createpersonmanuell.street')}
-              required
-              value={form.street}
-              onChange={handleInputChange('street')}
-            />
-            <Input
-              label={t('components.createpersonmanuell.housenumber')}
-              required
-              value={form.housenumber}
-              onChange={handleInputChange('housenumber')}
-            />
-          </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Input
-              label={t('components.createpersonmanuell.zipcode')}
-              required
-              value={form.zipcode}
-              onChange={handleInputChange('zipcode')}
-            />
-            <Input
-              label={t('components.createpersonmanuell.country')}
-              required
-              value={form.country}
-              onChange={handleInputChange('country')}
-            />
-          </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Input
-              label={t('components.createpersonmanuell.nationality')}
-              required
-              value={form.nationality}
-              onChange={handleInputChange('nationality')}
-            />
-          </Box>
-          <Select
-            placeholder={t('components.createpersonmanuell.role')}
-            value={form.role || null}
-            onChange={handleRoleChange}
-            required
-            sx={{ width: '68%', mt: 2 }}
-          >
-            {roles.map((role) => (
-              <Option key={role} value={role}>
-                {role}
-              </Option>
-            ))}
-          </Select>
         </>
       )}
 
       {step === 2 && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+        <Box>
           {dynamicFields.length === 0 ? (
             <Box sx={{ mb: 4 }}>
               {t('components.createpersonmanuell.no_role_specific_fields')}
             </Box>
           ) : (
-            dynamicFields.map((field) => (
-              <Input
-                key={field.name}
-                label={field.label}
-                required={field.required}
-                type={field.type}
-                value={form[field.name]}
-                onChange={handleInputChange(field.name)}
-                sx={{ width: '68%' }}
-              />
-            ))
+            renderRoleDynamicFieldsRows()
           )}
         </Box>
       )}
