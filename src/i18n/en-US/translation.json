@@ -4,5 +4,16 @@
       "title": "Master Data Management",
       "description": "This is the homepage for Master Data Management."
     }
+  },
+  "components": {
+    "userDataTable": {
+      "header": "User Data Table",
+      "searchPlaceholder": "Search…",
+      "name": "Name",
+      "birthdate": "Birthdate",
+      "address": "Address",
+      "phone": "Phone",
+      "allroles": "All Roles"
+    }
   }
 }

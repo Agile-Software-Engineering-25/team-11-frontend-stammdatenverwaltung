@@ -4,5 +4,16 @@
       "title": "Stammdatenverwaltung",
       "description": "Das ist die Startseite für die Stammdatenverwaltung."
     }
+  },
+  "components": {
+    "userDataTable": {
+      "header": "Benutzerdatentabelle",
+      "searchPlaceholder": "Suchen…",
+      "name": "Name",
+      "birthdate": "Geburtsdatum",
+      "address": "Adresse",
+      "phone": "Telefon",
+      "allroles": "Alle Rollen"
+    }
   }
 }
