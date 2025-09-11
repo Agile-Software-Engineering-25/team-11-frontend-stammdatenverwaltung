@@ -39,9 +39,7 @@
     "creationerror": "Error creating person. Please try again.",
     "role_missing": "Please select a role first.",
     "no_role_specific_fields": "No additional information required for this role."
-    }
-  },
-  "components": {
+    },
     "userDataTable": {
       "header": "User Data Table",
       "searchPlaceholder": "Search…",

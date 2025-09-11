@@ -39,9 +39,7 @@
       "creationerror": "Fehler beim Anlegen der Person. Bitte versuchen Sie es erneut.",
       "role_missing": "Bitte wählen Sie zuerst eine Rolle aus.",
       "no_role_specific_fields": "Für diese Rolle sind keine weiteren Angaben erforderlich."
-    }
-  },
-  "components": {
+    },
     "userDataTable": {
       "header": "Benutzerdatentabelle",
       "searchPlaceholder": "Suchen…",
