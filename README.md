@@ -47,10 +47,14 @@ npm i
 │   ├─ components/                              # Reusable UI components
 │   │   ├─ CreatePersonManuelComponent/         # Folder for the UI component to add a user/person manually
 │   │   │   └─CreatePersonManuelComponent.tsx   # Implementation for the UI component to add a user/person manually
-│   │   ├─ RoutingComponent/                    # Folder for the UserInfoCard component
-│   │   │   └─ RoutingComponent.tsx             # Implementation of the UserInfoCard component
 │   │   └─ LanguageSelectorComponent/           # Folder for the Language Selector UI component
-│   │       └─ LanguageSelectorComponent.tsx    #Implementation of the LanguageSelectorComponent
+│   │   │   └─ LanguageSelectorComponent.tsx    #Implementation of the LanguageSelectorComponent
+│   │   ├─ RoutingComponent/                    # Folder for the UserInfoCard component
+│   │   │   └─ RoutingComponent.tsx             # Implementation of the UserInfoCardComponent
+│   │   ├─ UserDataCardComponent/               # Folder for the UserDataCard component
+│   │   │   └─ UserDataCardComponent.tsx        # Implementation of the UserDataCardComponent
+│   │   └─ UserDataTableComponent/              # Folder for the UserDataTable component
+│   │       └─ UserDataTableComponent.tsx       #Implementation of the UserDataTableComponent
 │   ├─ hooks/                                   # Custom React hooks
 │   ├─ i18n/                                    # Internationalization setup and translations
 │   │   ├─ de-DE/                               # German language translations
@@ -61,10 +65,11 @@ npm i
 │   ├─ pages/                                   # Top-level route components
 │   │   ├─ Create_Person/                       # Folder for the page for the User/Person creation
 │   │   │   └─ Create_Person.tsx                # Implementation of the User/Person creation page
-│   │   ├─ Home/                                # Folder for the homepage
+│   │   └─ Home/                                # Folder for the homepage
 │   │       └─ Home.tsx                         # Implementation of the HomePage component
 │   ├─ utils/                                   # General utility/helper functions
-│   │   └─createpersonfunction.tsx              # File with all functions for the User/Person creation page
+│   │   ├─ createpersonfunction.ts              # File with all functions for the User/Person creation page
+│   │   └─ showuserdatafunctions.ts             # File with all functions for the User data table
 │   ├─ App.tsx                                  # Root app component, sets up routes/layout
 │   ├─ main.tsx                                 # Application entry point (ReactDOM.render)
 │   └─ config.ts                                # global application configurations (e.g. backend-base-url)
