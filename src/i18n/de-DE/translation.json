@@ -2,7 +2,43 @@
   "pages": {
     "home": {
       "title": "Stammdatenverwaltung",
-      "description": "Das ist die Startseite für die Stammdatenverwaltung."
+      "description": "Das ist die Startseite für die Stammdatenverwaltung.",
+      "create_manuell": "Person manuell anlegen"
+    },
+    "create_person_manuell": {
+      "title": "Person manuell anlegen",
+      "description": "Information zur Person",
+      "openbutton": "Person manuell anlegen",
+      "text": "Füllen Sie die folgenden Informationen aus.",
+      "content": "Gebe Sie die erweiterten Informationen ein."
+      }
+  },
+  "components": {
+      "createpersonmanuell":{
+      "closebutton": "Anlegen Abbrechen",
+      "nextbutton": "Weiter",
+      "finishbutton": "Anlegen abschließen",
+      "text": "Füllen Sie die folgenden Informationen aus.",
+      "role": "Rolle",
+      "choose_role": "Wählen Sie eine Rolle",
+      "content": "Gebe Sie die erweiterten Informationen ein.",
+      "backbutton": "Zurück",
+      "firstname": "Vorname",
+      "lastname": "Nachname",
+      "email": "E-Mail",
+      "phone": "Telefonnummer",
+      "street": "Straße",
+      "housenumber": "Hausnummer",
+      "zipcode": "PLZ",
+      "city": "Stadt",
+      "country": "Land",
+      "birthdate": "Geburtsdatum",
+      "placeofbirth": "Geburtsort",
+      "nationality": "Nationalität",
+      "missingfields": "Bitte füllen Sie alle Pflichtfelder aus.",
+      "creationerror": "Fehler beim Anlegen der Person. Bitte versuchen Sie es erneut.",
+      "role_missing": "Bitte wählen Sie zuerst eine Rolle aus.",
+      "no_role_specific_fields": "Für diese Rolle sind keine weiteren Angaben erforderlich."
     }
   },
   "components": {

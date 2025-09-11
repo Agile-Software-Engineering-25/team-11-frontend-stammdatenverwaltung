@@ -2,7 +2,43 @@
   "pages": {
     "home": {
       "title": "Master Data Management",
-      "description": "This is the homepage for Master Data Management."
+      "description": "This is the homepage for Master Data Management.",
+      "create_manuell": "Create Person Manually"
+    },
+    "create_person_manuell": {
+      "title": "Create Person Manually",
+      "description": "Information about the person",
+      "openbutton": "Create Person Manually",
+      "text": "Please fill in the following information.",
+      "content": "Enter the extended information."
+      }
+  },
+  "components": {
+    "createpersonmanuell":{
+    "closebutton": "Abort Creation",
+    "finishbutton": "Finish Creation",
+    "backbutton": "Back",
+    "nextbutton": "Next",
+    "text": "Please fill in the following information.",
+    "role": "Role",
+    "choose_role": "Choose a role",
+    "content": "Enter the extended information.",
+    "firstname": "Vorname",
+    "lastname": "Nachname",
+    "email": "E-Mail",
+    "phone": "Phone number",
+    "street": "Street",
+    "housenumber": "House number",
+    "zipcode": "Zip code",
+    "city": "City",
+    "country": "Country",
+    "birthdate": "Date of birth",
+    "placeofbirth": "Place of birth",
+    "nationality": "Nationality",
+    "missingfields": "Please fill in all required fields.",
+    "creationerror": "Error creating person. Please try again.",
+    "role_missing": "Please select a role first.",
+    "no_role_specific_fields": "No additional information required for this role."
     }
   },
   "components": {
