@@ -3,7 +3,20 @@
     "home": {
       "title": "Stammdatenverwaltung",
       "description": "Das ist die Startseite für die Stammdatenverwaltung.",
-      "create_manuell": "Person manuell anlegen"
+      "create_manuell": "Person manuell anlegen",
+      "csv_upload": "CSV-Upload",
+      "csv_export": "CSV-Export",
+      "error_delete": "Fehler beim Löschen der Person. Bitte versuchen Sie es erneut.",
+      "error_fetch": "Fehler beim Laden der Personendaten. Bitte versuchen Sie es erneut.",
+      "error_create": "Fehler beim Anlegen der Person. Bitte versuchen Sie es erneut.",
+      "error_update": "Fehler beim Aktualisieren der Person. Bitte versuchen Sie es erneut.",
+      "error_csv_import": "Fehler beim Importieren der CSV-Datei. Bitte versuchen Sie es erneut.",
+      "error_csv_export": "Fehler beim Exportieren der CSV-Datei. Bitte versuchen Sie es erneut.",
+      "success_delete": "Person erfolgreich gelöscht.",
+      "success_create": "Person erfolgreich angelegt.",
+      "success_update": "Person erfolgreich aktualisiert.",
+      "success_csv_import": "CSV-Datei erfolgreich importiert.",
+      "success_csv_export": "CSV-Datei erfolgreich exportiert."
     },
     "create_person_manuell": {
       "title": "Person manuell anlegen",

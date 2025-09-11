@@ -3,7 +3,20 @@
     "home": {
       "title": "Master Data Management",
       "description": "This is the homepage for Master Data Management.",
-      "create_manuell": "Create Person Manually"
+      "create_manuell": "Create Person Manually",
+      "csv_upload": "CSV Upload",
+      "csv_export": "CSV Export",
+      "error_delete": "Error deleting person. Please try again.",
+      "error_fetch": "Error loading person data. Please try again.",
+      "error_create": "Error creating person. Please try again.",
+      "error_update": "Error updating person. Please try again.",
+      "error_csv_import": "Error importing CSV file. Please try again.",
+      "error_csv_export": "Error exporting CSV file. Please try again.",
+      "success_delete": "Person deleted successfully.",
+      "success_create": "Person created successfully.",
+      "success_update": "Person updated successfully.",
+      "success_csv_import": "CSV file imported successfully.",
+      "success_csv_export": "CSV file exported successfully."
     },
     "create_person_manuell": {
       "title": "Create Person Manually",
