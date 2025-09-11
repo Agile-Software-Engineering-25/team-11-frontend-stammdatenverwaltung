@@ -45,7 +45,7 @@ const UserDataTableComponent = () => {
   // Card nach erfolgreichem Speichern direkt wieder öffnen
   const handleSaveSuccess = (userId: number) => {
     setSelectedUserId(null);
-    setSelectedUserId(userId);
+    //setSelectedUserId(userId);
     //setTimeout(() => setSelectedUserId(userId), 0);
   };
 

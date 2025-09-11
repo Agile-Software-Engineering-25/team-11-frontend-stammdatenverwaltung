@@ -182,7 +182,7 @@ const UserDataCardComponent = ({
       </Modal>
 
       <Typography level="h5" sx={{ mb: 1, fontSize: 18, fontWeight: 700 }}>
-        Detailansicht
+        {t('components.userDataTable.detailedview')}
       </Typography>
       <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
         {cards.map((card) => (
