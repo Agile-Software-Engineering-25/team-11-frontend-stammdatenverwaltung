@@ -2,21 +2,29 @@ type User = {
   id: number;
   firstname: string;
   lastname: string;
-  birthdate: string;
-  address: string;
-  phone: string;
+  email: string;
   roles: string[];
   details?: Record<string, string>;
+  [key: string]: any;
 };
 
 type CardField = { label: string; key: string };
 type CardConfig = { key: string; title: string; fields: CardField[] };
+
+function getDynamicUserFields(): { key: string; label: string }[] {
+  return [
+    { key: 'birthdate', label: 'Geburtsdatum' },
+    { key: 'address', label: 'Adresse' },
+    { key: 'phone', label: 'Telefon' },
+  ];
+}
 
 const users: User[] = [
   {
     id: 1,
     firstname: 'Max',
     lastname: 'Mustermann',
+    email: 'max.mustermann@example.com',
     birthdate: '01.01.1990',
     address: 'Musterstraße 1, 12345 Musterstadt',
     phone: '01234 567890',
@@ -31,6 +39,7 @@ const users: User[] = [
     id: 2,
     firstname: 'Anna',
     lastname: 'Muster',
+    email: 'anna.muster@example.com',
     birthdate: '02.02.1992',
     address: 'Beispielweg 2, 23456 Beispielstadt',
     phone: '02345 678901',
@@ -44,6 +53,7 @@ const users: User[] = [
     id: 3,
     firstname: 'Josef',
     lastname: 'Furt',
+    email: 'josef.furt@example.com',
     birthdate: '03.03.1993',
     address: 'Musterweg 3, 45678 Musterstadt',
     phone: '03456 789012',
@@ -91,6 +101,7 @@ function getAllRoles(): string[] {
 }
 
 function getCardsForRoles(roles: string[]): CardConfig[] {
+  const dynamicFields = getDynamicUserFields();
   const cards: CardConfig[] = [
     {
       key: 'basis',
@@ -98,9 +109,8 @@ function getCardsForRoles(roles: string[]): CardConfig[] {
       fields: [
         { label: 'Vorname', key: 'firstname' },
         { label: 'Nachname', key: 'lastname' },
-        { label: 'Geburtsdatum', key: 'birthdate' },
-        { label: 'Adresse', key: 'address' },
-        { label: 'Telefon', key: 'phone' },
+        { label: 'E-Mail', key: 'email' },
+        ...dynamicFields,
       ],
     },
   ];
@@ -112,5 +122,44 @@ function getCardsForRoles(roles: string[]): CardConfig[] {
   return cards;
 }
 
+function updateUserData(id: number, updatedFields: Record<string, string>) {
+  const user = users.find((u) => u.id === id);
+  if (!user) return false;
+  Object.keys(updatedFields).forEach((key) => {
+    if (
+      key === 'id' ||
+      key === 'firstname' ||
+      key === 'lastname' ||
+      key === 'roles' ||
+      key === 'email'
+    ) {
+      if (key in user) user[key] = updatedFields[key];
+    } else if (getDynamicUserFields().some((f) => f.key === key)) {
+      user[key] = updatedFields[key];
+    } else {
+      if (!user.details) user.details = {};
+      user.details[key] = updatedFields[key];
+    }
+  });
+  return true;
+}
+
+// NEU: User löschen
+function deleteUserById(id: number): boolean {
+  const idx = users.findIndex((u) => u.id === id);
+  if (idx !== -1) {
+    users.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+
 export type { User, CardConfig, CardField };
-export { getAllUsers, getAllRoles, getCardsForRoles };
+export {
+  getAllUsers,
+  getAllRoles,
+  getCardsForRoles,
+  updateUserData,
+  getDynamicUserFields,
+  deleteUserById,
+};

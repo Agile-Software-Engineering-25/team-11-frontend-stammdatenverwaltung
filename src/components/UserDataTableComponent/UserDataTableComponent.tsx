@@ -18,8 +18,8 @@ const UserDataTableComponent = () => {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('alle');
+  const [users, setUsers] = useState(getAllUsers());
 
-  const users = getAllUsers();
   const allRoles = getAllRoles();
 
   // Filter-Logik
@@ -31,6 +31,23 @@ const UserDataTableComponent = () => {
       roleFilter === 'alle' || user.roles.includes(roleFilter);
     return matchesSearch && matchesRole;
   });
+
+  // Callback für Detailansicht, um nach dem Speichern/Löschen die Userdaten neu zu laden
+  const handleUserUpdate = () => {
+    setUsers(getAllUsers());
+  };
+
+  // Card schließen
+  const handleCloseDetail = () => {
+    setSelectedUserId(null);
+  };
+
+  // Card nach erfolgreichem Speichern direkt wieder öffnen
+  const handleSaveSuccess = (userId: number) => {
+    setSelectedUserId(null);
+    setSelectedUserId(userId);
+    //setTimeout(() => setSelectedUserId(userId), 0);
+  };
 
   return (
     <Box sx={{ p: 2 }}>
@@ -76,6 +93,7 @@ const UserDataTableComponent = () => {
         </thead>
         <tbody>
           {filteredUsers.flatMap((user) => {
+            const freshUser = users.find((u) => u.id === user.id) ?? user;
             const rows = [
               <tr
                 key={user.id}
@@ -98,7 +116,7 @@ const UserDataTableComponent = () => {
                 >
                   <Box>
                     <span style={{ display: 'block', fontWeight: 500 }}>
-                      {user.firstname} {user.lastname}
+                      {freshUser.firstname} {freshUser.lastname}
                     </span>
                     <Box
                       sx={{
@@ -109,7 +127,7 @@ const UserDataTableComponent = () => {
                         maxWidth: 160,
                       }}
                     >
-                      {user.roles.map((role) => (
+                      {freshUser.roles.map((role) => (
                         <Chip
                           key={role}
                           size="sm"
@@ -131,16 +149,21 @@ const UserDataTableComponent = () => {
                     </Box>
                   </Box>
                 </td>
-                <td>{user.birthdate}</td>
-                <td>{user.address}</td>
-                <td>{user.phone}</td>
+                <td>{freshUser.birthdate}</td>
+                <td>{freshUser.address}</td>
+                <td>{freshUser.phone}</td>
               </tr>,
             ];
             if (selectedUserId === user.id) {
               rows.push(
                 <tr key={user.id + '-details'}>
                   <td colSpan={4} style={{ background: '#f9f9f9', padding: 0 }}>
-                    <UserDataCardComponent user={user} />
+                    <UserDataCardComponent
+                      user={freshUser}
+                      onUserUpdate={handleUserUpdate}
+                      onClose={handleCloseDetail}
+                      onSaveSuccess={handleSaveSuccess}
+                    />
                   </td>
                 </tr>
               );
