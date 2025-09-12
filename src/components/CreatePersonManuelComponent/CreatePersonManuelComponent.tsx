@@ -77,7 +77,7 @@ const CreateUser = () => {
         if (
           !initialState.hasOwnProperty(key) &&
           !keepFields.has(key) &&
-          !page1DynamicFields.some(f => f.name === key)
+          !page1DynamicFields.some((f) => f.name === key)
         ) {
           delete cleanedForm[key];
         }
