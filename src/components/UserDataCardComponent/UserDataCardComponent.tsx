@@ -2,7 +2,6 @@
 import {
   Box,
   Typography,
-  Card,
   CardContent,
   Sheet,
   DialogActions,
@@ -13,6 +12,7 @@ import {
 } from '@mui/joy';
 import Input from '@agile-software/shared-components/src/components/Input/Input';
 import Button from '@agile-software/shared-components/src/components/Button/Button';
+import Card from '@agile-software/shared-components/src/components/Card/Card';
 import { useState, useEffect } from 'react';
 import {
   getCardsForRoles,

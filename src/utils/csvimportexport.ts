@@ -1,6 +1,5 @@
 import {
   users,
-  fixedFieldNames,
   page1DynamicFieldsConfig,
   roleFieldConfigs,
 } from './mockupdata';

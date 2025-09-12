@@ -1,11 +1,12 @@
-import { Box, Typography } from '@mui/joy';
+import { Box, Typography, Modal, ModalDialog } from '@mui/joy';
 import LanguageSelectorComponent from '@components/LanguageSelectorComponent/LanguageSelectorComponent';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import UserDataTableComponent from '@/components/UserDataTableComponent/UserDataTableComponent';
 import Button from '@agile-software/shared-components/src/components/Button/Button';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { exportUsersToCSV, downloadCSV } from '@/utils/csvimportexport';
+import UsersCsvImportComponent from '@/components/UserCsvImportComponent/UserCsvImportComponent';
 
 const Home = () => {
   const { t } = useTranslation();
@@ -13,6 +14,9 @@ const Home = () => {
 
   // Ref, um auf die ausgewählten IDs aus der Tabelle zuzugreifen
   const selectedUserIdsRef = useRef<number[]>([]);
+
+  // Popup-Status für CSV-Import
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   // Callback, das von der Tabelle gesetzt wird
   const handleSelectedUserIdsChange = (ids: number[]) => {
@@ -22,11 +26,14 @@ const Home = () => {
   const handleExport = () => {
     const csv = exportUsersToCSV(selectedUserIdsRef.current);
     if (csv) {
-      downloadCSV(csv, 'benutzerdaten.csv');
+      downloadCSV(csv, t('pages.home.userdatafilename'),);
     } else {
-      alert('Bitte wählen Sie mindestens einen Benutzer aus.');
+      alert(t('pages.home.nouserselected'));
     }
   };
+
+  const handleOpenCsvImport = () => setCsvImportOpen(true);
+  const handleCloseCsvImport = () => setCsvImportOpen(false);
 
   return (
     <Box sx={{ padding: 2, maxWidth: 1500, mx: 'auto' }}>
@@ -36,12 +43,19 @@ const Home = () => {
         <Button onClick={() => navigate('/create_user')}>
           {t('pages.home.createmanuell')}
         </Button>
-        <Button>{t('pages.home.csvupload')}</Button>
+        <Button onClick={handleOpenCsvImport}>
+          {t('pages.home.csvupload')}
+        </Button>
         <Button onClick={handleExport}>{t('pages.home.csvexport')}</Button>
       </Box>
       <UserDataTableComponent
         onSelectedUserIdsChange={handleSelectedUserIdsChange}
       />
+      <Modal open={csvImportOpen} onClose={handleCloseCsvImport}>
+        <ModalDialog>
+          <UsersCsvImportComponent onClose={handleCloseCsvImport} />
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 };
