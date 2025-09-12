@@ -13,7 +13,7 @@ const Home = () => {
 
   return (
     <Box sx={{ padding: 2, maxWidth: 1500, mx: 'auto' }}>
-      <Typography>{t('pages.home.title')}</Typography>
+      <Typography level="h3">{t('pages.home.title')}</Typography>
       <LanguageSelectorComponent />
       <Button onClick={() => navigate('/create_person')}>
         {t('pages.home.create_manuell')}

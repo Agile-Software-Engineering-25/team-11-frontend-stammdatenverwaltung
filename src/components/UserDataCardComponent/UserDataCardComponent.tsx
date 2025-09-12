@@ -208,10 +208,7 @@ const UserDataCardComponent = ({
             background: '#fff',
           }}
         >
-          <Typography
-            level="h6"
-            sx={{ mb: 0.5, fontSize: 16, fontWeight: 700 }}
-          >
+          <Typography level="h6" sx={{ mb: -1, fontSize: 16, fontWeight: 700 }}>
             {currentCard.title}
           </Typography>
           <CardContent sx={{ p: 0 }}>
@@ -219,7 +216,7 @@ const UserDataCardComponent = ({
               sx={{
                 display: 'grid',
                 gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' },
-                gap: 1.5,
+                gap: 0.5,
                 alignItems: 'start',
               }}
             >
@@ -231,7 +228,8 @@ const UserDataCardComponent = ({
                   disabled={!editMode}
                   onChange={handleInputChange(field.key)}
                   sx={{
-                    mb: 1,
+                    mt: 0, // vorher -1 oder größer, jetzt 0
+                    mb: 0, // falls vorhanden, auf 0 setzen
                     '& .Mui-disabled': {
                       color: '#000',
                     },

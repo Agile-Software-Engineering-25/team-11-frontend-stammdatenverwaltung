@@ -150,7 +150,9 @@ const UserDataTableComponent = () => {
                   </Box>
                 </td>
                 <td>{freshUser.birthdate}</td>
-                <td>{freshUser.address}</td>
+                <td>
+                  {`${freshUser.street ?? ''} ${freshUser.housenumber ?? ''}, ${freshUser.zipcode ?? ''} ${freshUser.city ?? ''}`.trim()}
+                </td>
                 <td>{freshUser.phone}</td>
               </tr>,
             ];

@@ -26,11 +26,14 @@ export function getAvailableRoles() {
   return availableRoles;
 }
 
-// Erstellt eine neue Person aus einem Datenarray
+// Erstellt eine neue Person aus einem Datenarray und fügt sie zu den Mockupdaten hinzu
 export function createPerson(data: string[]) {
   // Hole die Rollen aus den Daten (letztes festes Feld)
   const rolesString = data[fixedFieldNames.indexOf('roles')] ?? '';
-  const roles = rolesString.split(',').map(r => r.trim()).filter(Boolean);
+  const roles = rolesString
+    .split(',')
+    .map((r) => r.trim())
+    .filter(Boolean);
 
   // Dynamische Felder für alle Rollen bestimmen (ohne Duplikate)
   const dynamicFields = Array.from(
@@ -50,16 +53,42 @@ export function createPerson(data: string[]) {
   ];
 
   // Objekt mit Namen und Wert aus dem Array erzeugen
-  const result: Record<string, string> = {};
+  const result: Record<string, any> = {};
   allFieldNames.forEach((name, idx) => {
     result[name] = data[idx] ?? '';
   });
 
-  // Ausgabe in der Konsole
-  console.log('createPerson:', result);
+  // details für rollenbasierte Felder
+  const details: Record<string, string> = {};
+  dynamicFieldNames.forEach((name) => {
+    if (result[name]) {
+      details[name] = result[name];
+      delete result[name];
+    }
+  });
 
-  // Optional: In die Mockupdaten einfügen (für Demo-Zwecke)
-  // users.push({ id: users.length + 1, ...result, details: {} });
+  // id generieren
+  const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
 
-  return result;
+  // User-Objekt zusammenbauen
+  const newUser = {
+    id: newId,
+    firstname: result.firstname,
+    lastname: result.lastname,
+    email: result.email,
+    roles: roles,
+    ...page1DynamicFieldsConfig.reduce((acc, f) => {
+        acc[f.name] = result[f.name];
+        return acc;
+      },
+      {} as Record<string, string>
+    ),
+    details,
+  };
+
+  users.push(newUser);
+
+  console.log('createPerson: Neuer User hinzugefügt:', newUser);
+
+  return newUser;
 }

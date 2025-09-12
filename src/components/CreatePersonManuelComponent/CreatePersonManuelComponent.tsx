@@ -62,10 +62,10 @@ const CreateUser = () => {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
-  // Mehrfachauswahl für Rollen
-  const handleRoleChange = (_: any, value: string[] | null) => {
+  // Einzel-Auswahl für Rollen (nur eine Rolle möglich)
+  const handleRoleChange = (_: any, value: string | null) => {
     setForm((prev) => {
-      const rolesArr = value ?? [];
+      const rolesArr = value ? [value] : [];
       // Leere dynamische Felder zurücksetzen, die nicht mehr gebraucht werden
       const keepFields = new Set(
         rolesArr.flatMap((role) =>
@@ -250,9 +250,8 @@ const CreateUser = () => {
           <Box sx={{ mt: -2 }}>
             <label>{t('components.createpersonmanuell.role')} </label>
             <Select
-              multiple
               placeholder={t('components.createpersonmanuell.choose_role')}
-              value={form.roles}
+              value={form.roles[0] ?? ''}
               onChange={handleRoleChange}
               required
               sx={{ width: '68%' }}
