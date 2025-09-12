@@ -18,7 +18,7 @@
       "successcsvimport": "CSV file imported successfully.",
       "successcsvexport": "CSV file exported successfully."
     },
-    "create_person_manuell": {
+    "create_user_manually": {
       "title": "Create User Manually",
       "description": "Information about the user",
       "openbutton": "Create User Manually",
@@ -27,7 +27,7 @@
       }
   },
   "components": {
-    "createpersonmanuell":{
+    "createusermanually":{
     "closebutton": "Abort Creation",
     "finishbutton": "Finish Creation",
     "backbutton": "Back",

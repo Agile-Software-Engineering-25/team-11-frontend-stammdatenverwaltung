@@ -45,8 +45,8 @@ npm i
 ├─ src/                                         # Main application source code
 │   ├─ @custom-types/                           # Custom global TypeScript type declarations
 │   ├─ components/                              # Reusable UI components
-│   │   ├─ CreatePersonManuelComponent/         # Folder for the UI component to add a user/person manually
-│   │   │   └─CreatePersonManuelComponent.tsx   # Implementation for the UI component to add a user/person manually
+│   │   ├─ CreatePersonManualyComponent/        # Folder for the UI component to add a user manually
+│   │   │   └─CreatePersonManualyComponent.tsx  # Implementation for the UI component to add a user manually
 │   │   └─ LanguageSelectorComponent/           # Folder for the Language Selector UI component
 │   │   │   └─ LanguageSelectorComponent.tsx    #Implementation of the LanguageSelectorComponent
 │   │   ├─ RoutingComponent/                    # Folder for the UserInfoCard component
@@ -63,12 +63,14 @@ npm i
 │   │   │   └─ translation.json                 # English translation strings
 │   │   └─ index.ts                             # i18n initialization and config
 │   ├─ pages/                                   # Top-level route components
-│   │   ├─ Create_Person/                       # Folder for the page for the User/Person creation
-│   │   │   └─ Create_Person.tsx                # Implementation of the User/Person creation page
+│   │   ├─ Create_User/                         # Folder for the page for the User creation
+│   │   │   └─ Create_User.tsx                  # Implementation of the User creation page
 │   │   └─ Home/                                # Folder for the homepage
 │   │       └─ Home.tsx                         # Implementation of the HomePage component
 │   ├─ utils/                                   # General utility/helper functions
-│   │   ├─ createpersonfunction.ts              # File with all functions for the User/Person creation page
+│   │   ├─ createuserfunction.ts                # File with all functions for the User creation page
+│   │   ├─ csvimportexport.ts                   # File with all functions for the User import/export with csv
+│   │   ├─ mockupdata.ts                        # File with all mockup data for other functions
 │   │   └─ showuserdatafunctions.ts             # File with all functions for the User data table
 │   ├─ App.tsx                                  # Root app component, sets up routes/layout
 │   ├─ main.tsx                                 # Application entry point (ReactDOM.render)

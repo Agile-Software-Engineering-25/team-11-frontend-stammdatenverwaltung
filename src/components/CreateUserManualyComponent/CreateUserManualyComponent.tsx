@@ -8,9 +8,9 @@ import Input from '@agile-software/shared-components/src/components/Input/Input'
 import {
   dynamicInputFields,
   getAvailableRoles,
-  createPerson,
+  createUser,
   getPage1DynamicFields,
-} from '@/utils/createpersonfunction';
+} from '@/utils/createuserfunction';
 
 const initialState = {
   firstname: '',
@@ -107,7 +107,7 @@ const CreateUser = () => {
     );
 
     // Übergabe an createPerson
-    createPerson(values);
+    createUser(values);
 
     setForm(initialState);
     navigate('/');
@@ -224,13 +224,13 @@ const CreateUser = () => {
         <>
           <Box sx={{ display: 'flex', gap: 2}}>
             <Input
-              label={t('components.createpersonmanuell.firstname')}
+              label={t('components.createusermanually.firstname')}
               required
               value={form.firstname}
               onChange={handleInputChange('firstname')}
             />
             <Input
-              label={t('components.createpersonmanuell.lastname')}
+              label={t('components.createusermanually.lastname')}
               required
               value={form.lastname}
               onChange={handleInputChange('lastname')}
@@ -238,7 +238,7 @@ const CreateUser = () => {
           </Box>
           <Box>
             <Input
-              label={t('components.createpersonmanuell.email')}
+              label={t('components.createusermanually.email')}
               required
               value={form.email}
               onChange={handleInputChange('email')}
@@ -248,9 +248,9 @@ const CreateUser = () => {
           {/* Dynamische Felder für Seite 1 in 2er-Zeilen */}
           {renderDynamicFieldsRows()}
           <Box sx={{ mt: -2 }}>
-            <label>{t('components.createpersonmanuell.role')} </label>
+            <label>{t('components.createusermanually.role')} </label>
             <Select
-              placeholder={t('components.createpersonmanuell.choose_role')}
+              placeholder={t('components.createusermanually.choose_role')}
               value={form.roles[0] ?? ''}
               onChange={handleRoleChange}
               required
@@ -270,7 +270,7 @@ const CreateUser = () => {
         <Box>
           {dynamicFields.length === 0 ? (
             <Box sx={{ mb: 4 }}>
-              {t('components.createpersonmanuell.no_role_specific_fields')}
+              {t('components.createusermanually.no_role_specific_fields')}
             </Box>
           ) : (
             renderRoleDynamicFieldsRows()
@@ -286,7 +286,7 @@ const CreateUser = () => {
               sx={{ textTransform: 'none' }}
               color="danger"
             >
-              {t('components.createpersonmanuell.backbutton')}
+              {t('components.createusermanually.backbutton')}
             </Button>
           )}
           <Button
@@ -294,7 +294,7 @@ const CreateUser = () => {
             sx={{ textTransform: 'none' }}
             color="danger"
           >
-            {t('components.createpersonmanuell.closebutton')}
+            {t('components.createusermanually.closebutton')}
           </Button>
           {step === 1 ? (
             <Button
@@ -303,7 +303,7 @@ const CreateUser = () => {
               color="success"
               disabled={!isPage1Valid}
             >
-              {t('components.createpersonmanuell.nextbutton')}
+              {t('components.createusermanually.nextbutton')}
             </Button>
           ) : (
             <Button
@@ -312,7 +312,7 @@ const CreateUser = () => {
               color="success"
               disabled={!isPage2Valid}
             >
-              {t('components.createpersonmanuell.finishbutton')}
+              {t('components.createusermanually.finishbutton')}
             </Button>
           )}
         </ButtonGroup>

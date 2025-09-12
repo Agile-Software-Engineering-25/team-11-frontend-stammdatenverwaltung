@@ -3,7 +3,6 @@ import LanguageSelectorComponent from '@components/LanguageSelectorComponent/Lan
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import UserDataTableComponent from '@/components/UserDataTableComponent/UserDataTableComponent';
-
 import Button from '@agile-software/shared-components/src/components/Button/Button';
 import { useRef } from 'react';
 import { exportUsersToCSV, downloadCSV } from '@/utils/csvimportexport';
@@ -34,13 +33,15 @@ const Home = () => {
       <Typography level="h3">{t('pages.home.title')}</Typography>
       <LanguageSelectorComponent />
       <Box sx={{ display: 'flex', gap: 2, my: 2 }}>
-        <Button onClick={() => navigate('/create_person')}>
+        <Button onClick={() => navigate('/create_user')}>
           {t('pages.home.createmanuell')}
         </Button>
         <Button>{t('pages.home.csvupload')}</Button>
         <Button onClick={handleExport}>{t('pages.home.csvexport')}</Button>
       </Box>
-      <UserDataTableComponent onSelectedUserIdsChange={handleSelectedUserIdsChange} />
+      <UserDataTableComponent
+        onSelectedUserIdsChange={handleSelectedUserIdsChange}
+      />
     </Box>
   );
 };

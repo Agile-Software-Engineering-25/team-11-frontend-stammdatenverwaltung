@@ -27,7 +27,7 @@ export function getAvailableRoles() {
 }
 
 // Erstellt eine neue Person aus einem Datenarray und fügt sie zu den Mockupdaten hinzu
-export function createPerson(data: string[]) {
+export function createUser(data: string[]) {
   // Hole die Rollen aus den Daten (letztes festes Feld)
   const rolesString = data[fixedFieldNames.indexOf('roles')] ?? '';
   const roles = rolesString
@@ -88,7 +88,7 @@ export function createPerson(data: string[]) {
 
   users.push(newUser);
 
-  console.log('createPerson: Neuer User hinzugefügt:', newUser);
+  console.log('createUser: Neuer User hinzugefügt:', newUser);
 
   return newUser;
 }
