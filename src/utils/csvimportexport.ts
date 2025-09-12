@@ -1,67 +1,96 @@
+/* eslint-disable max-lines-per-function */
 import {
   users,
   page1DynamicFieldsConfig,
   roleFieldConfigs,
 } from './mockupdata';
 
-// Hilfsfunktion: Alle dynamischen Felder für die User-Liste bestimmen
-function getAllDynamicFieldsForUsers(userList: typeof users) {
-  // Alle Felder, die in page1DynamicFieldsConfig stehen
-  const page1Fields = page1DynamicFieldsConfig.map((f) => f.name);
+// Erstellt ein CSV-Template für eine bestimmte Rolle (ohne Rollen-Spalte, Dateiname: {Rolle}_SAU_IMPORT.csv)
+export function generateCsvTemplateForRole(role: string): string {
+ 
 
-  // Alle rollenbasierten Felder, die bei mindestens einem User vorkommen
-  const roleFields = new Set<string>();
-  userList.forEach(user => {
-    user.roles.forEach(role => {
-      const config = roleFieldConfigs[role];
-      if (config) {
-        config.forEach((f) => roleFields.add(f.name));
-      }
-    });
-    // Auch Felder aus details aufnehmen, falls sie nicht in der Config stehen
-    if (user.details) {
-      Object.keys(user.details).forEach((key) => roleFields.add(key));
-    }
-  });
-
-  // page1Fields zuerst, dann alle weiteren rollenbasierten Felder (ohne Duplikate)
-  const allFields = [
-    ...page1Fields,
-    ...Array.from(roleFields).filter((f) => !page1Fields.includes(f)),
+  const baseFields = [
+    { key: 'firstname', label: 'Vorname' },
+    { key: 'lastname', label: 'Nachname' },
+    { key: 'email', label: 'E-Mail' },
   ];
-  return allFields;
+  // Dynamische Felder (Seite 1)
+  const page1Fields = page1DynamicFieldsConfig.map((f) => ({
+    key: f.name,
+    label: f.label,
+  }));
+  const roleFields = (roleFieldConfigs[role] ?? []).map(f => ({
+    key: f.name,
+    label: f.label,
+  }));
+
+  const header = [
+    ...baseFields.map(f => f.label),
+    ...page1Fields.map(f => f.label),
+    ...roleFields.map(f => f.label),
+  ];
+
+  const csv = header
+    .map((val) =>
+      typeof val === 'string' &&
+      (val.includes(',') || val.includes('"') || val.includes('\n'))
+        ? `"${val.replace(/"/g, '""')}"`
+        : val
+    )
+    .join(',');
+
+  return csv;
 }
 
-// Erstellt CSV-String aus Userdaten
-export function exportUsersToCSV(selectedUserIds: number[]) {
+// Dynamischer Export der ausgewählten Nutzer als CSV (inkl. Basisdaten und rollenspezifischer Felder)
+export function exportUsersToCSV(selectedUserIds: number[]): string {
   // Filtere die User
   const selectedUsers = users.filter((u) => selectedUserIds.includes(u.id));
   if (selectedUsers.length === 0) return '';
 
-  // Feste Felder
-  const baseFields = ['firstname', 'lastname', 'email', 'roles'];
-  // Dynamische Felder
-  const dynamicFields = getAllDynamicFieldsForUsers(selectedUsers);
+  // Basisfelder (wie in generateCsvTemplateForRole, aber inkl. Rollen)
+  const baseFields = [
+    { key: 'firstname', label: 'Vorname' },
+    { key: 'lastname', label: 'Nachname' },
+    { key: 'email', label: 'E-Mail' },
+    { key: 'roles', label: 'Rollen' },
+  ];
+  // Dynamische Felder (Seite 1)
+  const page1Fields = page1DynamicFieldsConfig.map(f => ({
+    key: f.name,
+    label: f.label,
+  }));
+
+  // Alle rollenspezifischen Felder, die bei mindestens einem User vorkommen
+  const roleFieldSet = new Set<string>();
+  selectedUsers.forEach(user => {
+    user.roles.forEach(role => {
+      const config = roleFieldConfigs[role];
+      if (config) {
+        config.forEach(f => roleFieldSet.add(f.name));
+      }
+    });
+    // Auch Felder aus details aufnehmen, falls sie nicht in der Config stehen
+    if (user.details) {
+      Object.keys(user.details).forEach(key => roleFieldSet.add(key));
+    }
+  });
+  // Rollenspezifische Felder als Array mit Label
+  const roleFields = Array.from(roleFieldSet).map(fieldName => {
+    // Label suchen
+    for (const role in roleFieldConfigs) {
+      const found = roleFieldConfigs[role].find(f => f.name === fieldName);
+      if (found) return { key: fieldName, label: found.label };
+    }
+    // Fallback: Feldname als Label
+    return { key: fieldName, label: fieldName };
+  });
 
   // Kopfzeile (Labels)
   const header = [
-    ...baseFields.map((f) => {
-      if (f === 'firstname') return 'Vorname';
-      if (f === 'lastname') return 'Nachname';
-      if (f === 'email') return 'E-Mail';
-      if (f === 'roles') return 'Rollen';
-      return f;
-    }),
-    ...dynamicFields.map(f => {
-      // Label aus Config suchen
-      const page1 = page1DynamicFieldsConfig.find(field => field.name === f);
-      if (page1) return page1.label;
-      for (const role in roleFieldConfigs) {
-        const found = roleFieldConfigs[role].find(field => field.name === f);
-        if (found) return found.label;
-      }
-      return f;
-    }),
+    ...baseFields.map(f => f.label),
+    ...page1Fields.map(f => f.label),
+    ...roleFields.map(f => f.label),
   ];
 
   // Zeilen
@@ -72,14 +101,19 @@ export function exportUsersToCSV(selectedUserIds: number[]) {
       user.email ?? '',
       (user.roles ?? []).join(', '),
     ];
-    const dynamic = dynamicFields.map(f =>
-      user[f] !== undefined && user[f] !== null
-        ? user[f]
-        : user.details && user.details[f]
-          ? user.details[f]
+    const page1 = page1Fields.map(f =>
+      user[f.key] !== undefined && user[f.key] !== null
+        ? user[f.key]
         : ''
     );
-    return [...base, ...dynamic];
+    const roleSpecific = roleFields.map(f =>
+      user[f.key] !== undefined && user[f.key] !== null
+        ? user[f.key]
+        : user.details && user.details[f.key]
+        ? user.details[f.key]
+        : ''
+    );
+    return [...base, ...page1, ...roleSpecific];
   });
 
   // CSV-String bauen
@@ -93,7 +127,7 @@ export function exportUsersToCSV(selectedUserIds: number[]) {
             : val
         )
         .join(',')
-      )
+    )
     .join('\r\n');
 
   return csv;

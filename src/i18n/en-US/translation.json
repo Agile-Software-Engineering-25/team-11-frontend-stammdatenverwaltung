@@ -84,8 +84,10 @@
       "invalidfiletype": "Invalid file type. Please upload a CSV file.",
       "no_file_chosen": "No file chosen. Please select a CSV file to upload.",
       "invalidfilecontent": "Invalid file content. Please check the CSV file and try again.",
-      "rolefortemplate": "Choose a role for the template",
-      "role": "Role"
+      "rolefortemplate": "Choose a role for the template and for the import",
+      "role": "Role",
+      "information":"Only users with the same role can be imported.",
+      "previewcsvtemplate": "Preview CSV Template for"
     }
   }
 }

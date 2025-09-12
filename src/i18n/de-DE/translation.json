@@ -85,8 +85,10 @@
       "importerror": "Fehler beim Importieren der CSV-Datei. Bitte versuchen Sie es erneut.",
       "invalidfiletype": "Ungültiger Dateityp. Bitte laden Sie eine CSV-Datei hoch.",
       "invalidfilecontent": "Ungültiger Dateiinhalte. Bitte überprüfen Sie die CSV-Datei und versuchen Sie es erneut.",
-      "rolefortemplate": "Wähle eine Rolle für die Vorlage aus",
-      "role": "Rolle"
+      "rolefortemplate": "Wähle eine Rolle für die Vorlage und für den Import aus",
+      "role": "Rolle",
+      "information":"Es können nur Benutzer mit der gleichen Rolle importiert werden.",
+      "previewcsvtemplate": "Vorschau der CSV-Vorlage"
     }
   }
 }
