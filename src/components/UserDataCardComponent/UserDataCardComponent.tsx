@@ -26,13 +26,13 @@ const UserDataCardComponent = ({
   onUserUpdate,
   onClose,
   onSaveSuccess,
-  onShowMessage, // <-- NEU
+  onShowMessage, 
 }: {
   user: any;
   onUserUpdate?: () => void;
   onClose?: () => void;
   onSaveSuccess?: (userId: number) => void;
-  onShowMessage?: (type: 'success' | 'error', text: string) => void; // <-- NEU
+  onShowMessage?: (type: 'success' | 'error', text: string) => void;
 }) => {
   if (!user) return null;
   const cards = getCardsForRoles(user.roles);
@@ -62,7 +62,6 @@ const UserDataCardComponent = ({
       });
       setInputValues(newValues);
     }
-    // eslint-disable-next-line
   }, [currentCard, user, editMode]);
 
   const handleInputChange =
@@ -81,7 +80,8 @@ const UserDataCardComponent = ({
       setEditMode(false);
       forceUpdate((n) => n + 1);
       if (onUserUpdate) onUserUpdate();
-      if (onShowMessage) onShowMessage('success', t('pages.home.successupdate'));
+      if (onShowMessage)
+        onShowMessage('success', t('pages.home.successupdate'));
       if (onSaveSuccess) onSaveSuccess(user.id);
     } else {
       if (onShowMessage) onShowMessage('error', t('pages.home.errorupdate'));
@@ -110,7 +110,8 @@ const UserDataCardComponent = ({
     setShowDeleteDialog(false);
     if (result) {
       if (onUserUpdate) onUserUpdate();
-      if (onShowMessage) onShowMessage('success', t('pages.home.successdelete'));
+      if (onShowMessage)
+        onShowMessage('success', t('pages.home.successdelete'));
       if (onClose) onClose();
     } else {
       if (onShowMessage) onShowMessage('error', t('pages.home.errordelete'));
@@ -130,7 +131,6 @@ const UserDataCardComponent = ({
         p: 1,
         borderRadius: 6,
         boxShadow: 'xs',
-        background: '#f9f9f9',
         position: 'relative',
       }}
     >
@@ -185,7 +185,7 @@ const UserDataCardComponent = ({
         </ModalDialog>
       </Modal>
 
-      <Typography level="h5" sx={{ mb: 1, fontSize: 18, fontWeight: 700 }}>
+      <Typography level="h4" sx={{ mb: 1 }}>
         {t('components.userDataTable.detailedview')}
       </Typography>
       <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
@@ -209,7 +209,6 @@ const UserDataCardComponent = ({
             borderRadius: 4,
             p: 1,
             m: 0,
-            background: '#fff',
           }}
         >
           <Typography level="h6" sx={{ mb: -1, fontSize: 16, fontWeight: 700 }}>

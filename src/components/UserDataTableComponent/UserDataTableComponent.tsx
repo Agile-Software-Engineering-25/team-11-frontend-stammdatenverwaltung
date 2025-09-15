@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Table,
-  Input as JoyInput,
   Chip,
   Select,
   Option,
@@ -13,6 +12,8 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import UserDataCardComponent from '../UserDataCardComponent/UserDataCardComponent';
 import { getAllUsers, getAllRoles } from '../../utils/showuserdatafunctions';
+import Input from '@agile-software/shared-components/src/components/Input/Input';
+import { createCustomTheme } from '@agile-software/shared-components';
 
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,
@@ -129,7 +130,7 @@ const UserDataTableComponent = ({
           alignItems: 'center',
         }}
       >
-        <JoyInput
+        <Input
           placeholder={t('components.userDataTable.searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -192,8 +193,7 @@ const UserDataTableComponent = ({
                 key={user.id}
                 style={{
                   cursor: 'pointer',
-                  background:
-                    selectedUserId === user.id ? '#f0f4ff' : undefined,
+                  background: selectedUserId === user.id ? 50 : undefined,
                 }}
                 onClick={() =>
                   setSelectedUserId(selectedUserId === user.id ? null : user.id)
@@ -237,12 +237,8 @@ const UserDataTableComponent = ({
                           variant="soft"
                           color="neutral"
                           sx={{
-                            fontSize: 12,
                             height: 20,
                             px: 1,
-                            background: '#e0e0e0',
-                            color: '#333',
-                            fontWeight: 500,
                             mb: 0.5,
                           }}
                         >
@@ -262,7 +258,7 @@ const UserDataTableComponent = ({
             if (selectedUserId === user.id) {
               rows.push(
                 <tr key={user.id + '-details'}>
-                  <td colSpan={5} style={{ background: '#f9f9f9', padding: 0 }}>
+                  <td colSpan={5} style={{ padding: 0 }}>
                     <UserDataCardComponent
                       user={freshUser}
                       onUserUpdate={handleUserUpdate}

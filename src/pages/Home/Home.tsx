@@ -86,9 +86,9 @@ const Home = () => {
           sx={{
             mb: 2,
             display: 'block',
-            background: message.type === 'success' ? '#e6f4ea' : '#fdeaea',
-            borderColor: message.type === 'success' ? '#b7ebc6' : '#f5c6cb',
-            color: message.type === 'success' ? '#1a5936' : '#a94442',
+            background: message.type === 'success',
+            borderColor: message.type === 'success',
+            color: message.type === 'success',
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

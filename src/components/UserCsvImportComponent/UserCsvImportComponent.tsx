@@ -387,11 +387,7 @@ const UserCsvImportComponent = ({
                 <Typography level="body-lg" sx={{ mb: 1 }}>
                   {t('components.userCsvImportComponent.information')}
                 </Typography>
-                <Button
-                  variant="soft"
-                  onClick={handleDownloadTemplate}
-                  sx={{ mb: 1 }}
-                >
+                <Button onClick={handleDownloadTemplate} sx={{ mb: 1 }}>
                   {t('components.userCsvImportComponent.downloadtemplate', {
                     role: selectedRole,
                   })}
