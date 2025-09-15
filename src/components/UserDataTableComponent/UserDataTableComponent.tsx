@@ -16,8 +16,10 @@ import { getAllUsers, getAllRoles } from '../../utils/showuserdatafunctions';
 
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,
+  onUserAction,
 }: {
   onSelectedUserIdsChange?: (ids: number[]) => void;
+  onUserAction?: (type: 'success' | 'error', text: string) => void;
 }) => {
   const { t } = useTranslation();
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -90,6 +92,28 @@ const UserDataTableComponent = ({
   const someChecked =
     filteredUsers.some((user) => selectedUserIds.includes(user.id)) &&
     !allChecked;
+
+  // Beispiel für Löschen
+  const handleDeleteUser = (userId: number) => {
+    const result = deleteUserById(userId);
+    if (result) {
+      if (onUserAction) onUserAction('success', t('pages.home.successdelete'));
+      setUsers(getAllUsers());
+    } else {
+      if (onUserAction) onUserAction('error', t('pages.home.errordelete'));
+    }
+  };
+
+  // Beispiel für Speichern
+  const handleSaveUser = (userId: number, data: any) => {
+    const result = updateUserData(userId, data);
+    if (result) {
+      if (onUserAction) onUserAction('success', t('pages.home.successupdate'));
+      setUsers(getAllUsers());
+    } else {
+      if (onUserAction) onUserAction('error', t('pages.home.errorupdate'));
+    }
+  };
 
   return (
     <Box sx={{ p: 2 }}>

@@ -94,7 +94,13 @@
       "role": "Rolle",
       "information":"Es können nur Benutzer mit der gleichen Rolle importiert werden.",
       "previewcsvtemplate": "Vorschau der CSV-Vorlage",
-      "importerrorfilename": "Fehlerhafte_"
+      "importerrorfilename": "Fehlerhafte_Import_",
+      "downloaderrorfile": "Fehlerhafte Zeilen herunterladen",
+      "nextbutton": "Zum Daten überprüfen",
+      "backbutton": "Zurück",
+      "previewtableinfo": "Vorschau der zu importierenden Daten. Überprüfen Sie die Daten und klicken Sie auf 'Importieren', um den Import abzuschließen.",
+      "missingrequired": "Bitte füllen Sie alle Pflichtfelder, welche markiert sind, aus.",
+      "missingrequiredcount": "Pflichtfelder müssen noch ausgefüllt werden. Klicken Sie zum nächsten Feld."
     }
   }
 }

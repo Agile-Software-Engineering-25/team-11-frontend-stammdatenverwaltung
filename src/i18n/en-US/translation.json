@@ -93,7 +93,13 @@
       "role": "Role",
       "information":"Only users with the same role can be imported.",
       "previewcsvtemplate": "Preview CSV Template for",
-      "importerrorfilename": "Failed_"
+      "importerrorfilename": "Failed_Import_",
+      "downloaderrorfile": "Download Failed Rows",
+      "nextbutton": "To Data Review",
+      "backbutton": "Back",
+      "previewtableinfo": "Preview of the data to be imported. Please review the data and click 'Import' to complete the import.",
+      "missingrequired": "Please fill in all required fields, which are marked.",
+      "missingrequiredcount": "There are still required fields to be filled. Click to the next field."
     }
   }
 }

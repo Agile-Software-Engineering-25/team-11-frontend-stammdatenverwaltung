@@ -22,7 +22,13 @@ const initialState = {
 
 const requiredFieldsPage1 = ['firstname', 'lastname', 'email', 'roles'];
 
-const CreateUser = () => {
+const CreateUser = ({
+  onClose,
+  onShowMessage,
+}: {
+  onClose?: () => void;
+  onShowMessage?: (type: 'success' | 'error', text: string) => void;
+}) => {
   const [step, setStep] = useState(1);
 
   const [form, setForm] = useState({
@@ -96,21 +102,27 @@ const CreateUser = () => {
     // Sammle alle Feldnamen in der gewünschten Reihenfolge
     const allFieldNames = [
       ...requiredFieldsPage1,
-      ...page1DynamicFields.map(f => f.name),
+      ...page1DynamicFields.map((f) => f.name),
       ...dynamicFields.map((field) => field.name),
     ];
     // Erzeuge das Array mit den Werten in der gleichen Reihenfolge
     const values = allFieldNames.map((field) =>
       field === 'roles'
         ? (form.roles as string[]).join(',')
-        : form[field] ?? ''
+        : (form[field] ?? '')
     );
 
     // Übergabe an createPerson
-    createUser(values);
-
-    setForm(initialState);
-    navigate('/');
+    const result = createUser(values);
+    if (result) {
+      if (onShowMessage)
+        onShowMessage('success', t('pages.home.successcreate'));
+      setForm(initialState);
+      if (onClose) onClose();
+      navigate('/');
+    } else {
+      if (onShowMessage) onShowMessage('error', t('pages.home.errorcreate'));
+    }
   };
   const cancel = () => {
     setForm(initialState);

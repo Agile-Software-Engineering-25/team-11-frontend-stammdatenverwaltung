@@ -26,11 +26,13 @@ const UserDataCardComponent = ({
   onUserUpdate,
   onClose,
   onSaveSuccess,
+  onShowMessage, // <-- NEU
 }: {
   user: any;
   onUserUpdate?: () => void;
   onClose?: () => void;
   onSaveSuccess?: (userId: number) => void;
+  onShowMessage?: (type: 'success' | 'error', text: string) => void; // <-- NEU
 }) => {
   if (!user) return null;
   const cards = getCardsForRoles(user.roles);
@@ -79,16 +81,15 @@ const UserDataCardComponent = ({
       setEditMode(false);
       forceUpdate((n) => n + 1);
       if (onUserUpdate) onUserUpdate();
-      // Card direkt wieder öffnen (selectedUserId bleibt gesetzt)
+      if (onShowMessage) onShowMessage('success', t('pages.home.successupdate'));
       if (onSaveSuccess) onSaveSuccess(user.id);
     } else {
-      // Bei Fehler Card schließen
+      if (onShowMessage) onShowMessage('error', t('pages.home.errorupdate'));
       if (onClose) onClose();
     }
   };
 
   const handleCancel = () => {
-    // Werte zurücksetzen
     if (currentCard && user) {
       const newValues: Record<string, string> = {};
       currentCard.fields.forEach((field) => {
@@ -109,7 +110,10 @@ const UserDataCardComponent = ({
     setShowDeleteDialog(false);
     if (result) {
       if (onUserUpdate) onUserUpdate();
+      if (onShowMessage) onShowMessage('success', t('pages.home.successdelete'));
       if (onClose) onClose();
+    } else {
+      if (onShowMessage) onShowMessage('error', t('pages.home.errordelete'));
     }
   };
 

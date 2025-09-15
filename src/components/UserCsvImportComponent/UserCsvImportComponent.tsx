@@ -1,7 +1,15 @@
 /* eslint-disable max-lines-per-function */
 import Card from '@agile-software/shared-components/src/components/Card/Card';
 import Button from '@agile-software/shared-components/src/components/Button/Button';
-import { Box, ButtonGroup, Select, Option, Typography } from '@mui/joy';
+import {
+  Box,
+  ButtonGroup,
+  Select,
+  Option,
+  Typography,
+  Table,
+  Input,
+} from '@mui/joy';
 import { useTranslation } from 'react-i18next';
 import { useRef, useState, useMemo } from 'react';
 import {
@@ -15,32 +23,32 @@ import {
   downloadCSV,
 } from '@/utils/csvimportexport';
 
-const UserCsvImportComponent = ({ onClose }: { onClose?: () => void }) => {
+type CsvRow = { [key: string]: string };
+
+const NOVALUE = '#novalue';
+
+const UserCsvImportComponent = ({
+  onClose,
+  onShowMessage,
+  onFailedCsv,
+}: {
+  onClose?: () => void;
+  onShowMessage?: (type: 'success' | 'error', text: string) => void;
+  onFailedCsv?: (csv: string, filename: string) => void;
+}) => {
   const { t } = useTranslation();
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  const [step, setStep] = useState<'select' | 'preview'>('select');
+  const [csvHeader, setCsvHeader] = useState<string[]>([]);
+  const [csvRows, setCsvRows] = useState<CsvRow[]>([]);
+  const [requiredFields, setRequiredFields] = useState<string[]>([]);
   const roles = getAvailableRoles();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleReset = () => {
-    setSelectedRole(null);
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
-    } else {
-      setSelectedFile(null);
-    }
-  };
-
-  // Import-Button nur aktivieren, wenn eine Rolle UND eine Datei ausgewählt ist
-  const importDisabled = !selectedRole || !selectedFile || importing;
+  // Für das Scrollen zu fehlenden Feldern
+  const cellRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // CSV-Template für die ausgewählte Rolle generieren (ohne Rollen-Spalte)
   const { csvString, filename } = useMemo(() => {
@@ -79,39 +87,44 @@ const UserCsvImportComponent = ({ onClose }: { onClose?: () => void }) => {
   }
 
   // Hilfsfunktion: Validierung der Pflichtfelder
-  function validateRow(
-    row: string[],
-    header: string[],
-    requiredFields: string[]
-  ): boolean {
-    for (const field of requiredFields) {
-      const idx = header.indexOf(field);
-      if (idx === -1 || !row[idx] || row[idx].trim() === '') {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  // Import-Funktion
-  const handleImport = async () => {
-    if (!selectedFile || !selectedRole) return;
-    setImporting(true);
-
-    // Felder für die gewählte Rolle
+  function getRequiredFields(): string[] {
+    if (!selectedRole) return [];
     const page1Fields = getPage1DynamicFields();
     const roleFields = dynamicInputFields(selectedRole).fields;
-
-    // Pflichtfelder (Standard + dynamisch + rollenspezifisch)
-    const requiredFields = [
+    return [
       'Vorname',
       'Nachname',
       'E-Mail',
       ...page1Fields.filter((f) => f.required).map((f) => f.label),
       ...roleFields.filter((f) => f.required).map((f) => f.label),
     ];
+  }
 
-    // Datei einlesen
+  const handleReset = () => {
+    setSelectedRole(null);
+    setSelectedFile(null);
+    setStep('select');
+    setCsvHeader([]);
+    setCsvRows([]);
+    setRequiredFields([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    } else {
+      setSelectedFile(null);
+    }
+  };
+
+  // Weiter-Button: CSV einlesen und in Tabelle anzeigen
+  const handleNext = async () => {
+    if (!selectedFile || !selectedRole) return;
+    setImporting(true);
+
     const text = await selectedFile.text();
     const rows = parseCsv(text);
     if (rows.length < 1) {
@@ -122,52 +135,89 @@ const UserCsvImportComponent = ({ onClose }: { onClose?: () => void }) => {
     const header = rows[0];
     const dataRows = rows.slice(1);
 
-    // Mappe Label zu Index
-    const labelToIndex = Object.fromEntries(
-      header.map((label, idx) => [label, idx])
+    // Felder für die gewählte Rolle
+    const reqFields = getRequiredFields();
+
+    // Baue die Datenstruktur für die Tabelle
+    const csvRows: CsvRow[] = dataRows.map((row) => {
+      const obj: CsvRow = {};
+      header.forEach((col, idx) => {
+        obj[col] = row[idx] ?? '';
+      });
+      // Pflichtfelder prüfen
+      reqFields.forEach((field) => {
+        if (!obj[field] || obj[field].trim() === '') {
+          obj[field] = NOVALUE;
+        }
+      });
+      return obj;
+    });
+
+    setCsvHeader(header);
+    setCsvRows(csvRows);
+    setRequiredFields(reqFields);
+    setStep('preview');
+    setImporting(false);
+  };
+
+  // Zellen-Änderung
+  const handleCellChange = (rowIdx: number, col: string, value: string) => {
+    setCsvRows((prev) =>
+      prev.map((row, idx) =>
+        idx === rowIdx
+          ? {
+              ...row,
+              [col]:
+                value === '' && requiredFields.includes(col) ? NOVALUE : value,
+            }
+          : row
+      )
     );
+  };
 
-    // Für createUser: Reihenfolge der Felder bestimmen
-    const allLabels = [
-      'Vorname',
-      'Nachname',
-      'E-Mail',
-      ...page1Fields.map((f) => f.label),
-      ...roleFields.map((f) => f.label),
-    ];
+  // Prüfe, ob noch Pflichtfelder fehlen
+  const missingRequiredCells: { row: number; col: string }[] = [];
+  csvRows.forEach((row, rowIdx) => {
+    requiredFields.forEach((field) => {
+      if (row[field] === NOVALUE) {
+        missingRequiredCells.push({ row: rowIdx, col: field });
+      }
+    });
+  });
 
-    // Für createUser: Feldnamen in der richtigen Reihenfolge (wie in createUser erwartet)
-    const allFieldNames = [
-      'firstname',
-      'lastname',
-      'email',
-      ...page1Fields.map((f) => f.name),
-      ...roleFields.map((f) => f.name),
-    ];
+  const hasMissingRequired = missingRequiredCells.length > 0;
+
+  // Import-Funktion
+  const handleImport = () => {
+    if (!selectedRole) return;
+    setImporting(true);
+
+    // Reihenfolge der Felder für createUser
+    const allLabels = previewColumns;
 
     // Nutzer, die nicht importiert werden konnten
     const failedRows: string[][] = [];
-    // Erfolgreich importierte Nutzer zählen
     let successCount = 0;
 
-    for (const row of dataRows) {
+    for (const row of csvRows) {
       // Prüfe auf Pflichtfelder
-      if (!validateRow(row, header, requiredFields)) {
-        failedRows.push(row);
+      if (
+        requiredFields.some(
+          (field) =>
+            row[field] === NOVALUE || !row[field] || row[field].trim() === ''
+        )
+      ) {
+        failedRows.push(allLabels.map((label) => row[label] ?? ''));
         continue;
       }
       // Werte in der richtigen Reihenfolge für createUser
-      const userData: string[] = allLabels.map((label) => {
-        const idx = labelToIndex[label];
-        return idx !== undefined ? row[idx] : '';
-      });
-      // Rolle anhängen (für createUser)
+      const userData: string[] = allLabels.map((label) => row[label] ?? '');
       userData.push(selectedRole);
 
       // createUser aufrufen
       const result = createUser(userData);
       if (!result) {
-        failedRows.push(row);
+        failedRows.push(allLabels.map((label) => row[label] ?? ''));
       } else {
         successCount++;
       }
@@ -176,8 +226,8 @@ const UserCsvImportComponent = ({ onClose }: { onClose?: () => void }) => {
     setImporting(false);
 
     if (failedRows.length > 0) {
-      // Fehlerhafte Zeilen als CSV zum Download anbieten
-      const failedCsv = [header, ...failedRows]
+      // Fehlerhafte Zeilen als CSV zum Download bereitstellen (nicht automatisch downloaden)
+      const failedCsv = [allLabels, ...failedRows]
         .map((row) =>
           row
             .map((val) =>
@@ -189,26 +239,77 @@ const UserCsvImportComponent = ({ onClose }: { onClose?: () => void }) => {
             .join(',')
         )
         .join('\r\n');
-      downloadCSV(
-        failedCsv,
-        `${t('components.userCsvImportComponent.importerrorfilename')}Import_${selectedRole}_SAU.csv`
-      );
-      alert(
-        t('components.userCsvImportComponent.partialimport', {
-          success: successCount,
-          failed: failedRows.length,
-        })
-      );
+      const errorFileName = `${t('components.userCsvImportComponent.importerrorfilename')}${selectedRole}_SAU.csv`;
+      if (onFailedCsv) onFailedCsv(failedCsv, errorFileName);
+      if (onShowMessage)
+        onShowMessage(
+          'error',
+          t('components.userCsvImportComponent.partialimport', {
+            success: successCount,
+            failed: failedRows.length,
+          })
+        );
     } else {
-      alert(
-        t('components.userCsvImportComponent.importsuccess', {
-          success: successCount,
-        })
-      );
+      if (onShowMessage)
+        onShowMessage(
+          'success',
+          t('components.userCsvImportComponent.importsuccess', {
+            success: successCount,
+          })
+        );
     }
     handleReset();
-    if (onClose) onClose(); // Popup nach Import schließen
+    if (onClose) onClose();
   };
+
+  // Hilfsfunktion: Berechne die tatsächliche Pixelbreite des längsten Inhalts (Header + Zellen)
+  function getTextWidth(text: string, font = '16px Arial') {
+    if (typeof document === 'undefined') return 200;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return 200;
+    context.font = font;
+    return context.measureText(text).width;
+  }
+
+  function getColumnWidths(header: string[], rows: CsvRow[]): Record<string, number> {
+    const widths: Record<string, number> = {};
+    header.forEach((col) => {
+      let maxWidth = getTextWidth(col, '16px Arial');
+      rows.forEach((row) => {
+        const val = row[col] ?? '';
+        maxWidth = Math.max(maxWidth, getTextWidth(val, '16px Arial'));
+      });
+      // +48px für Padding & Input-Icon, min. 80px
+      widths[col] = Math.max(Math.ceil(maxWidth) + 48, 80);
+    });
+    return widths;
+  }
+
+  const columnWidths = useMemo(
+    () => getColumnWidths(csvHeader, csvRows),
+    [csvHeader, csvRows]
+  );
+
+  // Scroll zu erstem fehlenden Feld
+  const scrollToFirstMissing = () => {
+    if (missingRequiredCells.length > 0) {
+      const { row, col } = missingRequiredCells[0];
+      const refKey = `${row}-${col}`;
+      const input = cellRefs.current[refKey];
+      if (input) {
+        input.focus();
+        input.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'center',
+        });
+      }
+    }
+  };
+
+  // Zähle alle fehlenden Pflichtfelder
+  const missingCount = missingRequiredCells.length;
 
   return (
     <Card>
@@ -224,95 +325,219 @@ const UserCsvImportComponent = ({ onClose }: { onClose?: () => void }) => {
           width: '100%',
         }}
       >
-        <Typography>
-          {t('components.userCsvImportComponent.rolefortemplate')}
-        </Typography>
-        <Select
-          placeholder={t('components.userCsvImportComponent.role')}
-          value={selectedRole}
-          onChange={(_, value) => setSelectedRole(value ?? null)}
-          sx={{ width: '100%' }}
-        >
-          {roles.map((role) => (
-            <Option key={role} value={role}>
-              {role}
-            </Option>
-          ))}
-        </Select>
-        <Box
-          sx={{
-            border: '1px solid #d1d5db',
-            borderRadius: 8,
-            p: 2,
-            background: '#f9f9fa',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            minHeight: 70,
-          }}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
-          <Button
-            variant="outlined"
-            onClick={() => fileInputRef.current?.click()}
-            sx={{ minWidth: 140 }}
-          >
-            {selectedFile
-              ? t('components.userCsvImportComponent.fileinputlabel')
-              : t('components.userCsvImportComponent.uploadbutton')}
-          </Button>
-          <Typography
-            sx={{
-              flex: 1,
-              ml: 1,
-              color: selectedFile ? '#222' : '#888',
-              fontSize: 16,
-            }}
-          >
-            {selectedFile
-              ? selectedFile.name
-              : t('components.userCsvImportComponent.fileinputplaceholder')}
-          </Typography>
-        </Box>
-        {selectedRole && (
-          <Box sx={{ mt: 2, mb: 1 }}>
-            <Typography level="body-lg" sx={{ mb: 1 }}>
+        {step === 'select' && (
+          <>
+            <Typography>
+              {t('components.userCsvImportComponent.rolefortemplate')}
+            </Typography>
+            <Select
+              placeholder={t('components.userCsvImportComponent.role')}
+              value={selectedRole}
+              onChange={(_, value) => setSelectedRole(value ?? null)}
+              sx={{ width: '100%' }}
+            >
+              {roles.map((role) => (
+                <Option key={role} value={role}>
+                  {role}
+                </Option>
+              ))}
+            </Select>
+            <Box
+              sx={{
+                border: '1px solid #d1d5db',
+                borderRadius: 8,
+                p: 2,
+                background: '#f9f9fa',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                minHeight: 70,
+              }}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
+              <Button
+                variant="outlined"
+                onClick={() => fileInputRef.current?.click()}
+                sx={{ minWidth: 140 }}
+              >
+                {selectedFile
+                  ? t('components.userCsvImportComponent.fileinputlabel')
+                  : t('components.userCsvImportComponent.uploadbutton')}
+              </Button>
+              <Typography
+                sx={{
+                  flex: 1,
+                  ml: 1,
+                  color: selectedFile ? '#222' : '#888',
+                  fontSize: 16,
+                }}
+              >
+                {selectedFile
+                  ? selectedFile.name
+                  : t('components.userCsvImportComponent.fileinputplaceholder')}
+              </Typography>
+            </Box>
+            {selectedRole && (
+              <Box sx={{ mt: 2, mb: 1 }}>
+                <Typography level="body-lg" sx={{ mb: 1 }}>
+                  {t('components.userCsvImportComponent.information')}
+                </Typography>
+                <Button
+                  variant="soft"
+                  onClick={handleDownloadTemplate}
+                  sx={{ mb: 1 }}
+                >
+                  {t('components.userCsvImportComponent.downloadtemplate', {
+                    role: selectedRole,
+                  })}
+                </Button>
+              </Box>
+            )}
+            <Typography level="h4">
               {t('components.userCsvImportComponent.information')}
             </Typography>
-            <Button
-              variant="soft"
-              onClick={handleDownloadTemplate}
-              sx={{ mb: 1 }}
-            >
-              {t('components.userCsvImportComponent.downloadtemplate', {
-                role: selectedRole,
-              })}
-            </Button>
-          </Box>
+            <ButtonGroup variant="outlined" sx={{ mt: 2 }}>
+              <Button color="danger" onClick={onClose}>
+                {t('components.userCsvImportComponent.cancelbutton')}
+              </Button>
+              <Button color="danger" onClick={handleReset}>
+                {t('components.userCsvImportComponent.resetbutton')}
+              </Button>
+              <Button
+                disabled={!selectedRole || !selectedFile || importing}
+                loading={importing}
+                onClick={handleNext}
+                color="success"
+              >
+                {t('components.userCsvImportComponent.nextbutton')}
+              </Button>
+            </ButtonGroup>
+          </>
         )}
-        <Typography level="h4">
-          {t('components.userCsvImportComponent.information')}
-        </Typography>
-        <ButtonGroup variant="outlined" sx={{ mt: 2 }}>
-          <Button color="danger" onClick={onClose}>
-            {t('components.userCsvImportComponent.cancelbutton')}
-          </Button>
-          <Button color="danger" onClick={handleReset}>
-            {t('components.userCsvImportComponent.resetbutton')}
-          </Button>
-          <Button
-            disabled={importDisabled}
-            loading={importing}
-            onClick={handleImport}
-          >
-            {t('components.userCsvImportComponent.importbutton')}
-          </Button>
-        </ButtonGroup>
+        {step === 'preview' && (
+          <>
+            <Typography level="body-lg" sx={{ mb: 1 }}>
+              {t('components.userCsvImportComponent.previewtableinfo')}
+            </Typography>
+            <Box sx={{ overflowX: 'auto', mb: 2 }}>
+              <Table
+                borderAxis="both"
+                size="lg"
+                sx={{
+                  fontSize: 16,
+                  minWidth:
+                    Object.values(columnWidths).reduce((a, b) => a + b, 0) +
+                    100,
+                  '& th, & td': {
+                    verticalAlign: 'middle',
+                    padding: '8px 8px',
+                  },
+                  '& th': { background: '#f3f6fa' },
+                }}
+              >
+                <thead>
+                  <tr>
+                    {csvHeader.map((col) => (
+                      <th
+                        key={col}
+                        style={{
+                          minWidth: columnWidths[col],
+                          width: columnWidths[col],
+                          maxWidth: columnWidths[col],
+                        }}
+                      >
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {csvRows.map((row, rowIdx) => (
+                    <tr key={rowIdx}>
+                      {csvHeader.map((col) => (
+                        <td
+                          key={col}
+                          style={{
+                            minWidth: columnWidths[col],
+                            width: columnWidths[col],
+                            maxWidth: columnWidths[col],
+                          }}
+                        >
+                          <Input
+                            value={row[col] === NOVALUE ? '' : row[col]}
+                            color={requiredFields.includes(col) && row[col] === NOVALUE ? 'danger' : 'neutral'}
+                            placeholder={row[col] === NOVALUE ? NOVALUE : ''}
+                            onChange={(e) => handleCellChange(rowIdx, col, e.target.value)}
+                            sx={{
+                              width: '100%',
+                              minWidth: columnWidths[col] - 16,
+                              maxWidth: columnWidths[col] - 16,
+                              ...(requiredFields.includes(col) && row[col] === NOVALUE
+                                ? {
+                                    borderColor: '#d32f2f',
+                                    color: '#d32f2f',
+                                    background: '#fff0f0',
+                                  }
+                                : {}),
+                            }}
+                            inputRef={(el: HTMLInputElement | null) => {
+                              cellRefs.current[`${rowIdx}-${col}`] = el;
+                            }}
+                            inputProps={{
+                              style: {
+                                width: '100%',
+                                minWidth: columnWidths[col] - 32,
+                                maxWidth: columnWidths[col] - 32,
+                              },
+                            }}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Box>
+            {/* Anzeige der fehlenden Pflichtfelder */}
+            {hasMissingRequired && (
+              <Box sx={{ mb: 1 }}>
+                <Button
+                  variant="soft"
+                  color="danger"
+                  onClick={scrollToFirstMissing}
+                  sx={{ fontWeight: 600 }}
+                >
+                  {` ${missingCount} ${t('components.userCsvImportComponent.missingrequiredcount')}`}
+                </Button>
+              </Box>
+            )}
+            <ButtonGroup variant="outlined" sx={{ mt: 2 }}>
+              <Button
+                color="danger"
+                onClick={() => setStep('select')}
+                disabled={importing}
+              >
+                {t('components.userCsvImportComponent.backbutton') ?? 'Zurück'}
+              </Button>
+              <Button color="danger" onClick={handleReset} disabled={importing}>
+                {t('components.userCsvImportComponent.resetbutton')}
+              </Button>
+              <Button
+                color="success"
+                disabled={importing || hasMissingRequired}
+                loading={importing}
+                onClick={handleImport}
+              >
+                {t('components.userCsvImportComponent.importbutton')}
+              </Button>
+            </ButtonGroup>
+          </>
+        )}
       </Box>
     </Card>
   );
