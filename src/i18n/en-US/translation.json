@@ -84,10 +84,16 @@
       "invalidfiletype": "Invalid file type. Please upload a CSV file.",
       "no_file_chosen": "No file chosen. Please select a CSV file to upload.",
       "invalidfilecontent": "Invalid file content. Please check the CSV file and try again.",
+      "importerrorinvalidformat": "Error: Invalid CSV format. Please check the file and try again.",
+      "importerrorinvalidcontent": "Error: Invalid file content. Please check the CSV file and try again.",
+      "noFileSelected": "No file selected. Please choose a CSV file to upload.",
+      "importerroremptyfile": "Error: The selected file is empty. Please choose a valid CSV file.",
+      "partialimport": "Partial import: Some users could not be imported. See the returned CSV file for details.",
       "rolefortemplate": "Choose a role for the template and for the import",
       "role": "Role",
       "information":"Only users with the same role can be imported.",
-      "previewcsvtemplate": "Preview CSV Template for"
+      "previewcsvtemplate": "Preview CSV Template for",
+      "importerrorfilename": "Failed_"
     }
   }
 }

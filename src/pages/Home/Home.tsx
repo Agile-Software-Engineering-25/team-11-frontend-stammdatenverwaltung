@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import UserDataTableComponent from '@/components/UserDataTableComponent/UserDataTableComponent';
 import Button from '@agile-software/shared-components/src/components/Button/Button';
+import Card from '@agile-software/shared-components/src/components/Card/Card';
 import { useRef, useState } from 'react';
 import { exportUsersToCSV, downloadCSV } from '@/utils/csvimportexport';
 import UsersCsvImportComponent from '@/components/UserCsvImportComponent/UserCsvImportComponent';
@@ -48,6 +49,7 @@ const Home = () => {
         </Button>
         <Button onClick={handleExport}>{t('pages.home.csvexport')}</Button>
       </Box>
+      <Card id="errorandsuccessmessages"></Card>
       <UserDataTableComponent
         onSelectedUserIdsChange={handleSelectedUserIdsChange}
       />

@@ -8,6 +8,7 @@ import {
   getAvailableRoles,
   getPage1DynamicFields,
   dynamicInputFields,
+  createUser,
 } from '@/utils/createuserfunction';
 import {
   generateCsvTemplateForRole,
@@ -18,6 +19,7 @@ const UserCsvImportComponent = ({ onClose }: { onClose?: () => void }) => {
   const { t } = useTranslation();
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
   const roles = getAvailableRoles();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,7 +40,7 @@ const UserCsvImportComponent = ({ onClose }: { onClose?: () => void }) => {
   };
 
   // Import-Button nur aktivieren, wenn eine Rolle UND eine Datei ausgewählt ist
-  const importDisabled = !selectedRole || !selectedFile;
+  const importDisabled = !selectedRole || !selectedFile || importing;
 
   // CSV-Template für die ausgewählte Rolle generieren (ohne Rollen-Spalte)
   const { csvString, filename } = useMemo(() => {
@@ -67,6 +69,146 @@ const UserCsvImportComponent = ({ onClose }: { onClose?: () => void }) => {
       ...roleFields.map((f) => f.label),
     ];
   }, [selectedRole]);
+
+  // Hilfsfunktion: CSV parsen (nur einfache CSV, keine Sonderzeichen/Quotes)
+  function parseCsv(text: string): string[][] {
+    return text
+      .split(/\r?\n/)
+      .map((line) => line.split(',').map((cell) => cell.trim()))
+      .filter((row) => row.some((cell) => cell.length > 0));
+  }
+
+  // Hilfsfunktion: Validierung der Pflichtfelder
+  function validateRow(
+    row: string[],
+    header: string[],
+    requiredFields: string[]
+  ): boolean {
+    for (const field of requiredFields) {
+      const idx = header.indexOf(field);
+      if (idx === -1 || !row[idx] || row[idx].trim() === '') {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Import-Funktion
+  const handleImport = async () => {
+    if (!selectedFile || !selectedRole) return;
+    setImporting(true);
+
+    // Felder für die gewählte Rolle
+    const page1Fields = getPage1DynamicFields();
+    const roleFields = dynamicInputFields(selectedRole).fields;
+
+    // Pflichtfelder (Standard + dynamisch + rollenspezifisch)
+    const requiredFields = [
+      'Vorname',
+      'Nachname',
+      'E-Mail',
+      ...page1Fields.filter((f) => f.required).map((f) => f.label),
+      ...roleFields.filter((f) => f.required).map((f) => f.label),
+    ];
+
+    // Datei einlesen
+    const text = await selectedFile.text();
+    const rows = parseCsv(text);
+    if (rows.length < 1) {
+      setImporting(false);
+      alert(t('components.userCsvImportComponent.importerrorempty'));
+      return;
+    }
+    const header = rows[0];
+    const dataRows = rows.slice(1);
+
+    // Mappe Label zu Index
+    const labelToIndex = Object.fromEntries(
+      header.map((label, idx) => [label, idx])
+    );
+
+    // Für createUser: Reihenfolge der Felder bestimmen
+    const allLabels = [
+      'Vorname',
+      'Nachname',
+      'E-Mail',
+      ...page1Fields.map((f) => f.label),
+      ...roleFields.map((f) => f.label),
+    ];
+
+    // Für createUser: Feldnamen in der richtigen Reihenfolge (wie in createUser erwartet)
+    const allFieldNames = [
+      'firstname',
+      'lastname',
+      'email',
+      ...page1Fields.map((f) => f.name),
+      ...roleFields.map((f) => f.name),
+    ];
+
+    // Nutzer, die nicht importiert werden konnten
+    const failedRows: string[][] = [];
+    // Erfolgreich importierte Nutzer zählen
+    let successCount = 0;
+
+    for (const row of dataRows) {
+      // Prüfe auf Pflichtfelder
+      if (!validateRow(row, header, requiredFields)) {
+        failedRows.push(row);
+        continue;
+      }
+      // Werte in der richtigen Reihenfolge für createUser
+      const userData: string[] = allLabels.map((label) => {
+        const idx = labelToIndex[label];
+        return idx !== undefined ? row[idx] : '';
+      });
+      // Rolle anhängen (für createUser)
+      userData.push(selectedRole);
+
+      // createUser aufrufen
+      const result = createUser(userData);
+      if (!result) {
+        failedRows.push(row);
+      } else {
+        successCount++;
+      }
+    }
+
+    setImporting(false);
+
+    if (failedRows.length > 0) {
+      // Fehlerhafte Zeilen als CSV zum Download anbieten
+      const failedCsv = [header, ...failedRows]
+        .map((row) =>
+          row
+            .map((val) =>
+              typeof val === 'string' &&
+              (val.includes(',') || val.includes('"') || val.includes('\n'))
+                ? `"${val.replace(/"/g, '""')}"`
+                : val
+            )
+            .join(',')
+        )
+        .join('\r\n');
+      downloadCSV(
+        failedCsv,
+        `${t('components.userCsvImportComponent.importerrorfilename')}Import_${selectedRole}_SAU.csv`
+      );
+      alert(
+        t('components.userCsvImportComponent.partialimport', {
+          success: successCount,
+          failed: failedRows.length,
+        })
+      );
+    } else {
+      alert(
+        t('components.userCsvImportComponent.importsuccess', {
+          success: successCount,
+        })
+      );
+    }
+    handleReset();
+    if (onClose) onClose(); // Popup nach Import schließen
+  };
 
   return (
     <Card>
@@ -151,48 +293,6 @@ const UserCsvImportComponent = ({ onClose }: { onClose?: () => void }) => {
                 role: selectedRole,
               })}
             </Button>
-            {/* 
-            <Box
-              sx={{
-                overflowX: 'auto',
-                border: '1px solid #e0e0e0',
-                borderRadius: 4,
-                p: 1,
-                background: '#fafbfc',
-                fontSize: 14,
-                mt: 1,
-              }}
-            >
-            
-            <Typography level="body-sm" sx={{ mb: 0.5, fontWeight: 600 }}>
-                {t('components.userCsvImportComponent.previewcsvtemplate')} {' '}
-                {selectedRole} {':'}
-            </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {previewColumns.map((col) => (
-                    <Box
-                        key={col}
-                        sx={{
-                            px: 1.5,
-                            py: 0.5,
-                            background: '#e3e7ef',
-                            borderRadius: 2,
-                            fontSize: 13,
-                            color: '#222',
-                        }}
-                    >
-                        {col}
-                    </Box>
-                ))}
-            </Box>
-            
-            
-                ))}
-              </Box>
-            
-
-            </Box>
-            */}
           </Box>
         )}
         <Typography level="h4">
@@ -205,7 +305,11 @@ const UserCsvImportComponent = ({ onClose }: { onClose?: () => void }) => {
           <Button color="danger" onClick={handleReset}>
             {t('components.userCsvImportComponent.resetbutton')}
           </Button>
-          <Button disabled={importDisabled}>
+          <Button
+            disabled={importDisabled}
+            loading={importing}
+            onClick={handleImport}
+          >
             {t('components.userCsvImportComponent.importbutton')}
           </Button>
         </ButtonGroup>

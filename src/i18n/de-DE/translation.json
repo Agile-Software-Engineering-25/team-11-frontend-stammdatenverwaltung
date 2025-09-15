@@ -83,12 +83,18 @@
       "resetbutton": "Zurücksetzen",
       "importsuccess": "CSV-Datei erfolgreich importiert.",
       "importerror": "Fehler beim Importieren der CSV-Datei. Bitte versuchen Sie es erneut.",
+      "importerrorinvalidformat": "Fehler: Ungültiges CSV-Format. Bitte überprüfen Sie die Datei und versuchen Sie es erneut.",
+      "importerrorinvalidcontent": "Fehler: Ungültige Dateiinhalte. Bitte überprüfen Sie die CSV-Datei und versuchen Sie es erneut.",
+      "noFileSelected": "Keine Datei ausgewählt. Bitte wählen Sie eine CSV-Datei zum Hochladen aus.",
+      "importerroremptyfile": "Fehler: Die ausgewählte Datei ist leer. Bitte wählen Sie eine gültige CSV-Datei aus.",
+      "partialimport": "Teilweiser Import: Einige Benutzer konnten nicht importiert werden. Siehe der zurückgegebenen CSV-Datei für Details.",
       "invalidfiletype": "Ungültiger Dateityp. Bitte laden Sie eine CSV-Datei hoch.",
       "invalidfilecontent": "Ungültiger Dateiinhalte. Bitte überprüfen Sie die CSV-Datei und versuchen Sie es erneut.",
       "rolefortemplate": "Wähle eine Rolle für die Vorlage und für den Import aus",
       "role": "Rolle",
       "information":"Es können nur Benutzer mit der gleichen Rolle importiert werden.",
-      "previewcsvtemplate": "Vorschau der CSV-Vorlage"
+      "previewcsvtemplate": "Vorschau der CSV-Vorlage",
+      "importerrorfilename": "Fehlerhafte_"
     }
   }
 }
