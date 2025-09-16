@@ -27,13 +27,14 @@ export function getAvailableRoles() {
 }
 
 // Erstellt eine neue Person aus einem Datenarray und fügt sie zu den Mockupdaten hinzu
-export function createUser(data: string[]) {
-  // Hole die Rollen aus den Daten (letztes festes Feld)
-  const rolesString = data[fixedFieldNames.indexOf('roles')] ?? '';
-  const roles = rolesString
-    .split(',')
-    .map((r) => r.trim())
-    .filter(Boolean);
+export function createUser(data: string[], roleFromSelection?: string) {
+  // Wenn die Rolle übergeben wird, nutze sie, sonst wie bisher
+  const roles = roleFromSelection
+    ? [roleFromSelection]
+    : (data[fixedFieldNames.indexOf('roles')] ?? '')
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean);
 
   // Dynamische Felder für alle Rollen bestimmen (ohne Duplikate)
   const dynamicFields = Array.from(
@@ -47,7 +48,7 @@ export function createUser(data: string[]) {
 
   // Alle Feldnamen in der richtigen Reihenfolge
   const allFieldNames = [
-    ...fixedFieldNames,
+    ...fixedFieldNames.filter((f) => f !== 'roles'), // 'roles' NICHT aus CSV!
     ...page1DynamicFieldsConfig.map(f => f.name),
     ...dynamicFieldNames
   ];

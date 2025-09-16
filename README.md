@@ -51,6 +51,8 @@ npm i
 │   │   │   └─ LanguageSelectorComponent.tsx    #Implementation of the LanguageSelectorComponent
 │   │   ├─ RoutingComponent/                    # Folder for the UserInfoCard component
 │   │   │   └─ RoutingComponent.tsx             # Implementation of the UserInfoCardComponent
+│   │   ├─ UserCsvImportComponent/              # Folder for the UserCsvImport component
+│   │   │   └─ UserCsvImportComponent.tsx       # Implementation of the UserCsvImportComponent
 │   │   ├─ UserDataCardComponent/               # Folder for the UserDataCard component
 │   │   │   └─ UserDataCardComponent.tsx        # Implementation of the UserDataCardComponent
 │   │   └─ UserDataTableComponent/              # Folder for the UserDataTable component

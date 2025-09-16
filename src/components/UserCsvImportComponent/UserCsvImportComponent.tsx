@@ -27,6 +27,30 @@ type CsvRow = { [key: string]: string };
 
 const NOVALUE = '#novalue';
 
+// Hilfsfunktion: Berechne die tatsächliche Pixelbreite des längsten Inhalts (Header + Zellen)
+function getTextWidth(text: string, font = '16px Arial') {
+  if (typeof document === 'undefined') return 200;
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  if (!context) return 200;
+  context.font = font;
+  return context.measureText(text).width;
+}
+
+function getColumnWidths(header: string[], rows: CsvRow[]): Record<string, number> {
+  const widths: Record<string, number> = {};
+  header.forEach((col) => {
+    let maxWidth = getTextWidth(col, '16px Arial');
+    rows.forEach((row) => {
+      const val = row[col] ?? '';
+      maxWidth = Math.max(maxWidth, getTextWidth(val, '16px Arial'));
+    });
+    // +48px für Padding & Input-Icon, min. 80px
+    widths[col] = Math.max(Math.ceil(maxWidth) + 48, 80);
+  });
+  return widths;
+}
+
 const UserCsvImportComponent = ({
   onClose,
   onShowMessage,
@@ -41,9 +65,10 @@ const UserCsvImportComponent = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [step, setStep] = useState<'select' | 'preview'>('select');
+  const [csvRowsObj, setCsvRowsObj] = useState<Record<number, CsvRow>>({});
   const [csvHeader, setCsvHeader] = useState<string[]>([]);
-  const [csvRows, setCsvRows] = useState<CsvRow[]>([]);
   const [requiredFields, setRequiredFields] = useState<string[]>([]);
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const roles = getAvailableRoles();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -105,8 +130,9 @@ const UserCsvImportComponent = ({
     setSelectedFile(null);
     setStep('select');
     setCsvHeader([]);
-    setCsvRows([]);
+    setCsvRowsObj({});
     setRequiredFields([]);
+    setColumnWidths({});
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -135,52 +161,50 @@ const UserCsvImportComponent = ({
     const header = rows[0];
     const dataRows = rows.slice(1);
 
-    // Felder für die gewählte Rolle
     const reqFields = getRequiredFields();
 
-    // Baue die Datenstruktur für die Tabelle
-    const csvRows: CsvRow[] = dataRows.map((row) => {
+    // Zeilen als Objekt
+    const csvRowsObj: Record<number, CsvRow> = {};
+    dataRows.forEach((row, idx) => {
       const obj: CsvRow = {};
-      header.forEach((col, idx) => {
-        obj[col] = row[idx] ?? '';
+      header.forEach((col, colIdx) => {
+        obj[col] = row[colIdx] ?? '';
       });
-      // Pflichtfelder prüfen
       reqFields.forEach((field) => {
         if (!obj[field] || obj[field].trim() === '') {
           obj[field] = NOVALUE;
         }
       });
-      return obj;
+      csvRowsObj[idx] = obj;
     });
 
     setCsvHeader(header);
-    setCsvRows(csvRows);
+    setCsvRowsObj(csvRowsObj);
     setRequiredFields(reqFields);
     setStep('preview');
     setImporting(false);
+
+    // Spaltenbreiten einmalig berechnen und speichern
+    setColumnWidths(getColumnWidths(header, Object.values(csvRowsObj)));
   };
 
-  // Zellen-Änderung
+  // Nur die geänderte Zeile updaten
   const handleCellChange = (rowIdx: number, col: string, value: string) => {
-    setCsvRows((prev) =>
-      prev.map((row, idx) =>
-        idx === rowIdx
-          ? {
-              ...row,
-              [col]:
-                value === '' && requiredFields.includes(col) ? NOVALUE : value,
-            }
-          : row
-      )
-    );
+    setCsvRowsObj((prev) => ({
+      ...prev,
+      [rowIdx]: {
+        ...prev[rowIdx],
+        [col]: value === '' && requiredFields.includes(col) ? NOVALUE : value,
+      },
+    }));
   };
 
   // Prüfe, ob noch Pflichtfelder fehlen
   const missingRequiredCells: { row: number; col: string }[] = [];
-  csvRows.forEach((row, rowIdx) => {
+  Object.entries(csvRowsObj).forEach(([rowIdx, row]) => {
     requiredFields.forEach((field) => {
       if (row[field] === NOVALUE) {
-        missingRequiredCells.push({ row: rowIdx, col: field });
+        missingRequiredCells.push({ row: Number(rowIdx), col: field });
       }
     });
   });
@@ -199,7 +223,7 @@ const UserCsvImportComponent = ({
     const failedRows: string[][] = [];
     let successCount = 0;
 
-    for (const row of csvRows) {
+    for (const row of Object.values(csvRowsObj)) {
       // Prüfe auf Pflichtfelder
       if (
         requiredFields.some(
@@ -211,11 +235,13 @@ const UserCsvImportComponent = ({
         continue;
       }
       // Werte in der richtigen Reihenfolge für createUser
+      // FIX: Die Rolle wird NICHT aus der CSV genommen, sondern aus selectedRole!
       const userData: string[] = allLabels.map((label) => row[label] ?? '');
+      // Die Rolle als letztes Feld anhängen
       userData.push(selectedRole);
 
       // createUser aufrufen
-      const result = createUser(userData);
+      const result = createUser(userData, selectedRole);
       if (!result) {
         failedRows.push(allLabels.map((label) => row[label] ?? ''));
       } else {
@@ -262,60 +288,45 @@ const UserCsvImportComponent = ({
     if (onClose) onClose();
   };
 
-  // Hilfsfunktion: Berechne die tatsächliche Pixelbreite des längsten Inhalts (Header + Zellen)
-  function getTextWidth(text: string, font = '16px Arial') {
-    if (typeof document === 'undefined') return 200;
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    if (!context) return 200;
-    context.font = font;
-    return context.measureText(text).width;
-  }
-
-  function getColumnWidths(header: string[], rows: CsvRow[]): Record<string, number> {
-    const widths: Record<string, number> = {};
-    header.forEach((col) => {
-      let maxWidth = getTextWidth(col, '16px Arial');
-      rows.forEach((row) => {
-        const val = row[col] ?? '';
-        maxWidth = Math.max(maxWidth, getTextWidth(val, '16px Arial'));
-      });
-      // +48px für Padding & Input-Icon, min. 80px
-      widths[col] = Math.max(Math.ceil(maxWidth) + 48, 80);
-    });
-    return widths;
-  }
-
-  const columnWidths = useMemo(
-    () => getColumnWidths(csvHeader, csvRows),
-    [csvHeader, csvRows]
-  );
-
   // Scroll zu erstem fehlenden Feld
   const scrollToFirstMissing = () => {
     if (missingRequiredCells.length > 0) {
       const { row, col } = missingRequiredCells[0];
       const refKey = `${row}-${col}`;
-      const input = cellRefs.current[refKey];
-      if (input) {
-        input.focus();
-        input.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-          inline: 'center',
-        });
-      }
+      setTimeout(() => {
+        const input = cellRefs.current[refKey];
+        if (input) {
+          input.focus();
+          input.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'center',
+          });
+        }
+      }, 100);
     }
   };
 
-  // Zähle alle fehlenden Pflichtfelder
   const missingCount = missingRequiredCells.length;
 
   return (
-    <Card>
-      <Typography level="h3" sx={{ mb: 2 }}>
-        {t('components.userCsvImportComponent.title')}
-      </Typography>
+    <Card sx={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Kompakter Header, sticky */}
+      <Box sx={{ pb: 1, borderBottom: '1px solid #e0e0e0', position: 'sticky', top: 0, zIndex: 2, background: '#fff' }}>
+        <Typography level="h3" sx={{ mb: 0.5 }}>
+          {t('components.userCsvImportComponent.title')}
+        </Typography>
+        {step === 'preview' && (
+          <Typography level="body-sm" sx={{ mb: 0.5 }}>
+            {t('components.userCsvImportComponent.previewtableinfo')}
+          </Typography>
+        )}
+        {step === 'select' && (
+          <Typography level="body-sm" sx={{ mb: 0.5 }}>
+            {t('components.userCsvImportComponent.rolefortemplate')}
+          </Typography>
+        )}
+      </Box>
       <Box
         sx={{
           display: 'flex',
@@ -323,13 +334,12 @@ const UserCsvImportComponent = ({
           gap: 2,
           alignItems: 'stretch',
           width: '100%',
+          flex: 1,
+          minHeight: 0,
         }}
       >
         {step === 'select' && (
           <>
-            <Typography>
-              {t('components.userCsvImportComponent.rolefortemplate')}
-            </Typography>
             <Select
               placeholder={t('components.userCsvImportComponent.role')}
               value={selectedRole}
@@ -387,7 +397,11 @@ const UserCsvImportComponent = ({
                 <Typography level="body-lg" sx={{ mb: 1 }}>
                   {t('components.userCsvImportComponent.information')}
                 </Typography>
-                <Button onClick={handleDownloadTemplate} sx={{ mb: 1 }}>
+                <Button
+                  variant="soft"
+                  onClick={handleDownloadTemplate}
+                  sx={{ mb: 1 }}
+                >
                   {t('components.userCsvImportComponent.downloadtemplate', {
                     role: selectedRole,
                   })}
@@ -417,10 +431,15 @@ const UserCsvImportComponent = ({
         )}
         {step === 'preview' && (
           <>
-            <Typography level="body-lg" sx={{ mb: 1 }}>
-              {t('components.userCsvImportComponent.previewtableinfo')}
-            </Typography>
-            <Box sx={{ overflowX: 'auto', mb: 2 }}>
+            <Box
+              sx={{
+                overflowX: 'auto',
+                overflowY: 'auto',
+                mb: 2,
+                maxHeight: '45vh',
+                minHeight: 0,
+              }}
+            >
               <Table
                 borderAxis="both"
                 size="lg"
@@ -431,9 +450,14 @@ const UserCsvImportComponent = ({
                     100,
                   '& th, & td': {
                     verticalAlign: 'middle',
-                    padding: '8px 8px',
+                    padding: '6px 8px',
                   },
-                  '& th': { background: '#f3f6fa' },
+                  '& th': {
+                    background: '#f3f6fa',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 1,
+                  },
                 }}
               >
                 <thead>
@@ -453,53 +477,22 @@ const UserCsvImportComponent = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {csvRows.map((row, rowIdx) => (
-                    <tr key={rowIdx}>
-                      {csvHeader.map((col) => (
-                        <td
-                          key={col}
-                          style={{
-                            minWidth: columnWidths[col],
-                            width: columnWidths[col],
-                            maxWidth: columnWidths[col],
-                          }}
-                        >
-                          <Input
-                            value={row[col] === NOVALUE ? '' : row[col]}
-                            color={requiredFields.includes(col) && row[col] === NOVALUE ? 'danger' : 'neutral'}
-                            placeholder={row[col] === NOVALUE ? NOVALUE : ''}
-                            onChange={(e) => handleCellChange(rowIdx, col, e.target.value)}
-                            sx={{
-                              width: '100%',
-                              minWidth: columnWidths[col] - 16,
-                              maxWidth: columnWidths[col] - 16,
-                              ...(requiredFields.includes(col) && row[col] === NOVALUE
-                                ? {
-                                    borderColor: '#d32f2f',
-                                    color: '#d32f2f',
-                                    background: '#fff0f0',
-                                  }
-                                : {}),
-                            }}
-                            inputRef={(el: HTMLInputElement | null) => {
-                              cellRefs.current[`${rowIdx}-${col}`] = el;
-                            }}
-                            inputProps={{
-                              style: {
-                                width: '100%',
-                                minWidth: columnWidths[col] - 32,
-                                maxWidth: columnWidths[col] - 32,
-                              },
-                            }}
-                          />
-                        </td>
-                      ))}
-                    </tr>
+                  {Object.entries(csvRowsObj).map(([rowIdx, row]) => (
+                    <TableRowMemo
+                      key={rowIdx}
+                      row={row}
+                      rowIdx={Number(rowIdx)}
+                      csvHeader={csvHeader}
+                      columnWidths={columnWidths}
+                      requiredFields={requiredFields}
+                      handleCellChange={handleCellChange}
+                      NOVALUE={NOVALUE}
+                      cellRefs={cellRefs}
+                    />
                   ))}
                 </tbody>
               </Table>
             </Box>
-            {/* Anzeige der fehlenden Pflichtfelder */}
             {hasMissingRequired && (
               <Box sx={{ mb: 1 }}>
                 <Button
@@ -538,4 +531,71 @@ const UserCsvImportComponent = ({
     </Card>
   );
 };
+
+import React from 'react';
+
+const TableRowMemo = React.memo(function TableRowMemo({
+  row,
+  rowIdx,
+  csvHeader,
+  columnWidths,
+  requiredFields,
+  handleCellChange,
+  NOVALUE,
+  cellRefs,
+}: {
+  row: CsvRow;
+  rowIdx: number;
+  csvHeader: string[];
+  columnWidths: Record<string, number>;
+  requiredFields: string[];
+  handleCellChange: (rowIdx: number, col: string, value: string) => void;
+  NOVALUE: string;
+  cellRefs: React.MutableRefObject<Record<string, HTMLInputElement | null>>;
+}) {
+  return (
+    <tr>
+      {csvHeader.map((col) => (
+        <td
+          key={col}
+          style={{
+            minWidth: columnWidths[col],
+            width: columnWidths[col],
+            maxWidth: columnWidths[col],
+          }}
+        >
+          <Input
+            value={row[col] === NOVALUE ? '' : row[col]}
+            color={requiredFields.includes(col) && row[col] === NOVALUE ? 'danger' : 'neutral'}
+            placeholder={row[col] === NOVALUE ? NOVALUE : ''}
+            onChange={(e) => handleCellChange(rowIdx, col, e.target.value)}
+            sx={{
+              width: '100%',
+              minWidth: columnWidths[col] - 16,
+              maxWidth: columnWidths[col] - 16,
+              ...(requiredFields.includes(col) && row[col] === NOVALUE
+                ? {
+                    borderColor: '#d32f2f',
+                    color: '#d32f2f',
+                    background: '#fff0f0',
+                  }
+                : {}),
+            }}
+            inputRef={(el: HTMLInputElement | null) => {
+              cellRefs.current[`${rowIdx}-${col}`] = el;
+            }}
+            inputProps={{
+              style: {
+                width: '100%',
+                minWidth: columnWidths[col] - 32,
+                maxWidth: columnWidths[col] - 32,
+              },
+            }}
+          />
+        </td>
+      ))}
+    </tr>
+  );
+});
+
 export default UserCsvImportComponent;

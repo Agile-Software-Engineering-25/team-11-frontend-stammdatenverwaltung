@@ -112,8 +112,8 @@ const CreateUser = ({
         : (form[field] ?? '')
     );
 
-    // Übergabe an createPerson
-    const result = createUser(values);
+    // Übergabe an createUser: Rolle als zweiten Parameter übergeben!
+    const result = createUser(values, form.roles[0]);
     if (result) {
       if (onShowMessage)
         onShowMessage('success', t('pages.home.successcreate'));
