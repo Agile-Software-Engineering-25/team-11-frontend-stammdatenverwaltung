@@ -8,7 +8,6 @@ import Card from '@agile-software/shared-components/src/components/Card/Card';
 import { useRef, useState } from 'react';
 import { exportUsersToCSV, downloadCSV } from '@/utils/csvimportexport';
 import UserCsvImportComponent from '@/components/UserCsvImportComponent/UserCsvImportComponent';
-import CreateUserManualyComponent from '@/components/CreateUserManualyComponent/CreateUserManualyComponent';
 
 const Home = () => {
   const { t } = useTranslation();
@@ -17,9 +16,8 @@ const Home = () => {
   // Ref, um auf die ausgewählten IDs aus der Tabelle zuzugreifen
   const selectedUserIdsRef = useRef<number[]>([]);
 
-  // Popup-Status für CSV-Import und User-Erstellung
+  // Popup-Status für CSV-Import
   const [csvImportOpen, setCsvImportOpen] = useState(false);
-  const [createUserOpen, setCreateUserOpen] = useState(false);
 
   // Message-Handling
   const [message, setMessage] = useState<null | { type: 'success' | 'error'; text: string }>(null);
@@ -45,10 +43,6 @@ const Home = () => {
   const handleOpenCsvImport = () => setCsvImportOpen(true);
   const handleCloseCsvImport = () => setCsvImportOpen(false);
 
-  // User manuell anlegen
-  const handleOpenCreateUser = () => setCreateUserOpen(true);
-  const handleCloseCreateUser = () => setCreateUserOpen(false);
-
   // Message-Callback für Kind-Komponenten
   const handleShowMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -62,6 +56,11 @@ const Home = () => {
   // UserDataTableComponent: Callback für User-Aktionen
   const handleUserAction = (type: 'success' | 'error', text: string) => {
     handleShowMessage(type, text);
+  };
+
+  // Weiterleitung zur Create-User-Seite
+  const handleOpenCreateUser = () => {
+    navigate('/create_user');
   };
 
   return (
@@ -110,15 +109,6 @@ const Home = () => {
         onSelectedUserIdsChange={handleSelectedUserIdsChange}
         onUserAction={handleShowMessage}
       />
-      {/* User erstellen Modal */}
-      <Modal open={createUserOpen} onClose={handleCloseCreateUser}>
-        <ModalDialog>
-          <CreateUserManualyComponent
-            onClose={handleCloseCreateUser}
-            onShowMessage={handleShowMessage}
-          />
-        </ModalDialog>
-      </Modal>
       {/* CSV Import Modal */}
       <Modal open={csvImportOpen} onClose={handleCloseCsvImport}>
         <ModalDialog>
