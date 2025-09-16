@@ -34,22 +34,24 @@ const UserDataCardComponent = ({
   onSaveSuccess?: (userId: number) => void;
   onShowMessage?: (type: 'success' | 'error', text: string) => void;
 }) => {
-  if (!user) return null;
-  const cards = getCardsForRoles(user.roles);
-  const [activeCard, setActiveCard] = useState<string>(
-    cards[0]?.key ?? 'basis'
-  );
   const { t } = useTranslation();
   const [editMode, setEditMode] = useState(false);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [, forceUpdate] = useState(0);
+  const cards = user ? getCardsForRoles(user.roles) : [];
+  const [activeCard, setActiveCard] = useState<string>(
+    cards[0]?.key ?? 'basis'
+  );
 
   useEffect(() => {
+    if (!user) return;
     setActiveCard(cards[0]?.key ?? 'basis');
     setInputValues({});
     setEditMode(false);
   }, [user, cards.length]);
+
+  if (!user) return null;
 
   const currentCard = cards.find((card) => card.key === activeCard);
 
@@ -211,7 +213,7 @@ const UserDataCardComponent = ({
             m: 0,
           }}
         >
-          <Typography level="h6" sx={{ mb: -1, fontSize: 16, fontWeight: 700 }}>
+          <Typography level="h4" sx={{ mb: -1, fontSize: 16, fontWeight: 700 }}>
             {currentCard.title}
           </Typography>
           <CardContent sx={{ p: 0 }}>

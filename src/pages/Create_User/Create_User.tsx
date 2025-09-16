@@ -1,13 +1,10 @@
 import { Box, Typography } from '@mui/joy';
 import LanguageSelectorComponent from '@components/LanguageSelectorComponent/LanguageSelectorComponent';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
 import CreateUserManualyComponent from '@/components/CreateUserManualyComponent/CreateUserManualyComponent';
 
 const CreateUser = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-
   return (
     <Box sx={{ padding: 2, maxWidth: 700, mx: 'auto' }}>
       <Typography level="h2">
@@ -22,5 +19,4 @@ const CreateUser = () => {
     </Box>
   );
 };
-
 export default CreateUser;

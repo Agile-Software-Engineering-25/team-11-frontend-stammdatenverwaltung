@@ -11,9 +11,13 @@ import {
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import UserDataCardComponent from '../UserDataCardComponent/UserDataCardComponent';
-import { getAllUsers, getAllRoles } from '../../utils/showuserdatafunctions';
+import {
+  getAllUsers,
+  getAllRoles,
+  deleteUserById,
+  updateUserData,
+} from '../../utils/showuserdatafunctions';
 import Input from '@agile-software/shared-components/src/components/Input/Input';
-import { createCustomTheme } from '@agile-software/shared-components';
 
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,

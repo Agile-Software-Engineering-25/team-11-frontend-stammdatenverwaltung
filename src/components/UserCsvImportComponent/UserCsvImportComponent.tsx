@@ -312,7 +312,16 @@ const UserCsvImportComponent = ({
   return (
     <Card sx={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
       {/* Kompakter Header, sticky */}
-      <Box sx={{ pb: 1, borderBottom: '1px solid #e0e0e0', position: 'sticky', top: 0, zIndex: 2, background: '#fff' }}>
+      <Box
+        sx={{
+          pb: 1,
+          borderBottom: '1px solid #e0e0e0',
+          position: 'sticky',
+          top: 0,
+          zIndex: 2,
+          background: '#fff',
+        }}
+      >
         <Typography level="h3" sx={{ mb: 0.5 }}>
           {t('components.userCsvImportComponent.title')}
         </Typography>

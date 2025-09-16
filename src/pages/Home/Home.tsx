@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { Box, Typography, Modal, ModalDialog } from '@mui/joy';
 import LanguageSelectorComponent from '@components/LanguageSelectorComponent/LanguageSelectorComponent';
 import { useTranslation } from 'react-i18next';
@@ -20,8 +21,14 @@ const Home = () => {
   const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   // Message-Handling
-  const [message, setMessage] = useState<null | { type: 'success' | 'error'; text: string }>(null);
-  const [failedCsv, setFailedCsv] = useState<{ csv: string; filename: string } | null>(null);
+  const [message, setMessage] = useState<null | {
+    type: 'success' | 'error';
+    text: string;
+  }>(null);
+  const [failedCsv, setFailedCsv] = useState<{
+    csv: string;
+    filename: string;
+  } | null>(null);
 
   // Callback, das von der Tabelle gesetzt wird
   const handleSelectedUserIdsChange = (ids: number[]) => {
