@@ -18,10 +18,12 @@ const UserDataTableComponent = ({
   onSelectedUserIdsChange,
   selectedUserId,
   setSelectedUserId,
+  onShowMessage,
 }: {
   onSelectedUserIdsChange?: (ids: number[]) => void;
   selectedUserId?: number | null;
   setSelectedUserId?: (id: number | null) => void;
+  onShowMessage?: (type: 'success' | 'error', text: string) => void;
 }) => {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
@@ -255,6 +257,7 @@ const UserDataTableComponent = ({
                       onUserUpdate={handleUserUpdate}
                       onClose={handleCloseDetail}
                       onSaveSuccess={handleSaveSuccess}
+                      onShowMessage={onShowMessage}
                     />
                   </td>
                 </tr>

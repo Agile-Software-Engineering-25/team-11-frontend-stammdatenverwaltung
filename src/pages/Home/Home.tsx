@@ -66,7 +66,7 @@ const Home = () => {
 
   // Weiterleitung zur Create-User-Seite
   const handleOpenCreateUser = () => {
-    setSelectedUserId(null); // Detailansicht schließen!
+    setSelectedUserId(null);
     navigate('/create_user');
   };
 
@@ -112,6 +112,7 @@ const Home = () => {
         onSelectedUserIdsChange={handleSelectedUserIdsChange}
         selectedUserId={selectedUserId}
         setSelectedUserId={setSelectedUserId}
+        onShowMessage={handleShowMessage}
       />
       {/* CSV Import Modal */}
       <Modal open={csvImportOpen} onClose={handleCloseCsvImport}>

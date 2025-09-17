@@ -135,12 +135,19 @@ const CreateUser = ({
     const result = createUser(values, form.roles[0]);
     if (result) {
       if (onShowMessage)
-        onShowMessage('success', t('pages.home.successcreate'));
+        onShowMessage(
+          'success',
+          t('components.userCsvImportComponent.importsuccess')
+        );
       setForm(initialState);
       if (onClose) onClose();
       navigate('/');
     } else {
-      if (onShowMessage) onShowMessage('error', t('pages.home.errorcreate'));
+      if (onShowMessage)
+        onShowMessage(
+          'error',
+          t('components.userCsvImportComponent.partialimport')
+        );
     }
   };
   const cancel = () => {

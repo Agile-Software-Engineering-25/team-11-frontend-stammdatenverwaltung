@@ -69,7 +69,11 @@
       "cancel": "Abbrechen",
       "deleteuserdialogtitle": "Benutzer löschen",
       "deleteuserdialogcontent": "Möchten Sie diesen Benutzer wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-      "detailedview": "Detailansicht"
+      "detailedview": "Detailansicht",
+      "successupdate": "Benutzer erfolgreich aktualisiert.",
+      "errorupdate": "Fehler beim Aktualisieren des Benutzers. Bitte versuchen Sie es erneut.",
+      "errordelete": "Fehler beim Löschen des Benutzers. Bitte versuchen Sie es erneut.",
+      "successdelete": "Benutzer erfolgreich gelöscht."
     },
     "userCsvImportComponent": {
       "title": "Benutzer per CSV anlegen",

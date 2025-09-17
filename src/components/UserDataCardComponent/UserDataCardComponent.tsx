@@ -108,10 +108,11 @@ const UserDataCardComponent = ({
       forceUpdate((n) => n + 1);
       if (onUserUpdate) onUserUpdate();
       if (onShowMessage)
-        onShowMessage('success', t('pages.home.successupdate'));
+        onShowMessage('success', t('components.userDataTable.successupdate'));
       if (onSaveSuccess) onSaveSuccess(user.id);
     } else {
-      if (onShowMessage) onShowMessage('error', t('pages.home.errorupdate'));
+      if (onShowMessage)
+        onShowMessage('error', t('components.userDataTable.errorupdate'));
       if (onClose) onClose();
     }
   };
@@ -140,10 +141,11 @@ const UserDataCardComponent = ({
     if (result) {
       if (onUserUpdate) onUserUpdate();
       if (onShowMessage)
-        onShowMessage('success', t('pages.home.successdelete'));
+        onShowMessage('success', t('components.userDataTable.successdelete'));
       if (onClose) onClose();
     } else {
-      if (onShowMessage) onShowMessage('error', t('pages.home.errordelete'));
+      if (onShowMessage)
+        onShowMessage('error', t('components.userDataTable.errordelete'));
     }
   };
 
