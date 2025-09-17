@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 'use server'
 import {
   page1DynamicFieldsConfig,
@@ -7,14 +8,25 @@ import {
   users,
 } from './mockupdata';
 
+// Typisierung für dynamische Felder
+type DynamicField = {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+};
+
+// Typisierung für roleFieldConfigs
+type RoleFieldConfigs = Record<string, DynamicField[]>;
+
 // Gibt die dynamischen Felder für Seite 1 zurück
-export function getPage1DynamicFields() {
+export function getPage1DynamicFields(): DynamicField[] {
   return page1DynamicFieldsConfig;
 }
 
 // Gibt die dynamischen Felder für eine Rolle zurück
-export function dynamicInputFields(role: string) {
-  const config = roleFieldConfigs[role];
+export function dynamicInputFields(role: string): { fields: DynamicField[] } {
+  const config = (roleFieldConfigs as RoleFieldConfigs)[role];
   if (config) {
     return { fields: config };
   }
@@ -22,13 +34,12 @@ export function dynamicInputFields(role: string) {
 }
 
 // Gibt alle verfügbaren Rollen zurück
-export function getAvailableRoles() {
+export function getAvailableRoles(): string[] {
   return availableRoles;
 }
 
 // Erstellt eine neue Person aus einem Datenarray und fügt sie zu den Mockupdaten hinzu
 export function createUser(data: string[], roleFromSelection?: string) {
-  // Wenn die Rolle übergeben wird, nutze sie, sonst wie bisher
   const roles = roleFromSelection
     ? [roleFromSelection]
     : (data[fixedFieldNames.indexOf('roles')] ?? '')
@@ -40,7 +51,9 @@ export function createUser(data: string[], roleFromSelection?: string) {
   const dynamicFields = Array.from(
     new Map(
       roles.flatMap((role) =>
-        (roleFieldConfigs[role] ?? []).map((field) => [field.name, field])
+        ((roleFieldConfigs as RoleFieldConfigs)[role] ?? []).map(
+          (field: DynamicField) => [field.name, field]
+        )
       )
     ).values()
   );
@@ -49,8 +62,8 @@ export function createUser(data: string[], roleFromSelection?: string) {
   // Alle Feldnamen in der richtigen Reihenfolge
   const allFieldNames = [
     ...fixedFieldNames.filter((f) => f !== 'roles'), // 'roles' NICHT aus CSV!
-    ...page1DynamicFieldsConfig.map(f => f.name),
-    ...dynamicFieldNames
+    ...page1DynamicFieldsConfig.map((f) => f.name),
+    ...dynamicFieldNames,
   ];
 
   // Objekt mit Namen und Wert aus dem Array erzeugen
@@ -69,27 +82,35 @@ export function createUser(data: string[], roleFromSelection?: string) {
   });
 
   // id generieren
-  const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
+  const newId = users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1;
 
-  // User-Objekt zusammenbauen
-  const newUser = {
+  // Dynamisches User-Objekt: alle Felder aus dem ersten Mockup-User übernehmen
+  const templateUser = users[0];
+  const userObj: typeof templateUser = {
+    ...templateUser,
     id: newId,
-    firstname: result.firstname,
-    lastname: result.lastname,
-    email: result.email,
-    roles: roles,
-    ...page1DynamicFieldsConfig.reduce((acc, f) => {
-        acc[f.name] = result[f.name];
-        return acc;
-      },
-      {} as Record<string, string>
-    ),
+    roles,
     details,
   };
 
-  users.push(newUser);
+  // Feste Felder dynamisch zuweisen
+  fixedFieldNames.forEach((field) => {
+    if (field !== 'roles' && field in userObj) {
+      (userObj as Record<string, any>)[field] = result[field] ?? '';
+    }
+  });
 
-  console.log('createUser: Neuer User hinzugefügt:', newUser);
+  // Dynamische Felder Seite 1 zuweisen
+  page1DynamicFieldsConfig.forEach((field) => {
+    if (field.name in userObj) {
+      (userObj as Record<string, any>)[field.name] = result[field.name] ?? '';
+    }
+  });
 
-  return newUser;
+  // User in die Mockupdaten einfügen
+  users.push(userObj);
+
+  console.log('createUser: Neuer User hinzugefügt:', userObj);
+
+  return userObj;
 }

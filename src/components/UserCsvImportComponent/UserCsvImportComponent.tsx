@@ -1,15 +1,8 @@
 /* eslint-disable max-lines-per-function */
 import Card from '@agile-software/shared-components/src/components/Card/Card';
 import Button from '@agile-software/shared-components/src/components/Button/Button';
-import {
-  Box,
-  ButtonGroup,
-  Select,
-  Option,
-  Typography,
-  Table,
-  Input,
-} from '@mui/joy';
+import Input from '@agile-software/shared-components/src/components/Input/Input';
+import { Box, ButtonGroup, Select, Option, Typography, Table } from '@mui/joy';
 import { useTranslation } from 'react-i18next';
 import { useRef, useState, useMemo } from 'react';
 import {
@@ -37,7 +30,10 @@ function getTextWidth(text: string, font = '16px Arial') {
   return context.measureText(text).width;
 }
 
-function getColumnWidths(header: string[], rows: CsvRow[]): Record<string, number> {
+function getColumnWidths(
+  header: string[],
+  rows: CsvRow[]
+): Record<string, number> {
   const widths: Record<string, number> = {};
   header.forEach((col) => {
     let maxWidth = getTextWidth(col, '16px Arial');
@@ -543,7 +539,7 @@ const UserCsvImportComponent = ({
 
 import React from 'react';
 
-const TableRowMemo = React.memo(function TableRowMemo({
+const TableRowMemo = React.memo(({
   row,
   rowIdx,
   csvHeader,
@@ -561,7 +557,7 @@ const TableRowMemo = React.memo(function TableRowMemo({
   handleCellChange: (rowIdx: number, col: string, value: string) => void;
   NOVALUE: string;
   cellRefs: React.MutableRefObject<Record<string, HTMLInputElement | null>>;
-}) {
+}) => {
   return (
     <tr>
       {csvHeader.map((col) => (
@@ -590,15 +586,8 @@ const TableRowMemo = React.memo(function TableRowMemo({
                   }
                 : {}),
             }}
-            inputRef={(el: HTMLInputElement | null) => {
+            ref={(el: HTMLInputElement | null) => {
               cellRefs.current[`${rowIdx}-${col}`] = el;
-            }}
-            inputProps={{
-              style: {
-                width: '100%',
-                minWidth: columnWidths[col] - 32,
-                maxWidth: columnWidths[col] - 32,
-              },
             }}
           />
         </td>

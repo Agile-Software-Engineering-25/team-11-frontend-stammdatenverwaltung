@@ -12,11 +12,28 @@ import {
   getPage1DynamicFields,
 } from '@/utils/createuserfunction';
 
-const initialState = {
+// Typen für dynamische Felder
+interface DynamicField {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+}
+
+// Typ für das Formular
+type FormState = {
+  firstname: string;
+  lastname: string;
+  email: string;
+  roles: string[];
+  [key: string]: string | string[];
+};
+
+const initialState: FormState = {
   firstname: '',
   lastname: '',
   email: '',
-  roles: [] as string[],
+  roles: [],
   // dynamische Felder werden nach Bedarf ergänzt
 };
 
@@ -29,23 +46,26 @@ const CreateUser = ({
   onClose?: () => void;
   onShowMessage?: (type: 'success' | 'error', text: string) => void;
 }) => {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<number>(1);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     ...initialState,
   });
 
   const roles = getAvailableRoles();
-  const page1DynamicFields = getPage1DynamicFields();
+  const page1DynamicFields: DynamicField[] = getPage1DynamicFields();
 
   // Alle dynamischen Felder für alle gewählten Rollen (ohne Duplikate)
-  const dynamicFields = Array.from(
+  const dynamicFields: DynamicField[] = Array.from(
     new Map(
-      (form.roles as string[]).flatMap((role) =>
-        dynamicInputFields(role).fields.map((field) => [field.name, field])
+      (form.roles as string[]).flatMap((role: string) =>
+        dynamicInputFields(role).fields.map((field: DynamicField) => [
+          field.name,
+          field,
+        ])
       )
     ).values()
-  );
+  ) as DynamicField[];
 
   const isPage1Valid =
     requiredFieldsPage1.every((field) => !!form[field]) &&
@@ -74,14 +94,14 @@ const CreateUser = ({
       const rolesArr = value ? [value] : [];
       // Leere dynamische Felder zurücksetzen, die nicht mehr gebraucht werden
       const keepFields = new Set(
-        rolesArr.flatMap((role) =>
-          dynamicInputFields(role).fields.map((f) => f.name)
+        rolesArr.flatMap((role: string) =>
+          dynamicInputFields(role).fields.map((f: DynamicField) => f.name)
         )
       );
-      const cleanedForm = { ...prev };
+      const cleanedForm: FormState = { ...prev };
       Object.keys(cleanedForm).forEach((key) => {
         if (
-          !initialState.hasOwnProperty(key) &&
+          !Object.prototype.hasOwnProperty.call(initialState, key) &&
           !keepFields.has(key) &&
           !page1DynamicFields.some((f) => f.name === key)
         ) {
@@ -101,18 +121,17 @@ const CreateUser = ({
   const finish = () => {
     // Sammle alle Feldnamen in der gewünschten Reihenfolge
     const allFieldNames = [
-      ...requiredFieldsPage1,
+      ...requiredFieldsPage1.filter((f) => f !== 'roles'), // <--- 'roles' entfernen!
       ...page1DynamicFields.map((f) => f.name),
       ...dynamicFields.map((field) => field.name),
     ];
     // Erzeuge das Array mit den Werten in der gleichen Reihenfolge
-    const values = allFieldNames.map((field) =>
-      field === 'roles'
-        ? (form.roles as string[]).join(',')
-        : (form[field] ?? '')
-    );
+    const values = allFieldNames.map((field) => {
+      const value = form[field];
+      return Array.isArray(value) ? value.join(',') : (value ?? '');
+    });
 
-    // Übergabe an createUser: Rolle als zweiten Parameter übergeben!
+    // Übergabe an createUser: Rolle nur als zweiten Parameter!
     const result = createUser(values, form.roles[0]);
     if (result) {
       if (onShowMessage)
@@ -139,7 +158,7 @@ const CreateUser = ({
 
   // Hilfsfunktion für 2er-Gruppierung der dynamischen Felder (Seite 1)
   const renderDynamicFieldsRows = () => {
-    const rows = [];
+    const rows: JSX.Element[] = [];
     for (let i = 0; i < page1DynamicFields.length; i += 2) {
       if (page1DynamicFields[i + 1]) {
         rows.push(
@@ -151,7 +170,11 @@ const CreateUser = ({
               label={page1DynamicFields[i].label}
               required={page1DynamicFields[i].required}
               type={page1DynamicFields[i].type}
-              value={form[page1DynamicFields[i].name] ?? ''}
+              value={
+                typeof form[page1DynamicFields[i].name] === 'string'
+                  ? (form[page1DynamicFields[i].name] as string)
+                  : ''
+              }
               onChange={handleInputChange(page1DynamicFields[i].name)}
               sx={{ flex: 1 }}
             />
@@ -159,7 +182,11 @@ const CreateUser = ({
               label={page1DynamicFields[i + 1].label}
               required={page1DynamicFields[i + 1].required}
               type={page1DynamicFields[i + 1].type}
-              value={form[page1DynamicFields[i + 1].name] ?? ''}
+              value={
+                typeof form[page1DynamicFields[i + 1].name] === 'string'
+                  ? (form[page1DynamicFields[i + 1].name] as string)
+                  : ''
+              }
               onChange={handleInputChange(page1DynamicFields[i + 1].name)}
               sx={{ flex: 1 }}
             />
@@ -175,7 +202,11 @@ const CreateUser = ({
               label={page1DynamicFields[i].label}
               required={page1DynamicFields[i].required}
               type={page1DynamicFields[i].type}
-              value={form[page1DynamicFields[i].name] ?? ''}
+              value={
+                typeof form[page1DynamicFields[i].name] === 'string'
+                  ? (form[page1DynamicFields[i].name] as string)
+                  : ''
+              }
               onChange={handleInputChange(page1DynamicFields[i].name)}
               sx={{ flex: 1 }}
             />
@@ -188,7 +219,7 @@ const CreateUser = ({
 
   // Hilfsfunktion für 2er-Gruppierung der dynamischen Rollen-Felder (Seite 2)
   const renderRoleDynamicFieldsRows = () => {
-    const rows = [];
+    const rows: JSX.Element[] = [];
     for (let i = 0; i < dynamicFields.length; i += 2) {
       if (dynamicFields[i + 1]) {
         rows.push(
@@ -197,7 +228,11 @@ const CreateUser = ({
               label={dynamicFields[i].label}
               required={dynamicFields[i].required}
               type={dynamicFields[i].type}
-              value={form[dynamicFields[i].name] ?? ''}
+              value={
+                typeof form[dynamicFields[i].name] === 'string'
+                  ? (form[dynamicFields[i].name] as string)
+                  : ''
+              }
               onChange={handleInputChange(dynamicFields[i].name)}
               sx={{ flex: 1 }}
             />
@@ -205,7 +240,11 @@ const CreateUser = ({
               label={dynamicFields[i + 1].label}
               required={dynamicFields[i + 1].required}
               type={dynamicFields[i + 1].type}
-              value={form[dynamicFields[i + 1].name] ?? ''}
+              value={
+                typeof form[dynamicFields[i + 1].name] === 'string'
+                  ? (form[dynamicFields[i + 1].name] as string)
+                  : ''
+              }
               onChange={handleInputChange(dynamicFields[i + 1].name)}
               sx={{ flex: 1 }}
             />
@@ -218,7 +257,11 @@ const CreateUser = ({
               label={dynamicFields[i].label}
               required={dynamicFields[i].required}
               type={dynamicFields[i].type}
-              value={form[dynamicFields[i].name] ?? ''}
+              value={
+                typeof form[dynamicFields[i].name] === 'string'
+                  ? (form[dynamicFields[i].name] as string)
+                  : ''
+              }
               onChange={handleInputChange(dynamicFields[i].name)}
               sx={{ flex: 1 }}
             />
@@ -234,17 +277,17 @@ const CreateUser = ({
     <Box sx={{ padding: 2, maxWidth: 700, mx: 'auto' }}>
       {step === 1 && (
         <>
-          <Box sx={{ display: 'flex', gap: 2}}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
             <Input
               label={t('components.createusermanually.firstname')}
               required
-              value={form.firstname}
+              value={typeof form.firstname === 'string' ? form.firstname : ''}
               onChange={handleInputChange('firstname')}
             />
             <Input
               label={t('components.createusermanually.lastname')}
               required
-              value={form.lastname}
+              value={typeof form.lastname === 'string' ? form.lastname : ''}
               onChange={handleInputChange('lastname')}
             />
           </Box>
@@ -252,7 +295,7 @@ const CreateUser = ({
             <Input
               label={t('components.createusermanually.email')}
               required
-              value={form.email}
+              value={typeof form.email === 'string' ? form.email : ''}
               onChange={handleInputChange('email')}
               sx={{ width: '68%' }}
             />
@@ -268,7 +311,7 @@ const CreateUser = ({
               required
               sx={{ width: '68%' }}
             >
-              {roles.map((role) => (
+              {roles.map((role: string) => (
                 <Option key={role} value={role}>
                   {role}
                 </Option>

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router';
 import UserDataTableComponent from '@/components/UserDataTableComponent/UserDataTableComponent';
 import Button from '@agile-software/shared-components/src/components/Button/Button';
 import Card from '@agile-software/shared-components/src/components/Card/Card';
-import { useRef, useState } from 'react';
+import { useState, useRef } from 'react';
 import { exportUsersToCSV, downloadCSV } from '@/utils/csvimportexport';
 import UserCsvImportComponent from '@/components/UserCsvImportComponent/UserCsvImportComponent';
 
@@ -29,6 +29,8 @@ const Home = () => {
     csv: string;
     filename: string;
   } | null>(null);
+
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   // Callback, das von der Tabelle gesetzt wird
   const handleSelectedUserIdsChange = (ids: number[]) => {
@@ -61,12 +63,10 @@ const Home = () => {
   };
 
   // UserDataTableComponent: Callback für User-Aktionen
-  const handleUserAction = (type: 'success' | 'error', text: string) => {
-    handleShowMessage(type, text);
-  };
 
   // Weiterleitung zur Create-User-Seite
   const handleOpenCreateUser = () => {
+    setSelectedUserId(null); // Detailansicht schließen!
     navigate('/create_user');
   };
 
@@ -90,11 +90,7 @@ const Home = () => {
           color={message.type === 'success' ? 'success' : 'danger'}
           variant="soft"
           sx={{
-            mb: 2,
-            display: 'block',
-            background: message.type === 'success',
-            borderColor: message.type === 'success',
-            color: message.type === 'success',
+            mb: 2
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -114,7 +110,8 @@ const Home = () => {
       )}
       <UserDataTableComponent
         onSelectedUserIdsChange={handleSelectedUserIdsChange}
-        onUserAction={handleShowMessage}
+        selectedUserId={selectedUserId}
+        setSelectedUserId={setSelectedUserId}
       />
       {/* CSV Import Modal */}
       <Modal open={csvImportOpen} onClose={handleCloseCsvImport}>

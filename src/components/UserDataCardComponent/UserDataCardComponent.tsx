@@ -21,14 +21,34 @@ import {
 } from '../../utils/showuserdatafunctions';
 import { useTranslation } from 'react-i18next';
 
+// Typ für ein Feld
+interface CardField {
+  key: string;
+  label: string;
+}
+
+// Typ für eine Card
+interface CardType {
+  key: string;
+  title: string;
+  fields: CardField[];
+}
+
+interface UserType {
+  id: number;
+  roles: string[];
+  details?: Record<string, string>;
+  [key: string]: any;
+}
+
 const UserDataCardComponent = ({
   user,
   onUserUpdate,
   onClose,
   onSaveSuccess,
-  onShowMessage, 
+  onShowMessage,
 }: {
-  user: any;
+  user: UserType | null;
   onUserUpdate?: () => void;
   onClose?: () => void;
   onSaveSuccess?: (userId: number) => void;
@@ -39,7 +59,8 @@ const UserDataCardComponent = ({
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [, forceUpdate] = useState(0);
-  const cards = user ? getCardsForRoles(user.roles) : [];
+
+  const cards: CardType[] = user ? getCardsForRoles(user.roles) : [];
   const [activeCard, setActiveCard] = useState<string>(
     cards[0]?.key ?? 'basis'
   );
@@ -49,6 +70,7 @@ const UserDataCardComponent = ({
     setActiveCard(cards[0]?.key ?? 'basis');
     setInputValues({});
     setEditMode(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, cards.length]);
 
   if (!user) return null;
@@ -60,10 +82,13 @@ const UserDataCardComponent = ({
       const newValues: Record<string, string> = {};
       currentCard.fields.forEach((field) => {
         newValues[field.key] =
-          user[field.key] ?? user.details?.[field.key] ?? '';
+          user[field.key] ??
+          (user.details ? user.details[field.key] : '') ??
+          '';
       });
       setInputValues(newValues);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentCard, user, editMode]);
 
   const handleInputChange =
@@ -96,7 +121,9 @@ const UserDataCardComponent = ({
       const newValues: Record<string, string> = {};
       currentCard.fields.forEach((field) => {
         newValues[field.key] =
-          user[field.key] ?? user.details?.[field.key] ?? '';
+          user[field.key] ??
+          (user.details ? user.details[field.key] : '') ??
+          '';
       });
       setInputValues(newValues);
     }
@@ -233,8 +260,8 @@ const UserDataCardComponent = ({
                   disabled={!editMode}
                   onChange={handleInputChange(field.key)}
                   sx={{
-                    mt: 0, // vorher -1 oder größer, jetzt 0
-                    mb: 0, // falls vorhanden, auf 0 setzen
+                    mt: 0,
+                    mb: 0,
                     '& .Mui-disabled': {
                       color: '#000',
                     },

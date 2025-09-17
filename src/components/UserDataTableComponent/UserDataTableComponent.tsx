@@ -11,23 +11,19 @@ import {
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import UserDataCardComponent from '../UserDataCardComponent/UserDataCardComponent';
-import {
-  getAllUsers,
-  getAllRoles,
-  deleteUserById,
-  updateUserData,
-} from '../../utils/showuserdatafunctions';
+import { getAllUsers, getAllRoles } from '../../utils/showuserdatafunctions';
 import Input from '@agile-software/shared-components/src/components/Input/Input';
 
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,
-  onUserAction,
+  selectedUserId,
+  setSelectedUserId,
 }: {
   onSelectedUserIdsChange?: (ids: number[]) => void;
-  onUserAction?: (type: 'success' | 'error', text: string) => void;
+  selectedUserId?: number | null;
+  setSelectedUserId?: (id: number | null) => void;
 }) => {
   const { t } = useTranslation();
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('alle');
   const [users, setUsers] = useState(getAllUsers());
@@ -52,12 +48,15 @@ const UserDataTableComponent = ({
 
   // Card schließen
   const handleCloseDetail = () => {
-    setSelectedUserId(null);
+    if (setSelectedUserId) setSelectedUserId(null);
   };
 
   // Card nach erfolgreichem Speichern direkt wieder öffnen
   const handleSaveSuccess = (userId: number) => {
-    setSelectedUserId(null);
+    if (setSelectedUserId) {
+      setSelectedUserId(userId);
+      setSelectedUserId(null);
+    }
     //setSelectedUserId(userId);
     //setTimeout(() => setSelectedUserId(userId), 0);
   };
@@ -98,27 +97,13 @@ const UserDataTableComponent = ({
     filteredUsers.some((user) => selectedUserIds.includes(user.id)) &&
     !allChecked;
 
-  // Beispiel für Löschen
-  const handleDeleteUser = (userId: number) => {
-    const result = deleteUserById(userId);
-    if (result) {
-      if (onUserAction) onUserAction('success', t('pages.home.successdelete'));
-      setUsers(getAllUsers());
-    } else {
-      if (onUserAction) onUserAction('error', t('pages.home.errordelete'));
-    }
-  };
-
-  // Beispiel für Speichern
-  const handleSaveUser = (userId: number, data: any) => {
-    const result = updateUserData(userId, data);
-    if (result) {
-      if (onUserAction) onUserAction('success', t('pages.home.successupdate'));
-      setUsers(getAllUsers());
-    } else {
-      if (onUserAction) onUserAction('error', t('pages.home.errorupdate'));
-    }
-  };
+  // Ersetze eigenen State durch Props, falls vorhanden
+  const [internalSelectedUserId, internalSetSelectedUserId] = useState<
+    number | null
+  >(null);
+  const activeUserId =
+    selectedUserId !== undefined ? selectedUserId : internalSelectedUserId;
+  const changeSelectedUserId = setSelectedUserId ?? internalSetSelectedUserId;
 
   return (
     <Box sx={{ p: 2 }}>
@@ -197,10 +182,12 @@ const UserDataTableComponent = ({
                 key={user.id}
                 style={{
                   cursor: 'pointer',
-                  background: selectedUserId === user.id ? 50 : undefined,
+                  background: activeUserId === user.id ? 50 : undefined,
                 }}
                 onClick={() =>
-                  setSelectedUserId(selectedUserId === user.id ? null : user.id)
+                  changeSelectedUserId(
+                    activeUserId === user.id ? null : user.id
+                  )
                 }
               >
                 <td
@@ -259,7 +246,7 @@ const UserDataTableComponent = ({
                 <td>{freshUser.phone}</td>
               </tr>,
             ];
-            if (selectedUserId === user.id) {
+            if (activeUserId === user.id) {
               rows.push(
                 <tr key={user.id + '-details'}>
                   <td colSpan={5} style={{ padding: 0 }}>

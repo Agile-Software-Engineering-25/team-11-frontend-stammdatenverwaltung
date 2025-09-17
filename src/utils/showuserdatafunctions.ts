@@ -6,14 +6,18 @@ import {
   fixedFieldNames,
 } from './mockupdata';
 
+// Typen für dynamische Felder und Karten
 type User = (typeof users)[number];
 
 type CardField = { label: string; key: string };
 type CardConfig = { key: string; title: string; fields: CardField[] };
 
 // Dynamische Felder für die Kartenansicht (außer feste Felder)
-function getDynamicUserFields(): { key: string; label: string }[] {
-  return page1DynamicFieldsConfig.map((f) => ({ key: f.name, label: f.label }));
+function getDynamicUserFields(): CardField[] {
+  return page1DynamicFieldsConfig.map((f) => ({
+    key: f.name,
+    label: f.label,
+  }));
 }
 
 function getAllUsers(): User[] {
@@ -40,12 +44,16 @@ function getCardsForRoles(roles: string[]): CardConfig[] {
     },
   ];
   roles.forEach((role) => {
-    const config = roleFieldConfigs[role];
+    // Typisierung für roleFieldConfigs
+    const config = (roleFieldConfigs as Record<string, { name: string; label: string }[]>)[role];
     if (config) {
       cards.push({
         key: role.toLowerCase(),
         title: role,
-        fields: config.map((f) => ({ label: f.label, key: f.name })),
+        fields: config.map((f) => ({
+          label: f.label,
+          key: f.name,
+        })),
       });
     }
   });
@@ -53,17 +61,20 @@ function getCardsForRoles(roles: string[]): CardConfig[] {
 }
 
 // Userdaten aktualisieren
-function updateUserData(id: number, updatedFields: Record<string, string>) {
+function updateUserData(
+  id: number,
+  updatedFields: Record<string, string>
+): boolean {
   const user = users.find((u) => u.id === id);
   if (!user) return false;
   Object.keys(updatedFields).forEach((key) => {
     if (fixedFieldNames.includes(key)) {
-      user[key] = updatedFields[key];
+      (user as Record<string, any>)[key] = updatedFields[key];
     } else if (page1DynamicFieldsConfig.some((f) => f.name === key)) {
-      user[key] = updatedFields[key];
+      (user as Record<string, any>)[key] = updatedFields[key];
     } else {
       if (!user.details) user.details = {};
-      user.details[key] = updatedFields[key];
+      (user.details as Record<string, string>)[key] = updatedFields[key];
     }
   });
   return true;

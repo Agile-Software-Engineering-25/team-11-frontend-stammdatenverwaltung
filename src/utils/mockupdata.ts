@@ -87,7 +87,8 @@ export const users = [
       matrikelnummer: '123456',
       studiengang: 'Informatik',
       fachsemester: '3',
-    },
+      // Index-Signatur: alle Felder als string
+    } as Record<string, string>,
   },
   {
     id: 2,
@@ -108,7 +109,7 @@ export const users = [
       personalnummer: '987654',
       abteilung: 'IT',
       eintrittsdatum: '01.01.2020',
-    },
+    } as Record<string, string>,
   },
   {
     id: 3,
@@ -132,7 +133,7 @@ export const users = [
       personalnummer: '123987',
       abteilung: 'Mathe',
       eintrittsdatum: '01.10.2021',
-    },
+    } as Record<string, string>,
   },
   {
     id: 4,
@@ -153,6 +154,6 @@ export const users = [
       dozentennummer: 'D-2024',
       fakultaet: 'Wirtschaft',
       titel: 'Prof. Dr.',
-    },
+    } as Record<string, string>,
   },
 ];

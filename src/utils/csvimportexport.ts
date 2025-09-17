@@ -5,10 +5,17 @@ import {
   roleFieldConfigs,
 } from './mockupdata';
 
+// Typ für ein User-Objekt
+type UserType = typeof users[number];
+
+// Typ für ein Feld
+interface FieldConfig {
+  name: string;
+  label: string;
+}
+
 // Erstellt ein CSV-Template für eine bestimmte Rolle (ohne Rollen-Spalte, Dateiname: {Rolle}_SAU_IMPORT.csv)
 export function generateCsvTemplateForRole(role: string): string {
- 
-
   const baseFields = [
     { key: 'firstname', label: 'Vorname' },
     { key: 'lastname', label: 'Nachname' },
@@ -19,15 +26,18 @@ export function generateCsvTemplateForRole(role: string): string {
     key: f.name,
     label: f.label,
   }));
-  const roleFields = (roleFieldConfigs[role] ?? []).map(f => ({
-    key: f.name,
-    label: f.label,
-  }));
+  const roleFields =
+    (roleFieldConfigs[role as keyof typeof roleFieldConfigs] ?? []).map(
+      (f: FieldConfig) => ({
+        key: f.name,
+        label: f.label,
+      })
+    );
 
   const header = [
-    ...baseFields.map(f => f.label),
-    ...page1Fields.map(f => f.label),
-    ...roleFields.map(f => f.label),
+    ...baseFields.map((f) => f.label),
+    ...page1Fields.map((f) => f.label),
+    ...roleFields.map((f) => f.label),
   ];
 
   const csv = header
@@ -56,30 +66,31 @@ export function exportUsersToCSV(selectedUserIds: number[]): string {
     { key: 'roles', label: 'Rollen' },
   ];
   // Dynamische Felder (Seite 1)
-  const page1Fields = page1DynamicFieldsConfig.map(f => ({
+  const page1Fields = page1DynamicFieldsConfig.map((f) => ({
     key: f.name,
     label: f.label,
   }));
 
   // Alle rollenspezifischen Felder, die bei mindestens einem User vorkommen
   const roleFieldSet = new Set<string>();
-  selectedUsers.forEach(user => {
-    user.roles.forEach(role => {
-      const config = roleFieldConfigs[role];
+  selectedUsers.forEach((user) => {
+    user.roles.forEach((role) => {
+      const config = roleFieldConfigs[role as keyof typeof roleFieldConfigs];
       if (config) {
-        config.forEach(f => roleFieldSet.add(f.name));
+        config.forEach((f: FieldConfig) => roleFieldSet.add(f.name));
       }
     });
     // Auch Felder aus details aufnehmen, falls sie nicht in der Config stehen
     if (user.details) {
-      Object.keys(user.details).forEach(key => roleFieldSet.add(key));
+      Object.keys(user.details).forEach((key) => roleFieldSet.add(key));
     }
   });
   // Rollenspezifische Felder als Array mit Label
-  const roleFields = Array.from(roleFieldSet).map(fieldName => {
+  const roleFields = Array.from(roleFieldSet).map((fieldName) => {
     // Label suchen
     for (const role in roleFieldConfigs) {
-      const found = roleFieldConfigs[role].find(f => f.name === fieldName);
+      const found = roleFieldConfigs[role as keyof typeof roleFieldConfigs].find(
+        (f: FieldConfig) => f.name === fieldName);
       if (found) return { key: fieldName, label: found.label };
     }
     // Fallback: Feldname als Label
@@ -88,30 +99,32 @@ export function exportUsersToCSV(selectedUserIds: number[]): string {
 
   // Kopfzeile (Labels)
   const header = [
-    ...baseFields.map(f => f.label),
-    ...page1Fields.map(f => f.label),
-    ...roleFields.map(f => f.label),
+    ...baseFields.map((f) => f.label),
+    ...page1Fields.map((f) => f.label),
+    ...roleFields.map((f) => f.label),
   ];
 
   // Zeilen
-  const rows = selectedUsers.map(user => {
+  const rows = selectedUsers.map((user) => {
     const base = [
       user.firstname ?? '',
       user.lastname ?? '',
       user.email ?? '',
       (user.roles ?? []).join(', '),
     ];
-    const page1 = page1Fields.map(f =>
-      user[f.key] !== undefined && user[f.key] !== null
-        ? user[f.key]
+    const page1 = page1Fields.map((f) =>
+      user[f.key as keyof UserType] !== undefined &&
+      user[f.key as keyof UserType] !== null
+        ? String(user[f.key as keyof UserType])
         : ''
     );
-    const roleSpecific = roleFields.map(f =>
-      user[f.key] !== undefined && user[f.key] !== null
-        ? user[f.key]
+    const roleSpecific = roleFields.map((f) =>
+      user[f.key as keyof UserType] !== undefined &&
+      user[f.key as keyof UserType] !== null
+        ? String(user[f.key as keyof UserType])
         : user.details && user.details[f.key]
-        ? user.details[f.key]
-        : ''
+          ? user.details[f.key]
+          : ''
     );
     return [...base, ...page1, ...roleSpecific];
   });
