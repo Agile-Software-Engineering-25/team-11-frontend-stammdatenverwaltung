@@ -158,3 +158,25 @@ export function downloadCSV(csvString: string, filename = 'export.csv') {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+
+export function getExpectedCsvHeaderForRole(role: string): string[] {
+  const baseFields = ['Vorname', 'Nachname', 'E-Mail'];
+  const page1Fields = page1DynamicFieldsConfig.map((f) => f.label);
+  const allowedRoles = Object.keys(roleFieldConfigs) as Array<
+    keyof typeof roleFieldConfigs
+  >;
+  const roleKey = allowedRoles.includes(role as keyof typeof roleFieldConfigs)
+    ? (role as keyof typeof roleFieldConfigs)
+    : allowedRoles[0];
+  const roleFields = (roleFieldConfigs[roleKey] ?? []).map((f) => f.label);
+  return [...baseFields, ...page1Fields, ...roleFields];
+}
+
+export function isCsvHeaderCompatible(header: string[], role: string): boolean {
+  const expected = getExpectedCsvHeaderForRole(role);
+  return (
+    header.length === expected.length &&
+    expected.every((label, idx) => header[idx] === label)
+  );
+}

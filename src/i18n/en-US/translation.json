@@ -103,7 +103,8 @@
       "backbutton": "Back",
       "previewtableinfo": "Preview of the data to be imported. Please review the data and click 'Import' to complete the import.",
       "missingrequired": "Please fill in all required fields, which are marked.",
-      "missingrequiredcount": "There are still required fields to be filled. Click to the next field."
+      "missingrequiredcount": "There are still required fields to be filled. Click to the next field.",
+      "headerincompatible": "The uploaded file is not compatible with the selected role. Please choose a different file or role."
     }
   }
 }

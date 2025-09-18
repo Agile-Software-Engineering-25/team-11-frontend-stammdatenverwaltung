@@ -104,7 +104,8 @@
       "backbutton": "Zurück",
       "previewtableinfo": "Vorschau der zu importierenden Daten. Überprüfen Sie die Daten und klicken Sie auf 'Importieren', um den Import abzuschließen.",
       "missingrequired": "Bitte füllen Sie alle Pflichtfelder, welche markiert sind, aus.",
-      "missingrequiredcount": "Pflichtfelder müssen noch ausgefüllt werden. Klicken Sie zum nächsten Feld."
+      "missingrequiredcount": "Pflichtfelder müssen noch ausgefüllt werden. Klicken Sie zum nächsten Feld.",
+      "headerincompatible": "Die hochgeladene Datei ist nicht mit der ausgewählten Rolle kompatibel. Bitte wählen Sie eine andere Datei oder Rolle aus."
     }
   }
 }

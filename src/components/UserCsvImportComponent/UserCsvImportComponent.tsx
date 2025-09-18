@@ -14,6 +14,8 @@ import {
 import {
   generateCsvTemplateForRole,
   downloadCSV,
+  isCsvHeaderCompatible,
+  getExpectedCsvHeaderForRole,
 } from '@/utils/csvimportexport';
 
 type CsvRow = { [key: string]: string };
@@ -65,6 +67,7 @@ const UserCsvImportComponent = ({
   const [csvHeader, setCsvHeader] = useState<string[]>([]);
   const [requiredFields, setRequiredFields] = useState<string[]>([]);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  const [headerError, setHeaderError] = useState<string | null>(null);
   const roles = getAvailableRoles();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -144,17 +147,40 @@ const UserCsvImportComponent = ({
 
   // Weiter-Button: CSV einlesen und in Tabelle anzeigen
   const handleNext = async () => {
+    setHeaderError(null);
     if (!selectedFile || !selectedRole) return;
     setImporting(true);
 
     const text = await selectedFile.text();
-    const rows = parseCsv(text);
+    let rows = parseCsv(text);
     if (rows.length < 1) {
       setImporting(false);
       alert(t('components.userCsvImportComponent.importerrorempty'));
       return;
     }
-    const header = rows[0];
+    let header = rows[0];
+
+    // Prüfe, ob es sich um einen Export handelt (Rollen-Spalte vorhanden)
+    const expectedHeader = getExpectedCsvHeaderForRole(selectedRole);
+    if (
+      header.length === expectedHeader.length + 1 &&
+      header.includes('Rollen')
+    ) {
+      // Entferne die Rollen-Spalte aus Header und allen Datenzeilen
+      const rollenIdx = header.indexOf('Rollen');
+      header = header.filter((h) => h !== 'Rollen');
+      rows = rows.map((row) =>
+        row.filter((_, idx) => idx !== rollenIdx)
+      );
+    }
+
+    // Header-Kompatibilität prüfen
+    if (!isCsvHeaderCompatible(header, selectedRole)) {
+      setImporting(false);
+      setHeaderError(t('components.userCsvImportComponent.headerincompatible'));
+      return;
+    }
+
     const dataRows = rows.slice(1);
 
     const reqFields = getRequiredFields();
@@ -531,6 +557,11 @@ const UserCsvImportComponent = ({
               </Button>
             </ButtonGroup>
           </>
+        )}
+        {headerError && (
+          <Typography color="danger" sx={{ mt: 1 }}>
+            {headerError}
+          </Typography>
         )}
       </Box>
     </Card>
