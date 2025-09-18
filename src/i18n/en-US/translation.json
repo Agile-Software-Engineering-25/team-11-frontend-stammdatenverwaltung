@@ -101,10 +101,15 @@
       "downloaderrorfile": "Download Failed Rows",
       "nextbutton": "To Data Review",
       "backbutton": "Back",
-      "previewtableinfo": "Preview of the data to be imported. Please review the data and click 'Import' to complete the import.",
+      "previewtableinfo": "Preview of the data to be imported. Select the rows you want to edit again and click the corresponding button.",
       "missingrequired": "Please fill in all required fields, which are marked.",
       "missingrequiredcount": "There are still required fields to be filled. Click to the next field.",
-      "headerincompatible": "The uploaded file is not compatible with the selected role. Please choose a different file or role."
+      "headerincompatible": "The uploaded file is not compatible with the selected role. Please choose a different file or role.",
+      "editdatabutton" : "Edit Selected Users",
+      "edit": "Edit",
+      "save": "Save Changes",
+      "cancelchanges": "Cancel Changes",
+      "edituserdata": "Edit User Data"
     }
   }
 }

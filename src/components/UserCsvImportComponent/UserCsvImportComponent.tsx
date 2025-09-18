@@ -17,12 +17,12 @@ import {
   isCsvHeaderCompatible,
   getExpectedCsvHeaderForRole,
 } from '@/utils/csvimportexport';
+import Checkbox from '@mui/joy/Checkbox';
 
 type CsvRow = { [key: string]: string };
 
 const NOVALUE = '#novalue';
 
-// Hilfsfunktion: Berechne die tatsächliche Pixelbreite des längsten Inhalts (Header + Zellen)
 function getTextWidth(text: string, font = '16px Arial') {
   if (typeof document === 'undefined') return 200;
   const canvas = document.createElement('canvas');
@@ -43,12 +43,171 @@ function getColumnWidths(
       const val = row[col] ?? '';
       maxWidth = Math.max(maxWidth, getTextWidth(val, '16px Arial'));
     });
-    // +48px für Padding & Input-Icon, min. 80px
     widths[col] = Math.max(Math.ceil(maxWidth) + 48, 80);
   });
   return widths;
 }
 
+// --- Neue Komponente für die Bearbeitung einer oder mehrerer Zeilen ---
+function EditRowsModal({
+  openRows,
+  csvHeader,
+  columnWidths,
+  requiredFields,
+  rowsObj,
+  onSave,
+  onCancel,
+}: {
+  openRows: number[];
+  csvHeader: string[];
+  columnWidths: Record<string, number>;
+  requiredFields: string[];
+  rowsObj: Record<number, CsvRow>;
+  onSave: (editedRows: Record<number, CsvRow>) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+  const [editRows, setEditRows] = useState<Record<number, CsvRow>>(() =>
+    Object.fromEntries(openRows.map((idx) => [idx, { ...rowsObj[idx] }]))
+  );
+
+  const handleCellChange = (rowIdx: number, col: string, value: string) => {
+    setEditRows((prev) => ({
+      ...prev,
+      [rowIdx]: {
+        ...prev[rowIdx],
+        [col]: value === '' && requiredFields.includes(col) ? NOVALUE : value,
+      },
+    }));
+  };
+
+  // Pflichtfelder prüfen
+  const missingRequiredCells: { row: number; col: string }[] = [];
+  Object.entries(editRows).forEach(([rowIdx, row]) => {
+    requiredFields.forEach((field) => {
+      if (row[field] === NOVALUE) {
+        missingRequiredCells.push({ row: Number(rowIdx), col: field });
+      }
+    });
+  });
+
+  return (
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        background: 'rgba(0,0,0,0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      <Card
+        sx={{
+          minWidth: '80vw',
+          maxWidth: '90vw',
+          maxHeight: '90vh',
+          height: '80vh',
+          display: 'flex',
+          flexDirection: 'column',
+          p: 3,
+        }}
+      >
+        <Typography level="h3" sx={{ mb: 2 }}>
+          {t('components.userCsvImportComponent.edituserdata')}
+        </Typography>
+        <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', mb: 2 }}>
+            <Table size="lg">
+              <thead>
+                <tr>
+                  <th style={{ minWidth: 40 }}>#</th>
+                  {csvHeader.map((col) => (
+                    <th
+                      key={col}
+                      style={{
+                        minWidth: columnWidths[col],
+                        width: columnWidths[col],
+                        maxWidth: columnWidths[col],
+                      }}
+                    >
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {openRows.map((rowIdx) => (
+                  <tr key={rowIdx}>
+                    <td>{rowIdx + 1}</td>
+                    {csvHeader.map((col) => (
+                      <td key={col}>
+                        <Input
+                          value={
+                            editRows[rowIdx][col] === NOVALUE
+                              ? ''
+                              : editRows[rowIdx][col]
+                          }
+                          color={
+                            requiredFields.includes(col) &&
+                            editRows[rowIdx][col] === NOVALUE
+                              ? 'danger'
+                              : 'neutral'
+                          }
+                          placeholder={
+                            editRows[rowIdx][col] === NOVALUE ? NOVALUE : ''
+                          }
+                          onChange={(e) =>
+                            handleCellChange(rowIdx, col, e.target.value)
+                          }
+                          sx={{
+                            width: '100%',
+                            minWidth: columnWidths[col] - 16,
+                            maxWidth: columnWidths[col] - 16,
+                            ...(requiredFields.includes(col) &&
+                            editRows[rowIdx][col] === NOVALUE
+                              ? {
+                                  borderColor: '#d32f2f',
+                                  color: '#d32f2f',
+                                  background: '#fff0f0',
+                                }
+                              : {}),
+                          }}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </Box>
+          {missingRequiredCells.length > 0 && (
+            <Typography color="danger" sx={{ mb: 2 }}>
+              {`${missingRequiredCells.length}, ${t('components.userCsvImportComponent.missingrequired')}`}
+            </Typography>
+          )}
+          <ButtonGroup sx={{ mt: 'auto' }}>
+            <Button
+              color="success"
+              onClick={() => onSave(editRows)}
+              disabled={missingRequiredCells.length > 0}
+            >
+              {t('components.userCsvImportComponent.save')}
+            </Button>
+            <Button color="danger" onClick={onCancel}>
+              {t('components.userCsvImportComponent.cancelchanges')}
+            </Button>
+          </ButtonGroup>
+        </Box>
+      </Card>
+    </Box>
+  );
+}
+
+// --- Hauptkomponente ---
 const UserCsvImportComponent = ({
   onClose,
   onShowMessage,
@@ -62,17 +221,16 @@ const UserCsvImportComponent = ({
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
-  const [step, setStep] = useState<'select' | 'preview'>('select');
+  const [step, setStep] = useState<'select' | 'preview' | 'edit'>('select');
   const [csvRowsObj, setCsvRowsObj] = useState<Record<number, CsvRow>>({});
   const [csvHeader, setCsvHeader] = useState<string[]>([]);
   const [requiredFields, setRequiredFields] = useState<string[]>([]);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [headerError, setHeaderError] = useState<string | null>(null);
+  const [editRows, setEditRows] = useState<number[]>([]);
+  const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const roles = getAvailableRoles();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Für das Scrollen zu fehlenden Feldern
-  const cellRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // CSV-Template für die ausgewählte Rolle generieren (ohne Rollen-Spalte)
   const { csvString, filename } = useMemo(() => {
@@ -132,6 +290,8 @@ const UserCsvImportComponent = ({
     setCsvRowsObj({});
     setRequiredFields([]);
     setColumnWidths({});
+    setEditRows([]);
+    setSelectedRows([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -169,9 +329,7 @@ const UserCsvImportComponent = ({
       // Entferne die Rollen-Spalte aus Header und allen Datenzeilen
       const rollenIdx = header.indexOf('Rollen');
       header = header.filter((h) => h !== 'Rollen');
-      rows = rows.map((row) =>
-        row.filter((_, idx) => idx !== rollenIdx)
-      );
+      rows = rows.map((row) => row.filter((_, idx) => idx !== rollenIdx));
     }
 
     // Header-Kompatibilität prüfen
@@ -206,19 +364,7 @@ const UserCsvImportComponent = ({
     setStep('preview');
     setImporting(false);
 
-    // Spaltenbreiten einmalig berechnen und speichern
     setColumnWidths(getColumnWidths(header, Object.values(csvRowsObj)));
-  };
-
-  // Nur die geänderte Zeile updaten
-  const handleCellChange = (rowIdx: number, col: string, value: string) => {
-    setCsvRowsObj((prev) => ({
-      ...prev,
-      [rowIdx]: {
-        ...prev[rowIdx],
-        [col]: value === '' && requiredFields.includes(col) ? NOVALUE : value,
-      },
-    }));
   };
 
   // Prüfe, ob noch Pflichtfelder fehlen
@@ -310,22 +456,54 @@ const UserCsvImportComponent = ({
     if (onClose) onClose();
   };
 
-  // Scroll zu erstem fehlenden Feld
-  const scrollToFirstMissing = () => {
-    if (missingRequiredCells.length > 0) {
-      const { row, col } = missingRequiredCells[0];
-      const refKey = `${row}-${col}`;
-      setTimeout(() => {
-        const input = cellRefs.current[refKey];
-        if (input) {
-          input.focus();
-          input.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'center',
-          });
-        }
-      }, 100);
+  // Mehrere Zeilen mit fehlenden Pflichtfeldern bearbeiten
+  const handleEditMissingRows = () => {
+    const rowsWithMissing = Array.from(
+      new Set(missingRequiredCells.map((cell) => cell.row))
+    );
+    setEditRows(rowsWithMissing);
+    setStep('edit');
+  };
+
+  // Speichern aus EditRowsModal
+  const handleSaveEditRows = (editedRows: Record<number, CsvRow>) => {
+    setCsvRowsObj((prev) => ({
+      ...prev,
+      ...editedRows,
+    }));
+    setEditRows([]);
+    setStep('preview');
+  };
+
+  // Abbrechen aus EditRowsModal
+  const handleCancelEditRows = () => {
+    setEditRows([]);
+    setStep('preview');
+  };
+
+  // Checkbox-Handler
+  const handleCheckboxChange = (rowIdx: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedRows((prev) =>
+      event.target.checked
+        ? [...prev, rowIdx]
+        : prev.filter((idx) => idx !== rowIdx)
+    );
+  };
+
+  // Alle auswählen
+  const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      setSelectedRows(Object.keys(csvRowsObj).map((idx) => Number(idx)));
+    } else {
+      setSelectedRows([]);
+    }
+  };
+
+  // Zeile auswählen für Bearbeitung (Checkboxen)
+  const handleEditSelectedRows = () => {
+    if (selectedRows.length > 0) {
+      setEditRows(selectedRows);
+      setStep('edit');
     }
   };
 
@@ -337,11 +515,9 @@ const UserCsvImportComponent = ({
       <Box
         sx={{
           pb: 1,
-          borderBottom: '1px solid #e0e0e0',
           position: 'sticky',
           top: 0,
           zIndex: 2,
-          background: '#fff',
         }}
       >
         <Typography level="h3" sx={{ mb: 0.5 }}>
@@ -385,10 +561,8 @@ const UserCsvImportComponent = ({
             </Select>
             <Box
               sx={{
-                border: '1px solid #d1d5db',
                 borderRadius: 8,
                 p: 2,
-                background: '#f9f9fa',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 2,
@@ -414,7 +588,6 @@ const UserCsvImportComponent = ({
                 sx={{
                   flex: 1,
                   ml: 1,
-                  color: selectedFile ? '#222' : '#888',
                   fontSize: 16,
                 }}
               >
@@ -478,13 +651,12 @@ const UserCsvImportComponent = ({
                   fontSize: 16,
                   minWidth:
                     Object.values(columnWidths).reduce((a, b) => a + b, 0) +
-                    100,
+                    140,
                   '& th, & td': {
                     verticalAlign: 'middle',
                     padding: '6px 8px',
                   },
                   '& th': {
-                    background: '#f3f6fa',
                     position: 'sticky',
                     top: 0,
                     zIndex: 1,
@@ -493,6 +665,21 @@ const UserCsvImportComponent = ({
               >
                 <thead>
                   <tr>
+                    <th style={{ minWidth: 40, width: 40, maxWidth: 40, textAlign: 'center', padding: 0 }}>
+                      <Checkbox
+                        checked={
+                          selectedRows.length === Object.keys(csvRowsObj).length &&
+                          Object.keys(csvRowsObj).length > 0
+                        }
+                        indeterminate={
+                          selectedRows.length > 0 &&
+                          selectedRows.length < Object.keys(csvRowsObj).length
+                        }
+                        onChange={handleSelectAll}
+                        size="sm"
+                        sx={{ m: 0, p: 0, display: 'block' }}
+                      />
+                    </th>
                     {csvHeader.map((col) => (
                       <th
                         key={col}
@@ -505,44 +692,71 @@ const UserCsvImportComponent = ({
                         {col}
                       </th>
                     ))}
+                    <th style={{ minWidth: 120 }}></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(csvRowsObj).map(([rowIdx, row]) => (
-                    <TableRowMemo
-                      key={rowIdx}
-                      row={row}
-                      rowIdx={Number(rowIdx)}
-                      csvHeader={csvHeader}
-                      columnWidths={columnWidths}
-                      requiredFields={requiredFields}
-                      handleCellChange={handleCellChange}
-                      NOVALUE={NOVALUE}
-                      cellRefs={cellRefs}
-                    />
-                  ))}
+                  {Object.entries(csvRowsObj).map(([rowIdxStr, row]) => {
+                    const rowIdx = Number(rowIdxStr);
+                    return (
+                      <tr key={rowIdx}>
+                        <td style={{ minWidth: 40, width: 40, maxWidth: 40, textAlign: 'center', padding: 0 }}>
+                          <Checkbox
+                            checked={selectedRows.includes(rowIdx)}
+                            onChange={handleCheckboxChange(rowIdx)}
+                            size="sm"
+                            sx={{ m: 0, p: 0, display: 'block' }}
+                          />
+                        </td>
+                        {csvHeader.map((col) => (
+                          <td
+                            key={col}
+                            style={{
+                              minWidth: columnWidths[col],
+                              width: columnWidths[col],
+                              maxWidth: columnWidths[col],
+                            }}
+                          >
+                            {row[col] === NOVALUE ? (
+                              <span style={{ color: '#d32f2f', fontWeight: 500 }}>
+                                {NOVALUE}
+                              </span>
+                            ) : (
+                              row[col]
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </Table>
             </Box>
-            {hasMissingRequired && (
-              <Box sx={{ mb: 1 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1 }}>
+              <Button
+                onClick={handleEditSelectedRows}
+                disabled={selectedRows.length === 0}
+              >
+                {t('components.userCsvImportComponent.editdatabutton', {})}
+              </Button>
+              {hasMissingRequired && (
                 <Button
                   variant="soft"
                   color="danger"
-                  onClick={scrollToFirstMissing}
+                  onClick={handleEditMissingRows}
                   sx={{ fontWeight: 600 }}
                 >
                   {` ${missingCount} ${t('components.userCsvImportComponent.missingrequiredcount')}`}
                 </Button>
-              </Box>
-            )}
+              )}
+            </Box>
             <ButtonGroup variant="outlined" sx={{ mt: 2 }}>
               <Button
                 color="danger"
                 onClick={() => setStep('select')}
                 disabled={importing}
               >
-                {t('components.userCsvImportComponent.backbutton') ?? 'Zurück'}
+                {t('components.userCsvImportComponent.backbutton')}
               </Button>
               <Button color="danger" onClick={handleReset} disabled={importing}>
                 {t('components.userCsvImportComponent.resetbutton')}
@@ -558,6 +772,17 @@ const UserCsvImportComponent = ({
             </ButtonGroup>
           </>
         )}
+        {step === 'edit' && (
+          <EditRowsModal
+            openRows={editRows}
+            csvHeader={csvHeader}
+            columnWidths={columnWidths}
+            requiredFields={requiredFields}
+            rowsObj={csvRowsObj}
+            onSave={handleSaveEditRows}
+            onCancel={handleCancelEditRows}
+          />
+        )}
         {headerError && (
           <Typography color="danger" sx={{ mt: 1 }}>
             {headerError}
@@ -567,64 +792,5 @@ const UserCsvImportComponent = ({
     </Card>
   );
 };
-
-import React from 'react';
-
-const TableRowMemo = React.memo(({
-  row,
-  rowIdx,
-  csvHeader,
-  columnWidths,
-  requiredFields,
-  handleCellChange,
-  NOVALUE,
-  cellRefs,
-}: {
-  row: CsvRow;
-  rowIdx: number;
-  csvHeader: string[];
-  columnWidths: Record<string, number>;
-  requiredFields: string[];
-  handleCellChange: (rowIdx: number, col: string, value: string) => void;
-  NOVALUE: string;
-  cellRefs: React.MutableRefObject<Record<string, HTMLInputElement | null>>;
-}) => {
-  return (
-    <tr>
-      {csvHeader.map((col) => (
-        <td
-          key={col}
-          style={{
-            minWidth: columnWidths[col],
-            width: columnWidths[col],
-            maxWidth: columnWidths[col],
-          }}
-        >
-          <Input
-            value={row[col] === NOVALUE ? '' : row[col]}
-            color={requiredFields.includes(col) && row[col] === NOVALUE ? 'danger' : 'neutral'}
-            placeholder={row[col] === NOVALUE ? NOVALUE : ''}
-            onChange={(e) => handleCellChange(rowIdx, col, e.target.value)}
-            sx={{
-              width: '100%',
-              minWidth: columnWidths[col] - 16,
-              maxWidth: columnWidths[col] - 16,
-              ...(requiredFields.includes(col) && row[col] === NOVALUE
-                ? {
-                    borderColor: '#d32f2f',
-                    color: '#d32f2f',
-                    background: '#fff0f0',
-                  }
-                : {}),
-            }}
-            ref={(el: HTMLInputElement | null) => {
-              cellRefs.current[`${rowIdx}-${col}`] = el;
-            }}
-          />
-        </td>
-      ))}
-    </tr>
-  );
-});
 
 export default UserCsvImportComponent;
