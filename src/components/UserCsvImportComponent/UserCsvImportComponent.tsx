@@ -228,6 +228,7 @@ const UserCsvImportComponent = ({
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [headerError, setHeaderError] = useState<string | null>(null);
   const [editRows, setEditRows] = useState<number[]>([]);
+  const [editRowsObj, setEditRowsObj] = useState<Record<number, CsvRow>>({});
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const roles = getAvailableRoles();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -291,6 +292,7 @@ const UserCsvImportComponent = ({
     setRequiredFields([]);
     setColumnWidths({});
     setEditRows([]);
+    setEditRowsObj({});
     setSelectedRows([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -456,33 +458,8 @@ const UserCsvImportComponent = ({
     if (onClose) onClose();
   };
 
-  // Mehrere Zeilen mit fehlenden Pflichtfeldern bearbeiten
-  const handleEditMissingRows = () => {
-    const rowsWithMissing = Array.from(
-      new Set(missingRequiredCells.map((cell) => cell.row))
-    );
-    setEditRows(rowsWithMissing);
-    setStep('edit');
-  };
-
-  // Speichern aus EditRowsModal
-  const handleSaveEditRows = (editedRows: Record<number, CsvRow>) => {
-    setCsvRowsObj((prev) => ({
-      ...prev,
-      ...editedRows,
-    }));
-    setEditRows([]);
-    setStep('preview');
-  };
-
-  // Abbrechen aus EditRowsModal
-  const handleCancelEditRows = () => {
-    setEditRows([]);
-    setStep('preview');
-  };
-
-  // Checkbox-Handler
-  const handleCheckboxChange = (rowIdx: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Checkbox-Handler für einzelne Zeile
+  const handleCheckboxChange = (rowIdx: number, event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedRows((prev) =>
       event.target.checked
         ? [...prev, rowIdx]
@@ -490,7 +467,7 @@ const UserCsvImportComponent = ({
     );
   };
 
-  // Alle auswählen
+  // Checkbox-Handler für "Alle auswählen"
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
       setSelectedRows(Object.keys(csvRowsObj).map((idx) => Number(idx)));
@@ -499,15 +476,63 @@ const UserCsvImportComponent = ({
     }
   };
 
-  // Zeile auswählen für Bearbeitung (Checkboxen)
+  // Edit-Modus öffnen
   const handleEditSelectedRows = () => {
     if (selectedRows.length > 0) {
       setEditRows(selectedRows);
+      setEditRowsObj(Object.fromEntries(selectedRows.map(idx => [idx, { ...csvRowsObj[idx] }])));
       setStep('edit');
     }
   };
 
-  const missingCount = missingRequiredCells.length;
+  // Mehrere Zeilen mit fehlenden Pflichtfeldern bearbeiten
+  const handleEditMissingRows = () => {
+    const rowsWithMissing = Array.from(
+      new Set(missingRequiredCells.map((cell) => cell.row))
+    );
+    setEditRows(rowsWithMissing);
+    setEditRowsObj(Object.fromEntries(rowsWithMissing.map(idx => [idx, { ...csvRowsObj[idx] }])));
+    setStep('edit');
+  };
+
+  // Bearbeitung eines Feldes
+  const handleEditCellChange = (rowIdx: number, col: string, value: string) => {
+    setEditRowsObj((prev) => ({
+      ...prev,
+      [rowIdx]: {
+        ...prev[rowIdx],
+        [col]: value === '' && requiredFields.includes(col) ? NOVALUE : value,
+      },
+    }));
+  };
+
+  // Speichern der Änderungen
+  const handleSaveEditRows = () => {
+    setCsvRowsObj((prev) => ({
+      ...prev,
+      ...editRowsObj,
+    }));
+    setEditRows([]);
+    setEditRowsObj({});
+    setStep('preview');
+  };
+
+  // Abbrechen der Änderungen
+  const handleCancelEditRows = () => {
+    setEditRows([]);
+    setEditRowsObj({});
+    setStep('preview');
+  };
+
+  // Pflichtfelder prüfen für Edit-Modus
+  const missingRequiredEditCells: { row: number; col: string }[] = [];
+  Object.entries(editRowsObj).forEach(([rowIdx, row]) => {
+    requiredFields.forEach((field) => {
+      if (row[field] === NOVALUE) {
+        missingRequiredEditCells.push({ row: Number(rowIdx), col: field });
+      }
+    });
+  });
 
   return (
     <Card sx={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
@@ -545,6 +570,7 @@ const UserCsvImportComponent = ({
           minHeight: 0,
         }}
       >
+        {/* Seite 1: Auswahl */}
         {step === 'select' && (
           <>
             <Select
@@ -633,6 +659,8 @@ const UserCsvImportComponent = ({
             </ButtonGroup>
           </>
         )}
+
+        {/* Seite 2: Vorschau */}
         {step === 'preview' && (
           <>
             <Box
@@ -692,7 +720,6 @@ const UserCsvImportComponent = ({
                         {col}
                       </th>
                     ))}
-                    <th style={{ minWidth: 120 }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -703,7 +730,7 @@ const UserCsvImportComponent = ({
                         <td style={{ minWidth: 40, width: 40, maxWidth: 40, textAlign: 'center', padding: 0 }}>
                           <Checkbox
                             checked={selectedRows.includes(rowIdx)}
-                            onChange={handleCheckboxChange(rowIdx)}
+                            onChange={(e) => handleCheckboxChange(rowIdx, e)}
                             size="sm"
                             sx={{ m: 0, p: 0, display: 'block' }}
                           />
@@ -746,7 +773,7 @@ const UserCsvImportComponent = ({
                   onClick={handleEditMissingRows}
                   sx={{ fontWeight: 600 }}
                 >
-                  {` ${missingCount} ${t('components.userCsvImportComponent.missingrequiredcount')}`}
+                  {`${missingRequiredCells.length} ${t('components.userCsvImportComponent.missingrequiredcount')}`}
                 </Button>
               )}
             </Box>
@@ -772,17 +799,121 @@ const UserCsvImportComponent = ({
             </ButtonGroup>
           </>
         )}
+
+        {/* Seite 3: Bearbeitung ausgewählter Zeilen */}
         {step === 'edit' && (
-          <EditRowsModal
-            openRows={editRows}
-            csvHeader={csvHeader}
-            columnWidths={columnWidths}
-            requiredFields={requiredFields}
-            rowsObj={csvRowsObj}
-            onSave={handleSaveEditRows}
-            onCancel={handleCancelEditRows}
-          />
+          <>
+            <Typography level="h3" sx={{ mb: 2 }}>
+              {t('components.userCsvImportComponent.edituserdata')}
+            </Typography>
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                overflowX: 'auto',
+                overflowY: 'auto',
+                mb: 2,
+                maxHeight: '45vh',
+              }}
+            >
+              <Table
+                size="lg"
+                sx={{
+                  minWidth: Object.values(columnWidths).reduce((a, b) => a + b, 0) + 120,
+                  '& th, & td': {
+                    verticalAlign: 'middle',
+                    padding: '6px 8px',
+                  },
+                  '& th': {
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 1,
+                    background: '#fff',
+                  },
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th style={{ minWidth: 40 }}>#</th>
+                    {csvHeader.map((col) => (
+                      <th
+                        key={col}
+                        style={{
+                          minWidth: columnWidths[col],
+                          width: columnWidths[col],
+                          maxWidth: columnWidths[col],
+                        }}
+                      >
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {editRows.map((rowIdx) => (
+                    <tr key={rowIdx}>
+                      <td>{rowIdx + 1}</td>
+                      {csvHeader.map((col) => (
+                        <td key={col}>
+                          <Input
+                            value={
+                              editRowsObj[rowIdx][col] === NOVALUE
+                                ? ''
+                                : editRowsObj[rowIdx][col]
+                            }
+                            color={
+                              requiredFields.includes(col) &&
+                              editRowsObj[rowIdx][col] === NOVALUE
+                                ? 'danger'
+                                : 'neutral'
+                            }
+                            placeholder={
+                              editRowsObj[rowIdx][col] === NOVALUE ? NOVALUE : ''
+                            }
+                            onChange={(e) =>
+                              handleEditCellChange(rowIdx, col, e.target.value)
+                            }
+                            sx={{
+                              width: '100%',
+                              minWidth: columnWidths[col] - 16,
+                              maxWidth: columnWidths[col] - 16,
+                              ...(requiredFields.includes(col) &&
+                              editRowsObj[rowIdx][col] === NOVALUE
+                                ? {
+                                    borderColor: '#d32f2f',
+                                    color: '#d32f2f',
+                                    background: '#fff0f0',
+                                  }
+                                : {}),
+                            }}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Box>
+            {missingRequiredEditCells.length > 0 && (
+              <Typography color="danger" sx={{ mb: 2 }}>
+                {`${missingRequiredEditCells.length}, ${t('components.userCsvImportComponent.missingrequired')}`}
+              </Typography>
+            )}
+            <ButtonGroup sx={{ mt: 2 }}>
+              <Button
+                color="success"
+                onClick={handleSaveEditRows}
+                disabled={missingRequiredEditCells.length > 0}
+              >
+                {t('components.userCsvImportComponent.save')}
+              </Button>
+              <Button color="danger" onClick={handleCancelEditRows}>
+                {t('components.userCsvImportComponent.cancelchanges')}
+              </Button>
+            </ButtonGroup>
+          </>
         )}
+
         {headerError && (
           <Typography color="danger" sx={{ mt: 1 }}>
             {headerError}

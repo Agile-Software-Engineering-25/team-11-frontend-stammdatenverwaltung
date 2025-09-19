@@ -104,7 +104,7 @@
       "backbutton": "Zurück",
       "previewtableinfo": "Vorschau der zu importierenden Daten. Wählen Sie die zeilen aus, welche sie nochmal bearbeiten möchten und klicken sie auf den dazu passenden Knopf.",
       "missingrequired": "Bitte füllen Sie alle Pflichtfelder, welche markiert sind, aus.",
-      "missingrequiredcount": "Pflichtfelder müssen noch ausgefüllt werden. Klicken Sie zum nächsten Feld.",
+      "missingrequiredcount": "Pflichtfelder müssen noch ausgefüllt werden. Klicken Sie auf diese Nachricht um die Zeilen im Editor anzuzeigen.",
       "headerincompatible": "Die hochgeladene Datei ist nicht mit der ausgewählten Rolle kompatibel. Bitte wählen Sie eine andere Datei oder Rolle aus.",
       "editdatabutton" : "Ausgewählte Nutzer bearbeiten",
       "edit": "Bearbeiten",
