@@ -49,6 +49,8 @@ npm i
 │   │   │   └─CreatePersonManualyComponent.tsx  # Implementation for the UI component to add a user manually
 │   │   └─ LanguageSelectorComponent/           # Folder for the Language Selector UI component
 │   │   │   └─ LanguageSelectorComponent.tsx    #Implementation of the LanguageSelectorComponent
+│   │   ├─ MessageProvider/                     # Folder for the Message Provider
+│   │   │   └─ MessageProvider.tsx              # Implementation of the MessageProvider
 │   │   ├─ RoutingComponent/                    # Folder for the UserInfoCard component
 │   │   │   └─ RoutingComponent.tsx             # Implementation of the UserInfoCardComponent
 │   │   ├─ UserCsvImportComponent/              # Folder for the UserCsvImport component
