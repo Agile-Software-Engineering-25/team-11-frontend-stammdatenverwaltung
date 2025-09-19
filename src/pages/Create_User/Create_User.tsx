@@ -5,6 +5,7 @@ import CreateUserManualyComponent from '@/components/CreateUserManualyComponent/
 
 const CreateUser = () => {
   const { t } = useTranslation();
+
   return (
     <Box sx={{ padding: 2, maxWidth: 700, mx: 'auto' }}>
       <Typography level="h2">

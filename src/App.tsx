@@ -6,6 +6,7 @@ import { CssVarsProvider as JoyCssVarsProvider } from '@mui/joy';
 import './i18n';
 import { Provider } from 'react-redux';
 import store from '@stores/index.ts';
+import { MessageProvider } from '@/components/MessageProvider/MessageProvider';
 
 const theme = createCustomTheme({
   colorSchemes: {
@@ -37,9 +38,11 @@ function App({ basename }: AppProps) {
     <Provider store={store}>
       <ThemeProvider theme={{ [MATERIAL_THEME_ID]: theme }}>
         <JoyCssVarsProvider>
-          <BrowserRouter basename={basename}>
-            <RoutingComponent />
-          </BrowserRouter>
+          <MessageProvider>
+            <BrowserRouter basename={basename}>
+              <RoutingComponent />
+            </BrowserRouter>
+          </MessageProvider>
         </JoyCssVarsProvider>
       </ThemeProvider>
     </Provider>

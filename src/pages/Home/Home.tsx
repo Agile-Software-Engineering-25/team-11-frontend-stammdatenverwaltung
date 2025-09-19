@@ -9,10 +9,12 @@ import Card from '@agile-software/shared-components/src/components/Card/Card';
 import { useState, useRef } from 'react';
 import { exportUsersToCSV, downloadCSV } from '@/utils/csvimportexport';
 import UserCsvImportComponent from '@/components/UserCsvImportComponent/UserCsvImportComponent';
+import { useMessage } from '@/components/MessageProvider/MessageProvider';
 
 const Home = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { message, setMessage } = useMessage();
 
   // Ref, um auf die ausgewählten IDs aus der Tabelle zuzugreifen
   const selectedUserIdsRef = useRef<number[]>([]);
@@ -21,10 +23,6 @@ const Home = () => {
   const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   // Message-Handling
-  const [message, setMessage] = useState<null | {
-    type: 'success' | 'error';
-    text: string;
-  }>(null);
   const [failedCsv, setFailedCsv] = useState<{
     csv: string;
     filename: string;
@@ -52,17 +50,15 @@ const Home = () => {
   const handleOpenCsvImport = () => setCsvImportOpen(true);
   const handleCloseCsvImport = () => setCsvImportOpen(false);
 
-  // Message-Callback für Kind-Komponenten
-  const handleShowMessage = (type: 'success' | 'error', text: string) => {
+  // Callback für UserCsvImportComponent und andere
+  const handleShowMessage = (type: 'success' | 'error', text: string) =>
     setMessage({ type, text });
-  };
 
   // Callback für UserCsvImportComponent
   const handleFailedCsv = (csv: string, filename: string) => {
     setFailedCsv({ csv, filename });
   };
 
-  // UserDataTableComponent: Callback für User-Aktionen
 
   // Weiterleitung zur Create-User-Seite
   const handleOpenCreateUser = () => {
@@ -89,9 +85,7 @@ const Home = () => {
           id="errorandsuccessmessages"
           color={message.type === 'success' ? 'success' : 'danger'}
           variant="soft"
-          sx={{
-            mb: 2
-          }}
+          sx={{ mb: 2 }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <span>{message.text}</span>

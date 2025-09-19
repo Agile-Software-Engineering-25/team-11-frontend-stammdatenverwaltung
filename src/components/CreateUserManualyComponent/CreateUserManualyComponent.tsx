@@ -11,6 +11,7 @@ import {
   createUser,
   getPage1DynamicFields,
 } from '@/utils/createuserfunction';
+import { useMessage } from '@/components/MessageProvider/MessageProvider'; // <--- Context importieren
 
 // Typen für dynamische Felder
 interface DynamicField {
@@ -41,10 +42,8 @@ const requiredFieldsPage1 = ['firstname', 'lastname', 'email', 'roles'];
 
 const CreateUser = ({
   onClose,
-  onShowMessage,
 }: {
   onClose?: () => void;
-  onShowMessage?: (type: 'success' | 'error', text: string) => void;
 }) => {
   const [step, setStep] = useState<number>(1);
 
@@ -81,6 +80,7 @@ const CreateUser = ({
 
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { setMessage } = useMessage(); // <--- Context Hook verwenden
 
   // Funktioniert für alle Felder, auch dynamische
   const handleInputChange =
@@ -134,20 +134,18 @@ const CreateUser = ({
     // Übergabe an createUser: Rolle nur als zweiten Parameter!
     const result = createUser(values, form.roles[0]);
     if (result) {
-      if (onShowMessage)
-        onShowMessage(
-          'success',
-          t('components.userCsvImportComponent.importsuccess')
-        );
+      setMessage({
+        type: 'success',
+        text: t('components.createusermanually.successcreation'),
+      });
       setForm(initialState);
       if (onClose) onClose();
       navigate('/');
     } else {
-      if (onShowMessage)
-        onShowMessage(
-          'error',
-          t('components.userCsvImportComponent.partialimport')
-        );
+      setMessage({
+        type: 'error',
+        text: t('components.createusermanually.creationerror'),
+      });
     }
   };
   const cancel = () => {
