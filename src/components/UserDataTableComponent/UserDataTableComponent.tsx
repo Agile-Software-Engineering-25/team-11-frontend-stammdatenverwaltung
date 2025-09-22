@@ -7,12 +7,14 @@ import {
   Select,
   Option,
   Checkbox,
+  Input
 } from '@mui/joy';
+import { SearchBar } from '@agile-software/shared-components'; // <--- Import der Shared SearchBar
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import UserDataCardComponent from '../UserDataCardComponent/UserDataCardComponent';
 import { getAllUsers, getAllRoles } from '../../utils/showuserdatafunctions';
-import Input from '@agile-software/shared-components/src/components/Input/Input';
+
 
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,
@@ -127,10 +129,17 @@ const UserDataTableComponent = ({
           alignItems: 'center',
         }}
       >
-        <Input
-          placeholder={t('components.userDataTable.searchPlaceholder')}
+        {/* Shared SearchBar statt Joy Input */}
+        <SearchBar
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={setSearch}
+          onSearch={setSearch}
+          placeholder={t('components.userDataTable.searchPlaceholder')}
+          size="md"
+          variant="outlined"
+          color="primary"
+          searchOnEnter={true}
+          fullWidth={false}
           sx={{ maxWidth: 300 }}
         />
         <Select

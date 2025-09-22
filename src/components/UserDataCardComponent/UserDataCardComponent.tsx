@@ -1,18 +1,6 @@
 /* eslint-disable max-lines-per-function */
-import {
-  Box,
-  Typography,
-  CardContent,
-  Sheet,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Modal,
-  ModalDialog,
-} from '@mui/joy';
-import Input from '@agile-software/shared-components/src/components/Input/Input';
-import Button from '@agile-software/shared-components/src/components/Button/Button';
-import Card from '@agile-software/shared-components/src/components/Card/Card';
+import { Box, Typography, CardContent, Sheet, Input, Button } from '@mui/joy';
+//import { Card } from '@agile-software/shared-components';
 import { useState, useEffect } from 'react';
 import {
   getCardsForRoles,
@@ -20,14 +8,13 @@ import {
   deleteUserById,
 } from '../../utils/showuserdatafunctions';
 import { useTranslation } from 'react-i18next';
+import { Card, Modal as SharedModal } from '@agile-software/shared-components';
 
-// Typ für ein Feld
 interface CardField {
   key: string;
   label: string;
 }
 
-// Typ für eine Card
 interface CardType {
   key: string;
   title: string;
@@ -196,25 +183,26 @@ const UserDataCardComponent = ({
         )}
       </Box>
 
-      {/* Bestätigungsdialog für Löschen */}
-      <Modal open={showDeleteDialog} onClose={cancelDelete}>
-        <ModalDialog>
-          <DialogTitle>
-            {t('components.userDataTable.deleteuserdialogtitle')}
-          </DialogTitle>
-          <DialogContent>
+      {/* Bestätigungsdialog für Löschen mit Shared Modal */}
+      <SharedModal
+        header={t('components.userDataTable.deleteuserdialogtitle')}
+        open={showDeleteDialog}
+        setOpen={setShowDeleteDialog}
+      >
+        <Box>
+          <Typography level="body-md" sx={{ mb: 2 }}>
             {t('components.userDataTable.deleteuserdialogcontent')}
-          </DialogContent>
-          <DialogActions>
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
             <Button color="danger" onClick={confirmDelete}>
               {t('components.userDataTable.delete')}
             </Button>
             <Button onClick={cancelDelete}>
               {t('components.userDataTable.cancel')}
             </Button>
-          </DialogActions>
-        </ModalDialog>
-      </Modal>
+          </Box>
+        </Box>
+      </SharedModal>
 
       <Typography level="h4" sx={{ mb: 1 }}>
         {t('components.userDataTable.detailedview')}
@@ -242,7 +230,7 @@ const UserDataCardComponent = ({
             m: 0,
           }}
         >
-          <Typography level="h4" sx={{ mb: -1, fontSize: 16, fontWeight: 700 }}>
+          <Typography level="h4" sx={{ mb: 1, fontSize: 16, fontWeight: 700 }}>
             {currentCard.title}
           </Typography>
           <CardContent sx={{ p: 0 }}>
@@ -255,23 +243,29 @@ const UserDataCardComponent = ({
               }}
             >
               {currentCard.fields.map((field) => (
-                <Input
+                <Box
                   key={field.key}
-                  label={field.label}
-                  value={inputValues[field.key] ?? ''}
-                  disabled={!editMode}
-                  onChange={handleInputChange(field.key)}
-                  sx={{
-                    mt: 0,
-                    mb: 0,
-                    '& .Mui-disabled': {
-                      color: '#000',
-                    },
-                    '& input:disabled': {
-                      color: '#000',
-                    },
-                  }}
-                />
+                  sx={{ display: 'flex', flexDirection: 'column', mb: 1 }}
+                >
+                  <Typography level="body-sm" sx={{ mb: 0.5 }}>
+                    {field.label}
+                  </Typography>
+                  <Input
+                    value={inputValues[field.key] ?? ''}
+                    disabled={!editMode}
+                    onChange={handleInputChange(field.key)}
+                    sx={{
+                      mt: 0,
+                      mb: 0,
+                      '& .Mui-disabled': {
+                        color: '#000',
+                      },
+                      '& input:disabled': {
+                        color: '#000',
+                      },
+                    }}
+                  />
+                </Box>
               ))}
             </Box>
           </CardContent>

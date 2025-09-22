@@ -1,10 +1,8 @@
 /* eslint-disable max-lines-per-function */
-import { Box, ButtonGroup, Select, Option } from '@mui/joy';
+import { Box, ButtonGroup, Select, Option, Button, Input, Typography } from '@mui/joy';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import React, { useState } from 'react';
-import Button from '@agile-software/shared-components/src/components/Button/Button';
-import Input from '@agile-software/shared-components/src/components/Input/Input';
 import {
   dynamicInputFields,
   getAvailableRoles,
@@ -40,11 +38,7 @@ const initialState: FormState = {
 
 const requiredFieldsPage1 = ['firstname', 'lastname', 'email', 'roles'];
 
-const CreateUser = ({
-  onClose,
-}: {
-  onClose?: () => void;
-}) => {
+const CreateUser = ({ onClose }: { onClose?: () => void }) => {
   const [step, setStep] = useState<number>(1);
 
   const [form, setForm] = useState<FormState>({
@@ -169,32 +163,40 @@ const CreateUser = ({
         rows.push(
           <Box
             key={page1DynamicFields[i].name}
-            sx={{ display: 'flex', gap: 2}}
+            sx={{ display: 'flex', gap: 2 }}
           >
-            <Input
-              label={page1DynamicFields[i].label}
-              required={page1DynamicFields[i].required}
-              type={page1DynamicFields[i].type}
-              value={
-                typeof form[page1DynamicFields[i].name] === 'string'
-                  ? (form[page1DynamicFields[i].name] as string)
-                  : ''
-              }
-              onChange={handleInputChange(page1DynamicFields[i].name)}
-              sx={{ flex: 1 }}
-            />
-            <Input
-              label={page1DynamicFields[i + 1].label}
-              required={page1DynamicFields[i + 1].required}
-              type={page1DynamicFields[i + 1].type}
-              value={
-                typeof form[page1DynamicFields[i + 1].name] === 'string'
-                  ? (form[page1DynamicFields[i + 1].name] as string)
-                  : ''
-              }
-              onChange={handleInputChange(page1DynamicFields[i + 1].name)}
-              sx={{ flex: 1 }}
-            />
+            <Box sx={{ flex: 1 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+                {page1DynamicFields[i].label}
+                {page1DynamicFields[i].required && ' *'}
+              </Typography>
+              <Input
+                required={page1DynamicFields[i].required}
+                type={page1DynamicFields[i].type}
+                value={
+                  typeof form[page1DynamicFields[i].name] === 'string'
+                    ? (form[page1DynamicFields[i].name] as string)
+                    : ''
+                }
+                onChange={handleInputChange(page1DynamicFields[i].name)}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+                {page1DynamicFields[i + 1].label}
+                {page1DynamicFields[i + 1].required && ' *'}
+              </Typography>
+              <Input
+                required={page1DynamicFields[i + 1].required}
+                type={page1DynamicFields[i + 1].type}
+                value={
+                  typeof form[page1DynamicFields[i + 1].name] === 'string'
+                    ? (form[page1DynamicFields[i + 1].name] as string)
+                    : ''
+                }
+                onChange={handleInputChange(page1DynamicFields[i + 1].name)}
+              />
+            </Box>
           </Box>
         );
       } else {
@@ -203,18 +205,22 @@ const CreateUser = ({
             key={page1DynamicFields[i].name}
             sx={{ display: 'flex', gap: 2, mb: 2 }}
           >
-            <Input
-              label={page1DynamicFields[i].label}
-              required={page1DynamicFields[i].required}
-              type={page1DynamicFields[i].type}
-              value={
-                typeof form[page1DynamicFields[i].name] === 'string'
-                  ? (form[page1DynamicFields[i].name] as string)
-                  : ''
-              }
-              onChange={handleInputChange(page1DynamicFields[i].name)}
-              sx={{ flex: 1 }}
-            />
+            <Box sx={{ flex: 1 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+                {page1DynamicFields[i].label}
+                {page1DynamicFields[i].required && ' *'}
+              </Typography>
+              <Input
+                required={page1DynamicFields[i].required}
+                type={page1DynamicFields[i].type}
+                value={
+                  typeof form[page1DynamicFields[i].name] === 'string'
+                    ? (form[page1DynamicFields[i].name] as string)
+                    : ''
+                }
+                onChange={handleInputChange(page1DynamicFields[i].name)}
+              />
+            </Box>
           </Box>
         );
       }
@@ -229,47 +235,59 @@ const CreateUser = ({
       if (dynamicFields[i + 1]) {
         rows.push(
           <Box key={dynamicFields[i].name} sx={{ display: 'flex', gap: 2 }}>
-            <Input
-              label={dynamicFields[i].label}
-              required={dynamicFields[i].required}
-              type={dynamicFields[i].type}
-              value={
-                typeof form[dynamicFields[i].name] === 'string'
-                  ? (form[dynamicFields[i].name] as string)
-                  : ''
-              }
-              onChange={handleInputChange(dynamicFields[i].name)}
-              sx={{ flex: 1 }}
-            />
-            <Input
-              label={dynamicFields[i + 1].label}
-              required={dynamicFields[i + 1].required}
-              type={dynamicFields[i + 1].type}
-              value={
-                typeof form[dynamicFields[i + 1].name] === 'string'
-                  ? (form[dynamicFields[i + 1].name] as string)
-                  : ''
-              }
-              onChange={handleInputChange(dynamicFields[i + 1].name)}
-              sx={{ flex: 1 }}
-            />
+            <Box sx={{ flex: 1 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+                {dynamicFields[i].label}
+                {dynamicFields[i].required && ' *'}
+              </Typography>
+              <Input
+                required={dynamicFields[i].required}
+                type={dynamicFields[i].type}
+                value={
+                  typeof form[dynamicFields[i].name] === 'string'
+                    ? (form[dynamicFields[i].name] as string)
+                    : ''
+                }
+                onChange={handleInputChange(dynamicFields[i].name)}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+                {dynamicFields[i + 1].label}
+                {dynamicFields[i + 1].required && ' *'}
+              </Typography>
+              <Input
+                required={dynamicFields[i + 1].required}
+                type={dynamicFields[i + 1].type}
+                value={
+                  typeof form[dynamicFields[i + 1].name] === 'string'
+                    ? (form[dynamicFields[i + 1].name] as string)
+                    : ''
+                }
+                onChange={handleInputChange(dynamicFields[i + 1].name)}
+              />
+            </Box>
           </Box>
         );
       } else {
         rows.push(
           <Box key={dynamicFields[i].name} sx={{ display: 'flex', gap: 2 }}>
-            <Input
-              label={dynamicFields[i].label}
-              required={dynamicFields[i].required}
-              type={dynamicFields[i].type}
-              value={
-                typeof form[dynamicFields[i].name] === 'string'
-                  ? (form[dynamicFields[i].name] as string)
-                  : ''
-              }
-              onChange={handleInputChange(dynamicFields[i].name)}
-              sx={{ flex: 1 }}
-            />
+            <Box sx={{ flex: 1 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+                {dynamicFields[i].label}
+                {dynamicFields[i].required && ' *'}
+              </Typography>
+              <Input
+                required={dynamicFields[i].required}
+                type={dynamicFields[i].type}
+                value={
+                  typeof form[dynamicFields[i].name] === 'string'
+                    ? (form[dynamicFields[i].name] as string)
+                    : ''
+                }
+                onChange={handleInputChange(dynamicFields[i].name)}
+              />
+            </Box>
             <Box sx={{ flex: 1 }} />
           </Box>
         );
@@ -283,32 +301,44 @@ const CreateUser = ({
       {step === 1 && (
         <>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Input
-              label={t('components.createusermanually.firstname')}
-              required
-              value={typeof form.firstname === 'string' ? form.firstname : ''}
-              onChange={handleInputChange('firstname')}
-            />
-            <Input
-              label={t('components.createusermanually.lastname')}
-              required
-              value={typeof form.lastname === 'string' ? form.lastname : ''}
-              onChange={handleInputChange('lastname')}
-            />
+            <Box sx={{ flex: 1 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+                {t('components.createusermanually.firstname')} *
+              </Typography>
+              <Input
+                required
+                value={typeof form.firstname === 'string' ? form.firstname : ''}
+                onChange={handleInputChange('firstname')}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+                {t('components.createusermanually.lastname')} *
+              </Typography>
+              <Input
+                required
+                value={typeof form.lastname === 'string' ? form.lastname : ''}
+                onChange={handleInputChange('lastname')}
+              />
+            </Box>
           </Box>
           <Box>
+            <Typography level="body-xs" sx={{ mb: 0.5 }}>
+              {t('components.createusermanually.email')} *
+            </Typography>
             <Input
-              label={t('components.createusermanually.email')}
               required
               value={typeof form.email === 'string' ? form.email : ''}
               onChange={handleInputChange('email')}
-              sx={{ width: '68%' }}
+              sx={{ width: '100%' }}
             />
           </Box>
           {/* Dynamische Felder für Seite 1 in 2er-Zeilen */}
           {renderDynamicFieldsRows()}
           <Box sx={{ mt: -2 }}>
-            <label>{t('components.createusermanually.role')} </label>
+            <Typography level="body-xs" sx={{ mb: 0.5 }}>
+              {t('components.createusermanually.role')} *
+            </Typography>
             <Select
               placeholder={t('components.createusermanually.choose_role')}
               value={form.roles[0] ?? ''}
@@ -339,7 +369,7 @@ const CreateUser = ({
       )}
 
       <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
-        <ButtonGroup>
+        <ButtonGroup variant="solid">
           {step === 2 && (
             <Button
               onClick={back}

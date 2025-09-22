@@ -1,11 +1,10 @@
 /* eslint-disable max-lines-per-function */
-import { Box, Typography, Modal, ModalDialog } from '@mui/joy';
+import { Box, Typography, Button } from '@mui/joy';
+import { Card, Modal as SharedModal } from '@agile-software/shared-components';
 import LanguageSelectorComponent from '@components/LanguageSelectorComponent/LanguageSelectorComponent';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import UserDataTableComponent from '@/components/UserDataTableComponent/UserDataTableComponent';
-import Button from '@agile-software/shared-components/src/components/Button/Button';
-import Card from '@agile-software/shared-components/src/components/Card/Card';
 import { useState, useRef } from 'react';
 import { exportUsersToCSV, downloadCSV } from '@/utils/csvimportexport';
 import UserCsvImportComponent from '@/components/UserCsvImportComponent/UserCsvImportComponent';
@@ -59,7 +58,6 @@ const Home = () => {
     setFailedCsv({ csv, filename });
   };
 
-
   // Weiterleitung zur Create-User-Seite
   const handleOpenCreateUser = () => {
     setSelectedUserId(null);
@@ -80,44 +78,53 @@ const Home = () => {
         <Button onClick={handleExport}>{t('pages.home.csvexport')}</Button>
       </Box>
       {/* Erfolgs-/Fehlermeldung */}
-      {message && (
-        <Card
-          id="errorandsuccessmessages"
-          color={message.type === 'success' ? 'success' : 'danger'}
-          variant="soft"
-          sx={{ mb: 2 }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <span>{message.text}</span>
-            {failedCsv && message.type === 'error' && (
-              <Button
-                size="sm"
-                variant="soft"
-                color="danger"
-                onClick={() => downloadCSV(failedCsv.csv, failedCsv.filename)}
-              >
-                {t('components.userCsvImportComponent.downloaderrorfile')}
-              </Button>
-            )}
-          </Box>
-        </Card>
-      )}
+      <Box id="errorandsuccessmessages">
+        {message && (
+          <Card
+            cardSX={{
+              mb: 2,
+              backgroundColor:
+                message.type === 'success'
+                  ? '#e6f4ea !important'
+                  : '#fdecea !important',
+              border: '2px solid',
+              borderColor: message.type === 'success' ? '#4caf50' : '#d32f2f',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <span>{message.text}</span>
+              {failedCsv && message.type === 'error' && (
+                <Button
+                  size="sm"
+                  variant="soft"
+                  color="danger"
+                  onClick={() => downloadCSV(failedCsv.csv, failedCsv.filename)}
+                >
+                  {t('components.userCsvImportComponent.downloaderrorfile')}
+                </Button>
+              )}
+            </Box>
+          </Card>
+        )}
+      </Box>
       <UserDataTableComponent
         onSelectedUserIdsChange={handleSelectedUserIdsChange}
         selectedUserId={selectedUserId}
         setSelectedUserId={setSelectedUserId}
         onShowMessage={handleShowMessage}
       />
-      {/* CSV Import Modal */}
-      <Modal open={csvImportOpen} onClose={handleCloseCsvImport}>
-        <ModalDialog>
-          <UserCsvImportComponent
-            onClose={handleCloseCsvImport}
-            onShowMessage={handleShowMessage}
-            onFailedCsv={handleFailedCsv}
-          />
-        </ModalDialog>
-      </Modal>
+      {/* CSV Import Modal mit Shared Component */}
+      <SharedModal
+        header={t('components.userCsvImportComponent.title')}
+        open={csvImportOpen}
+        setOpen={setCsvImportOpen}
+      >
+        <UserCsvImportComponent
+          onClose={handleCloseCsvImport}
+          onShowMessage={handleShowMessage}
+          onFailedCsv={handleFailedCsv}
+        />
+      </SharedModal>
     </Box>
   );
 };

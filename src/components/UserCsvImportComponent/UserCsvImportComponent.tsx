@@ -1,8 +1,15 @@
 /* eslint-disable max-lines-per-function */
-import Card from '@agile-software/shared-components/src/components/Card/Card';
-import Button from '@agile-software/shared-components/src/components/Button/Button';
-import Input from '@agile-software/shared-components/src/components/Input/Input';
-import { Box, ButtonGroup, Select, Option, Typography, Table } from '@mui/joy';
+import { Card } from '@agile-software/shared-components';
+import {
+  Box,
+  ButtonGroup,
+  Select,
+  Option,
+  Typography,
+  Table,
+  Input,
+  Button,
+} from '@mui/joy';
 import { useTranslation } from 'react-i18next';
 import { useRef, useState, useMemo } from 'react';
 import {
@@ -301,7 +308,10 @@ const UserCsvImportComponent = ({
   };
 
   // Checkbox-Handler für einzelne Zeile
-  const handleCheckboxChange = (rowIdx: number, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCheckboxChange = (
+    rowIdx: number,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     setSelectedRows((prev) =>
       event.target.checked
         ? [...prev, rowIdx]
@@ -322,7 +332,11 @@ const UserCsvImportComponent = ({
   const handleEditSelectedRows = () => {
     if (selectedRows.length > 0) {
       setEditRows(selectedRows);
-      setEditRowsObj(Object.fromEntries(selectedRows.map(idx => [idx, { ...csvRowsObj[idx] }])));
+      setEditRowsObj(
+        Object.fromEntries(
+          selectedRows.map((idx) => [idx, { ...csvRowsObj[idx] }])
+        )
+      );
       setStep('edit');
     }
   };
@@ -333,7 +347,11 @@ const UserCsvImportComponent = ({
       new Set(missingRequiredCells.map((cell) => cell.row))
     );
     setEditRows(rowsWithMissing);
-    setEditRowsObj(Object.fromEntries(rowsWithMissing.map(idx => [idx, { ...csvRowsObj[idx] }])));
+    setEditRowsObj(
+      Object.fromEntries(
+        rowsWithMissing.map((idx) => [idx, { ...csvRowsObj[idx] }])
+      )
+    );
     setStep('edit');
   };
 
@@ -387,9 +405,6 @@ const UserCsvImportComponent = ({
           zIndex: 2,
         }}
       >
-        <Typography level="h3" sx={{ mb: 0.5 }}>
-          {t('components.userCsvImportComponent.title')}
-        </Typography>
         {step === 'preview' && (
           <Typography level="body-sm" sx={{ mb: 0.5 }}>
             {t('components.userCsvImportComponent.previewtableinfo')}
@@ -470,7 +485,7 @@ const UserCsvImportComponent = ({
                   {t('components.userCsvImportComponent.information')}
                 </Typography>
                 <Button
-                  variant="soft"
+                  variant="solid"
                   onClick={handleDownloadTemplate}
                   sx={{ mb: 1 }}
                 >
@@ -483,7 +498,7 @@ const UserCsvImportComponent = ({
             <Typography level="h4">
               {t('components.userCsvImportComponent.information')}
             </Typography>
-            <ButtonGroup variant="outlined" sx={{ mt: 2 }}>
+            <ButtonGroup variant="solid" sx={{ mt: 2 }}>
               <Button color="danger" onClick={onClose}>
                 {t('components.userCsvImportComponent.cancelbutton')}
               </Button>
@@ -619,7 +634,7 @@ const UserCsvImportComponent = ({
                 </Button>
               )}
             </Box>
-            <ButtonGroup variant="outlined" sx={{ mt: 2 }}>
+            <ButtonGroup variant="solid" sx={{ mt: 2 }}>
               <Button
                 color="danger"
                 onClick={() => setStep('select')}
@@ -741,7 +756,7 @@ const UserCsvImportComponent = ({
                 {`${missingRequiredEditCells.length}, ${t('components.userCsvImportComponent.missingrequired')}`}
               </Typography>
             )}
-            <ButtonGroup sx={{ mt: 2 }}>
+            <ButtonGroup variant="solid" sx={{ mt: 2 }}>
               <Button
                 color="success"
                 onClick={handleSaveEditRows}
