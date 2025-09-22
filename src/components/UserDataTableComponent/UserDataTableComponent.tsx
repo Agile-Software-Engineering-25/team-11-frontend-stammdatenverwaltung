@@ -34,14 +34,20 @@ const UserDataTableComponent = ({
   const allRoles = getAllRoles();
 
   // Filter-Logik
-  const filteredUsers = users.filter((user) => {
-    const searchString =
-      `${user.firstname} ${user.lastname} ${user.street ?? ''} ${user.housenumber ?? ''} ${user.zipcode ?? ''} ${user.city ?? ''} ${user.phone ?? ''}`.toLowerCase();
-    const matchesSearch = searchString.includes(search.toLowerCase());
-    const matchesRole =
-      roleFilter === 'alle' || user.roles.includes(roleFilter);
-    return matchesSearch && matchesRole;
-  });
+  const filteredUsers = users
+    .filter((user) => {
+      const searchString =
+        `${user.firstname} ${user.lastname} ${user.street ?? ''} ${user.housenumber ?? ''} ${user.zipcode ?? ''} ${user.city ?? ''} ${user.phone ?? ''}`.toLowerCase();
+      const matchesSearch = searchString.includes(search.toLowerCase());
+      const matchesRole =
+        roleFilter === 'alle' || user.roles.includes(roleFilter);
+      return matchesSearch && matchesRole;
+    })
+    .sort((a, b) => {
+      const nameA = `${a.firstname} ${a.lastname}`.toLowerCase();
+      const nameB = `${b.firstname} ${b.lastname}`.toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
 
   // Callback für Detailansicht, um nach dem Speichern/Löschen die Userdaten neu zu laden
   const handleUserUpdate = () => {
