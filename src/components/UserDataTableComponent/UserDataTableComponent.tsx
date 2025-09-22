@@ -7,7 +7,6 @@ import {
   Select,
   Option,
   Checkbox,
-  Input
 } from '@mui/joy';
 import { SearchBar } from '@agile-software/shared-components'; // <--- Import der Shared SearchBar
 import { useState, useEffect } from 'react';
@@ -136,11 +135,6 @@ const UserDataTableComponent = ({
           onSearch={setSearch}
           placeholder={t('components.userDataTable.searchPlaceholder')}
           size="md"
-          variant="outlined"
-          color="primary"
-          searchOnEnter={true}
-          fullWidth={false}
-          sx={{ maxWidth: 300 }}
         />
         <Select
           value={roleFilter}

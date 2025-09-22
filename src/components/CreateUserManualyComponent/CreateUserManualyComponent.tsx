@@ -2,7 +2,7 @@
 import { Box, ButtonGroup, Select, Option, Button, Input, Typography } from '@mui/joy';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
-import React, { useState } from 'react';
+import React, { useState, type JSX } from 'react';
 import {
   dynamicInputFields,
   getAvailableRoles,

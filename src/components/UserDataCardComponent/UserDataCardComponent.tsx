@@ -221,15 +221,7 @@ const UserDataCardComponent = ({
         ))}
       </Box>
       {currentCard && (
-        <Card
-          sx={{
-            minWidth: 200,
-            boxShadow: 'xs',
-            borderRadius: 4,
-            p: 1,
-            m: 0,
-          }}
-        >
+        <Card>
           <Typography level="h4" sx={{ mb: 1, fontSize: 16, fontWeight: 700 }}>
             {currentCard.title}
           </Typography>

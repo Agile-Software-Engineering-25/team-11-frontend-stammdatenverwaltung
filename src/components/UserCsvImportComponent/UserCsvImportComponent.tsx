@@ -395,7 +395,7 @@ const UserCsvImportComponent = ({
   });
 
   return (
-    <Card sx={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+    <Card >
       {/* Kompakter Header, sticky */}
       <Box
         sx={{
