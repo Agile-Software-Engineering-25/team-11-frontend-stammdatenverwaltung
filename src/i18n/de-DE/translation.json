@@ -112,7 +112,8 @@
       "edit": "Bearbeiten",
       "save": "Änderungen speichern",
       "cancelchanges": "Änderungen abbrechen",
-      "edituserdata": "Benutzerdaten bearbeiten"
+      "edituserdata": "Benutzerdaten bearbeiten",
+      "dropzonetext": "Ziehen Sie Ihre CSV-Datei hierher oder klicken Sie, um eine Datei auszuwählen."
     }
   }
 }

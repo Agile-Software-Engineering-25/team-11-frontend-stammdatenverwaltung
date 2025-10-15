@@ -111,7 +111,8 @@
       "edit": "Edit",
       "save": "Save Changes",
       "cancelchanges": "Cancel Changes",
-      "edituserdata": "Edit User Data"
+      "edituserdata": "Edit User Data",
+      "dropzonetext": "Drag and drop your CSV file here, or click to select a file."
     }
   }
 }

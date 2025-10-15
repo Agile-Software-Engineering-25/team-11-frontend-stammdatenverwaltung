@@ -9,6 +9,7 @@ import {
   Table,
   Input,
   Button,
+  Checkbox,
 } from '@mui/joy';
 import { useTranslation } from 'react-i18next';
 import { useRef, useState, useMemo } from 'react';
@@ -24,7 +25,9 @@ import {
   isCsvHeaderCompatible,
   getExpectedCsvHeaderForRole,
 } from '@/utils/csvimportexport';
-import Checkbox from '@mui/joy/Checkbox';
+import { Dropzone } from '@agile-software/shared-components';
+
+
 
 type CsvRow = { [key: string]: string };
 
@@ -442,38 +445,25 @@ const UserCsvImportComponent = ({
                 </Option>
               ))}
             </Select>
-            <Box
-              sx={{
-                borderRadius: 8,
-                p: 2,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-                minHeight: 70,
-              }}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                style={{ display: 'none' }}
-                onChange={handleFileChange}
-              />
-              <Button
-                variant="outlined"
-                onClick={() => fileInputRef.current?.click()}
-                sx={{ minWidth: 140 }}
-              >
-                {selectedFile
-                  ? t('components.userCsvImportComponent.fileinputlabel')
-                  : t('components.userCsvImportComponent.uploadbutton')}
-              </Button>
-              <Typography
-                sx={{
-                  flex: 1,
-                  ml: 1,
-                  fontSize: 16,
+            {/* Dropzone für CSV-Upload */}
+            <Box sx={{ my: 2 }}>
+              <Dropzone
+                types={['CSV']}
+                multiple={false}
+                onFileSelect={(file) => {
+                  // file ist entweder File oder File[]
+                  if (Array.isArray(file)) {
+                    setSelectedFile(file[0] ?? null);
+                  } else {
+                    setSelectedFile(file);
+                  }
                 }}
-              >
+                dragDropText={t(
+                  'components.userCsvImportComponent.dropzonetext'
+                )}
+                browseText={t('components.userCsvImportComponent.uploadbutton')}
+              />
+              <Typography sx={{ mt: 1, fontSize: 16 }}>
                 {selectedFile
                   ? selectedFile.name
                   : t('components.userCsvImportComponent.fileinputplaceholder')}
