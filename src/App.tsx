@@ -13,7 +13,8 @@ import { CssVarsProvider as JoyCssVarsProvider, GlobalStyles } from '@mui/joy';
 import './i18n';
 import { Provider } from 'react-redux';
 import store from '@stores/index.ts';
-import GlobalControls from '@components/GlobalControls/GlobalControls';
+import { MessageProvider } from '@/components/MessageProvider/MessageProvider';
+
 
 const joyTheme = createCustomJoyTheme();
 const muiTheme = createCustomMuiTheme();
@@ -32,30 +33,15 @@ function App(props: AppProps) {
       <ThemeProvider theme={{ [MATERIAL_THEME_ID]: muiTheme }}>
         <JoyCssVarsProvider
           theme={joyTheme}
-          defaultMode="system"
+          defaultMode="light"
           modeStorageKey="joy-mode"
           colorSchemeStorageKey="joy-color-scheme"
         >
-          <CssBaseline />
-          <GlobalStyles
-            styles={(theme) => ({
-              // Ensure html and body have proper background
-              html: {
-                backgroundColor: theme.vars.palette.background.body,
-                minHeight: '100%',
-              },
-              body: {
-                backgroundColor: theme.vars.palette.background.body,
-                minHeight: '100vh',
-                margin: 0,
-                padding: 0,
-              },
-            })}
-          />
-          <BrowserRouter basename={basename ?? '/'}>
-            <RoutingComponent />
-            <GlobalControls />
-          </BrowserRouter>
+          <MessageProvider>
+            <BrowserRouter basename={basename}>
+              <RoutingComponent />
+            </BrowserRouter>
+          </MessageProvider>
         </JoyCssVarsProvider>
       </ThemeProvider>
     </Provider>
