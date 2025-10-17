@@ -75,7 +75,6 @@ const UserDataCardComponent = ({
       });
       setInputValues(newValues);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentCard, user, editMode]);
 
   const handleInputChange =

@@ -3,10 +3,7 @@ import { useSelector } from 'react-redux';
 import type { TypedUseSelectorHook } from 'react-redux';
 import type { RootState } from './index';
 
-
-const appReducer = combineReducers({
-  
-});
+const appReducer = combineReducers({});
 
 const rootReducer = appReducer;
 

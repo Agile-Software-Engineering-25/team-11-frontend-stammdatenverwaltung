@@ -1,5 +1,13 @@
 /* eslint-disable max-lines-per-function */
-import { Box, ButtonGroup, Select, Option, Button, Input, Typography } from '@mui/joy';
+import {
+  Box,
+  ButtonGroup,
+  Select,
+  Option,
+  Button,
+  Input,
+  Typography,
+} from '@mui/joy';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import React, { useState, type JSX } from 'react';

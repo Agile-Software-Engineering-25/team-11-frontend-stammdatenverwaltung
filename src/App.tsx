@@ -5,13 +5,15 @@ import {
   createCustomMuiTheme,
 } from '@agile-software/shared-components';
 import { THEME_ID as MATERIAL_THEME_ID, ThemeProvider } from '@mui/material';
-import {   CssBaseline,
-  GlobalStyles, CssVarsProvider as JoyCssVarsProvider } from '@mui/joy';
+import {
+  CssBaseline,
+  GlobalStyles,
+  CssVarsProvider as JoyCssVarsProvider,
+} from '@mui/joy';
 import './i18n';
 import { Provider } from 'react-redux';
 import store from '@stores/index.ts';
 import { MessageProvider } from '@/components/MessageProvider/MessageProvider';
-
 
 const joyTheme = createCustomJoyTheme();
 const muiTheme = createCustomMuiTheme();

@@ -27,8 +27,6 @@ import {
 } from '@/utils/csvimportexport';
 import { Dropzone } from '@agile-software/shared-components';
 
-
-
 type CsvRow = { [key: string]: string };
 
 const NOVALUE = '#novalue';
@@ -57,7 +55,6 @@ function getColumnWidths(
   });
   return widths;
 }
-
 
 // --- Hauptkomponente ---
 const UserCsvImportComponent = ({
@@ -399,7 +396,7 @@ const UserCsvImportComponent = ({
   });
 
   return (
-    <Card >
+    <Card>
       {/* Kompakter Header, sticky */}
       <Box
         sx={{
@@ -541,10 +538,19 @@ const UserCsvImportComponent = ({
               >
                 <thead>
                   <tr>
-                    <th style={{ minWidth: 40, width: 40, maxWidth: 40, textAlign: 'center', padding: 0 }}>
+                    <th
+                      style={{
+                        minWidth: 40,
+                        width: 40,
+                        maxWidth: 40,
+                        textAlign: 'center',
+                        padding: 0,
+                      }}
+                    >
                       <Checkbox
                         checked={
-                          selectedRows.length === Object.keys(csvRowsObj).length &&
+                          selectedRows.length ===
+                            Object.keys(csvRowsObj).length &&
                           Object.keys(csvRowsObj).length > 0
                         }
                         indeterminate={
@@ -575,7 +581,15 @@ const UserCsvImportComponent = ({
                     const rowIdx = Number(rowIdxStr);
                     return (
                       <tr key={rowIdx}>
-                        <td style={{ minWidth: 40, width: 40, maxWidth: 40, textAlign: 'center', padding: 0 }}>
+                        <td
+                          style={{
+                            minWidth: 40,
+                            width: 40,
+                            maxWidth: 40,
+                            textAlign: 'center',
+                            padding: 0,
+                          }}
+                        >
                           <Checkbox
                             checked={selectedRows.includes(rowIdx)}
                             onChange={(e) => handleCheckboxChange(rowIdx, e)}
@@ -593,7 +607,9 @@ const UserCsvImportComponent = ({
                             }}
                           >
                             {row[col] === NOVALUE ? (
-                              <span style={{ color: '#d32f2f', fontWeight: 500 }}>
+                              <span
+                                style={{ color: '#d32f2f', fontWeight: 500 }}
+                              >
                                 {NOVALUE}
                               </span>
                             ) : (
@@ -667,7 +683,9 @@ const UserCsvImportComponent = ({
               <Table
                 size="lg"
                 sx={{
-                  minWidth: Object.values(columnWidths).reduce((a, b) => a + b, 0) + 120,
+                  minWidth:
+                    Object.values(columnWidths).reduce((a, b) => a + b, 0) +
+                    120,
                   '& th, & td': {
                     verticalAlign: 'middle',
                     padding: '6px 8px',
@@ -716,7 +734,9 @@ const UserCsvImportComponent = ({
                                 : 'neutral'
                             }
                             placeholder={
-                              editRowsObj[rowIdx][col] === NOVALUE ? NOVALUE : ''
+                              editRowsObj[rowIdx][col] === NOVALUE
+                                ? NOVALUE
+                                : ''
                             }
                             onChange={(e) =>
                               handleEditCellChange(rowIdx, col, e.target.value)

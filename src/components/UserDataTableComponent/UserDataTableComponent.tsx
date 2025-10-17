@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 import UserDataCardComponent from '../UserDataCardComponent/UserDataCardComponent';
 import { getAllUsers, getAllRoles } from '../../utils/showuserdatafunctions';
 
-
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,
   selectedUserId,

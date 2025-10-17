@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState } from 'react';
 
 type MessageType = { type: 'success' | 'error'; text: string } | null;
 
-const MessageContext = createContext<{
+const MessageContext = createContext<
+  | {
       message: MessageType;
       setMessage: (msg: MessageType) => void;
     }

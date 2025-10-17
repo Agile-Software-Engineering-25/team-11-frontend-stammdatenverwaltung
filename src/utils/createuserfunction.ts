@@ -1,5 +1,5 @@
 /* eslint-disable max-lines-per-function */
-'use server'
+'use server';
 import {
   page1DynamicFieldsConfig,
   roleFieldConfigs,

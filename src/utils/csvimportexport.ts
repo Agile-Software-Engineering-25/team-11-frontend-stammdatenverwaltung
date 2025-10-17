@@ -6,7 +6,7 @@ import {
 } from './mockupdata';
 
 // Typ für ein User-Objekt
-type UserType = typeof users[number];
+type UserType = (typeof users)[number];
 
 // Typ für ein Feld
 interface FieldConfig {
@@ -26,13 +26,12 @@ export function generateCsvTemplateForRole(role: string): string {
     key: f.name,
     label: f.label,
   }));
-  const roleFields =
-    (roleFieldConfigs[role as keyof typeof roleFieldConfigs] ?? []).map(
-      (f: FieldConfig) => ({
-        key: f.name,
-        label: f.label,
-      })
-    );
+  const roleFields = (
+    roleFieldConfigs[role as keyof typeof roleFieldConfigs] ?? []
+  ).map((f: FieldConfig) => ({
+    key: f.name,
+    label: f.label,
+  }));
 
   const header = [
     ...baseFields.map((f) => f.label),
@@ -89,8 +88,9 @@ export function exportUsersToCSV(selectedUserIds: number[]): string {
   const roleFields = Array.from(roleFieldSet).map((fieldName) => {
     // Label suchen
     for (const role in roleFieldConfigs) {
-      const found = roleFieldConfigs[role as keyof typeof roleFieldConfigs].find(
-        (f: FieldConfig) => f.name === fieldName);
+      const found = roleFieldConfigs[
+        role as keyof typeof roleFieldConfigs
+      ].find((f: FieldConfig) => f.name === fieldName);
       if (found) return { key: fieldName, label: found.label };
     }
     // Fallback: Feldname als Label
@@ -158,7 +158,6 @@ export function downloadCSV(csvString: string, filename = 'export.csv') {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
-
 
 export function getExpectedCsvHeaderForRole(role: string): string[] {
   const baseFields = ['Vorname', 'Nachname', 'E-Mail'];

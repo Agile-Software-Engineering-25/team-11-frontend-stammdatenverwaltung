@@ -45,7 +45,9 @@ function getCardsForRoles(roles: string[]): CardConfig[] {
   ];
   roles.forEach((role) => {
     // Typisierung für roleFieldConfigs
-    const config = (roleFieldConfigs as Record<string, { name: string; label: string }[]>)[role];
+    const config = (
+      roleFieldConfigs as Record<string, { name: string; label: string }[]>
+    )[role];
     if (config) {
       cards.push({
         key: role.toLowerCase(),
