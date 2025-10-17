@@ -1,17 +1,8 @@
 /* eslint-disable max-lines-per-function */
-import {
-  Box,
-  ButtonGroup,
-  Select,
-  Option,
-  Button,
-  Input,
-  Typography,
-  Checkbox,
-} from '@mui/joy';
+import { Box, ButtonGroup, Select, Option, Button, Input, Typography } from '@mui/joy';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
-import React, { useState } from 'react';
+import React, { useState, type JSX } from 'react';
 import {
   dynamicInputFields,
   getAvailableRoles,
@@ -35,7 +26,7 @@ type FormState = {
   lastname: string;
   email: string;
   roles: string[];
-  [key: string]: string | string[] | boolean | undefined;
+  [key: string]: string | string[];
 };
 
 const initialState: FormState = {
@@ -71,12 +62,12 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
   ) as DynamicField[];
 
   const isPage1Valid =
-    requiredFieldsPage1.every((field) =>
-      field === 'roles'
-        ? Array.isArray(form.roles) && form.roles.length > 0
-        : !!form[field]
+    requiredFieldsPage1.every((field) => !!form[field]) &&
+    page1DynamicFields.every(
+      (field) => !field.required || !!form[field.name]
     ) &&
-    page1DynamicFields.every((field) => !field.required || !!form[field.name]);
+    Array.isArray(form.roles) &&
+    form.roles.length > 0;
 
   const isPage2Valid = dynamicFields.every(
     (field) => !field.required || !!form[field.name]
@@ -84,16 +75,12 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
 
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { setMessage } = useMessage();
+  const { setMessage } = useMessage(); // <--- Context Hook verwenden
 
-  // Hilfs-Setter: speichert Wert (strings, booleans, arrays)
-  const setFieldValue = (field: string, value: any) =>
-    setForm((prev) => ({ ...prev, [field]: value }));
-
-  // Funktioniert für text/number/date Inputs
+  // Funktioniert für alle Felder, auch dynamische
   const handleInputChange =
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      setFieldValue(field, e.target.value);
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
   // Einzel-Auswahl für Rollen (nur eine Rolle möglich)
@@ -116,13 +103,12 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
           delete cleanedForm[key];
         }
       });
-      // ensure kept fields exist
-      keepFields.forEach((f) => {
-        if (!(f in cleanedForm)) cleanedForm[f] = '';
-      });
       return {
         ...cleanedForm,
         roles: rolesArr,
+        ...Object.fromEntries(
+          Array.from(keepFields).map((field) => [field, prev[field] ?? ''])
+        ),
       };
     });
   };
@@ -130,16 +116,14 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
   const finish = () => {
     // Sammle alle Feldnamen in der gewünschten Reihenfolge
     const allFieldNames = [
-      ...requiredFieldsPage1.filter((f) => f !== 'roles'), // 'roles' wird separat übergeben
+      ...requiredFieldsPage1.filter((f) => f !== 'roles'), // <--- 'roles' entfernen!
       ...page1DynamicFields.map((f) => f.name),
       ...dynamicFields.map((field) => field.name),
     ];
     // Erzeuge das Array mit den Werten in der gleichen Reihenfolge
     const values = allFieldNames.map((field) => {
       const value = form[field];
-      if (Array.isArray(value)) return value.join(',');
-      if (typeof value === 'boolean') return value ? 'true' : 'false';
-      return (value ?? '') as string;
+      return Array.isArray(value) ? value.join(',') : (value ?? '');
     });
 
     // Übergabe an createUser: Rolle nur als zweiten Parameter!
@@ -172,92 +156,75 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
     }
   };
 
-  // Hilfsfunktion: Rendert ein Feld passend zu type
-  const renderField = (field: DynamicField) => {
-    const value = form[field.name];
-    switch (field.type) {
-      case 'select':
-        return (
-          <Select
-            value={(value as string) ?? ''}
-            onChange={(_: any, val: string | null) =>
-              setFieldValue(field.name, val ?? '')
-            }
-            required={field.required}
-          >
-            {(field.options ?? []).map((opt) => (
-              <Option key={opt.value} value={opt.value}>
-                {opt.label}
-              </Option>
-            ))}
-          </Select>
-        );
-      case 'date':
-        return (
-          <Input
-            type="date"
-            value={(value as string) ?? ''}
-            onChange={handleInputChange(field.name)}
-            required={field.required}
-          />
-        );
-      case 'number':
-        return (
-          <Input
-            type="number"
-            value={(value as string) ?? ''}
-            onChange={handleInputChange(field.name)}
-            required={field.required}
-          />
-        );
-      case 'checkbox':
-        return (
-          <Checkbox
-            checked={!!value}
-            onChange={(_, checked) => setFieldValue(field.name, !!checked)}
-            label={field.label}
-            slotProps={{ input: { 'aria-label': field.name } }}
-          />
-        );
-      default:
-        return (
-          <Input
-            value={(value as string) ?? ''}
-            onChange={handleInputChange(field.name)}
-            required={field.required}
-          />
-        );
-    }
-  };
-
   // Hilfsfunktion für 2er-Gruppierung der dynamischen Felder (Seite 1)
   const renderDynamicFieldsRows = () => {
     const rows: JSX.Element[] = [];
     for (let i = 0; i < page1DynamicFields.length; i += 2) {
-      const left = page1DynamicFields[i];
-      const right = page1DynamicFields[i + 1];
-      rows.push(
-        <Box key={left.name} sx={{ display: 'flex', gap: 2, mb: 2 }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography level="body-xs" sx={{ mb: 0.5 }}>
-              {left.label}
-              {left.required && ' *'}
-            </Typography>
-            {renderField(left)}
-          </Box>
-          {right ? (
+      if (page1DynamicFields[i + 1]) {
+        rows.push(
+          <Box
+            key={page1DynamicFields[i].name}
+            sx={{ display: 'flex', gap: 2 }}
+          >
             <Box sx={{ flex: 1 }}>
               <Typography level="body-xs" sx={{ mb: 0.5 }}>
-                {right.label}
-                {right.required && ' *'}
+                {page1DynamicFields[i].label}
+                {page1DynamicFields[i].required && ' *'}
               </Typography>
-              {renderField(right)}
+              <Input
+                required={page1DynamicFields[i].required}
+                type={page1DynamicFields[i].type}
+                value={
+                  typeof form[page1DynamicFields[i].name] === 'string'
+                    ? (form[page1DynamicFields[i].name] as string)
+                    : ''
+                }
+                onChange={handleInputChange(page1DynamicFields[i].name)}
+              />
             </Box>
-          ) : (
-            <Box sx={{ flex: 1 }} />
-          )}
-        </Box>
-      );
+            <Box sx={{ flex: 1 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+                {page1DynamicFields[i + 1].label}
+                {page1DynamicFields[i + 1].required && ' *'}
+              </Typography>
+              <Input
+                required={page1DynamicFields[i + 1].required}
+                type={page1DynamicFields[i + 1].type}
+                value={
+                  typeof form[page1DynamicFields[i + 1].name] === 'string'
+                    ? (form[page1DynamicFields[i + 1].name] as string)
+                    : ''
+                }
+                onChange={handleInputChange(page1DynamicFields[i + 1].name)}
+              />
+            </Box>
+          </Box>
+        );
+      } else {
+        rows.push(
+          <Box
+            key={page1DynamicFields[i].name}
+            sx={{ display: 'flex', gap: 2, mb: 2 }}
+          >
+            <Box sx={{ flex: 1 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+                {page1DynamicFields[i].label}
+                {page1DynamicFields[i].required && ' *'}
+              </Typography>
+              <Input
+                required={page1DynamicFields[i].required}
+                type={page1DynamicFields[i].type}
+                value={
+                  typeof form[page1DynamicFields[i].name] === 'string'
+                    ? (form[page1DynamicFields[i].name] as string)
+                    : ''
+                }
+                onChange={handleInputChange(page1DynamicFields[i].name)}
+              />
+            </Box>
+          </Box>
+        );
+      }
     }
     return rows;
   };
@@ -266,30 +233,66 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
   const renderRoleDynamicFieldsRows = () => {
     const rows: JSX.Element[] = [];
     for (let i = 0; i < dynamicFields.length; i += 2) {
-      const left = dynamicFields[i];
-      const right = dynamicFields[i + 1];
-      rows.push(
-        <Box key={left.name} sx={{ display: 'flex', gap: 2, mb: 2 }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography level="body-xs" sx={{ mb: 0.5 }}>
-              {left.label}
-              {left.required && ' *'}
-            </Typography>
-            {renderField(left)}
-          </Box>
-          {right ? (
+      if (dynamicFields[i + 1]) {
+        rows.push(
+          <Box key={dynamicFields[i].name} sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <Typography level="body-xs" sx={{ mb: 0.5 }}>
-                {right.label}
-                {right.required && ' *'}
+                {dynamicFields[i].label}
+                {dynamicFields[i].required && ' *'}
               </Typography>
-              {renderField(right)}
+              <Input
+                required={dynamicFields[i].required}
+                type={dynamicFields[i].type}
+                value={
+                  typeof form[dynamicFields[i].name] === 'string'
+                    ? (form[dynamicFields[i].name] as string)
+                    : ''
+                }
+                onChange={handleInputChange(dynamicFields[i].name)}
+              />
             </Box>
-          ) : (
+            <Box sx={{ flex: 1 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+                {dynamicFields[i + 1].label}
+                {dynamicFields[i + 1].required && ' *'}
+              </Typography>
+              <Input
+                required={dynamicFields[i + 1].required}
+                type={dynamicFields[i + 1].type}
+                value={
+                  typeof form[dynamicFields[i + 1].name] === 'string'
+                    ? (form[dynamicFields[i + 1].name] as string)
+                    : ''
+                }
+                onChange={handleInputChange(dynamicFields[i + 1].name)}
+              />
+            </Box>
+          </Box>
+        );
+      } else {
+        rows.push(
+          <Box key={dynamicFields[i].name} sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+                {dynamicFields[i].label}
+                {dynamicFields[i].required && ' *'}
+              </Typography>
+              <Input
+                required={dynamicFields[i].required}
+                type={dynamicFields[i].type}
+                value={
+                  typeof form[dynamicFields[i].name] === 'string'
+                    ? (form[dynamicFields[i].name] as string)
+                    : ''
+                }
+                onChange={handleInputChange(dynamicFields[i].name)}
+              />
+            </Box>
             <Box sx={{ flex: 1 }} />
-          )}
-        </Box>
-      );
+          </Box>
+        );
+      }
     }
     return rows;
   };
@@ -369,11 +372,19 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
       <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
         <ButtonGroup variant="solid">
           {step === 2 && (
-            <Button onClick={back} sx={{ textTransform: 'none' }} color="danger">
+            <Button
+              onClick={back}
+              sx={{ textTransform: 'none' }}
+              color="danger"
+            >
               {t('components.createusermanually.backbutton')}
             </Button>
           )}
-          <Button onClick={cancel} sx={{ textTransform: 'none' }} color="danger">
+          <Button
+            onClick={cancel}
+            sx={{ textTransform: 'none' }}
+            color="danger"
+          >
             {t('components.createusermanually.closebutton')}
           </Button>
           {step === 1 ? (
