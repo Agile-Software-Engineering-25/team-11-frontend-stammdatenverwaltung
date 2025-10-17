@@ -44,9 +44,10 @@ jobs:
             ${{ secrets.MINIO_ACCESS_KEY }} \
             ${{ secrets.MINIO_SECRET_KEY }}
 
-      - name: Clear existing files in bucket
+      - name: Clear existing files in subfolder
         run: |
-          $HOME/minio-binaries/mc rm --recursive --force minio/${{ secrets.BUCKET_NAME }} || echo "No existing files to remove"
+            $HOME/minio-binaries/mc rm --recursive --force minio/${{ secrets.BUCKET_NAME }}/stammdatenverwaltung/ || echo "No existing files to remove"
+
 
       - name: Upload dist files to MinIO (subfolder)
         run: |
