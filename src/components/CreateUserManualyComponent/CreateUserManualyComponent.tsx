@@ -17,6 +17,7 @@ interface DynamicField {
   label: string;
   type: string;
   required: boolean;
+  options?: { label: string; value: string }[];
 }
 
 // Typ für das Formular
