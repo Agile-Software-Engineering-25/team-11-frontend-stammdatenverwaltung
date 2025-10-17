@@ -150,7 +150,7 @@ const UserCsvImportComponent = ({
       fileInputRef.current.value = '';
     }
   };
-
+  /*
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setSelectedFile(e.target.files[0]);
@@ -158,6 +158,7 @@ const UserCsvImportComponent = ({
       setSelectedFile(null);
     }
   };
+  */
 
   // Weiter-Button: CSV einlesen und in Tabelle anzeigen
   const handleNext = async () => {
