@@ -4,12 +4,8 @@ import {
   createCustomJoyTheme,
   createCustomMuiTheme,
 } from '@agile-software/shared-components';
-import {
-  CssBaseline,
-  THEME_ID as MATERIAL_THEME_ID,
-  ThemeProvider,
-} from '@mui/material';
-import { CssVarsProvider as JoyCssVarsProvider, GlobalStyles } from '@mui/joy';
+import { THEME_ID as MATERIAL_THEME_ID, ThemeProvider } from '@mui/material';
+import { CssVarsProvider as JoyCssVarsProvider } from '@mui/joy';
 import './i18n';
 import { Provider } from 'react-redux';
 import store from '@stores/index.ts';
