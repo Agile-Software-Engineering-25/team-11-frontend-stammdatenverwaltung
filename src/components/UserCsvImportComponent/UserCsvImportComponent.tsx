@@ -12,7 +12,7 @@ import {
   Checkbox,
 } from '@mui/joy';
 import { useTranslation } from 'react-i18next';
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, type SetStateAction } from 'react';
 import {
   getAvailableRoles,
   getPage1DynamicFields,
@@ -451,7 +451,7 @@ const UserCsvImportComponent = ({
               <Dropzone
                 types={['CSV']}
                 multiple={false}
-                onFileSelect={(file) => {
+                onFileSelect={(file: any[] | SetStateAction<File | null>) => {
                   // file ist entweder File oder File[]
                   if (Array.isArray(file)) {
                     setSelectedFile(file[0] ?? null);
