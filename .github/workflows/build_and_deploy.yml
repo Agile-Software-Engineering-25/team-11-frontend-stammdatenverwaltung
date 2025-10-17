@@ -24,14 +24,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Clear shared components dir
-        run: |
-          rm -rf ./shared-components/*
-          rm -rf ./shared-components/.[!.]* ./shared-components/..?* || true
-
-      - name: Setup Shared Components
-        run: npm run init
-
       - name: Build application
         run: npm run build
         env:
