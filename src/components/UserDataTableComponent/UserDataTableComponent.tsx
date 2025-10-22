@@ -12,7 +12,7 @@ import { SearchBar } from '@agile-software/shared-components'; // <--- Import de
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import UserDataCardComponent from '../UserDataCardComponent/UserDataCardComponent';
-import { getAllUsers, getAllRoles } from '../../utils/showuserdatafunctions';
+import { getAllUsers, getAllRoles, inferRolesFromUser } from '../../utils/showuserdatafunctions';
 
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,
@@ -20,16 +20,16 @@ const UserDataTableComponent = ({
   setSelectedUserId,
   onShowMessage,
 }: {
-  onSelectedUserIdsChange?: (ids: number[]) => void;
-  selectedUserId?: number | null;
-  setSelectedUserId?: (id: number | null) => void;
+  onSelectedUserIdsChange?: (ids: string[]) => void;
+  selectedUserId?: string | null;
+  setSelectedUserId?: (id: string | null) => void;
   onShowMessage?: (type: 'success' | 'error', text: string) => void;
 }) => {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('alle');
   const [users, setUsers] = useState(getAllUsers());
-  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   const allRoles = getAllRoles();
 
@@ -37,10 +37,13 @@ const UserDataTableComponent = ({
   const filteredUsers = users
     .filter((user) => {
       const searchString =
-        `${user.firstname} ${user.lastname} ${user.street ?? ''} ${user.housenumber ?? ''} ${user.zipcode ?? ''} ${user.city ?? ''} ${user.phone ?? ''}`.toLowerCase();
+        `${user.firstname} ${user.lastname} ${user.address ?? ''}`.toLowerCase();
       const matchesSearch = searchString.includes(search.toLowerCase());
       const matchesRole =
-        roleFilter === 'alle' || user.roles.includes(roleFilter);
+        roleFilter === 'alle' ||
+        (Array.isArray(user.roles)
+          ? user.roles.includes(roleFilter)
+          : user.roles === roleFilter);
       return matchesSearch && matchesRole;
     })
     .sort((a, b) => {
@@ -57,24 +60,27 @@ const UserDataTableComponent = ({
   // Card schließen
   const handleCloseDetail = () => {
     if (setSelectedUserId) setSelectedUserId(null);
+    else internalSetSelectedUserId(null);
   };
 
   // Card nach erfolgreichem Speichern direkt wieder öffnen
-  const handleSaveSuccess = (userId: number) => {
+  const handleSaveSuccess = (userId: string) => {
     if (setSelectedUserId) {
-      setSelectedUserId(userId);
+      // toggle to force re-render in parent if needed
       setSelectedUserId(null);
+      setTimeout(() => setSelectedUserId(userId), 0);
+    } else {
+      internalSetSelectedUserId(null);
+      setTimeout(() => internalSetSelectedUserId(userId), 0);
     }
-    //setSelectedUserId(userId);
-    //setTimeout(() => setSelectedUserId(userId), 0);
   };
 
   // Checkbox-Handler
   const handleCheckboxChange =
-    (userId: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    (userId: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
       setSelectedUserIds((prev) => {
         const newIds = event.target.checked
-          ? [...prev, userId]
+          ? Array.from(new Set([...prev, userId]))
           : prev.filter((id) => id !== userId);
         if (onSelectedUserIdsChange) onSelectedUserIdsChange(newIds);
         return newIds;
@@ -83,9 +89,9 @@ const UserDataTableComponent = ({
 
   // Alle auswählen
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
-    let newIds: number[];
+    let newIds: string[];
     if (event.target.checked) {
-      newIds = filteredUsers.map((user) => user.id);
+      newIds = filteredUsers.map((user) => String(user.id));
     } else {
       newIds = [];
     }
@@ -100,18 +106,21 @@ const UserDataTableComponent = ({
 
   const allChecked =
     filteredUsers.length > 0 &&
-    filteredUsers.every((user) => selectedUserIds.includes(user.id));
+    filteredUsers.every((user) => selectedUserIds.includes(String(user.id)));
   const someChecked =
-    filteredUsers.some((user) => selectedUserIds.includes(user.id)) &&
+    filteredUsers.some((user) => selectedUserIds.includes(String(user.id))) &&
     !allChecked;
 
   // Ersetze eigenen State durch Props, falls vorhanden
   const [internalSelectedUserId, internalSetSelectedUserId] = useState<
-    number | null
+    string | null
   >(null);
   const activeUserId =
     selectedUserId !== undefined ? selectedUserId : internalSelectedUserId;
-  const changeSelectedUserId = setSelectedUserId ?? internalSetSelectedUserId;
+  const changeSelectedUserId = (id: string | null) => {
+    if (setSelectedUserId) setSelectedUserId(id);
+    else internalSetSelectedUserId(id);
+  };
 
   return (
     <Box sx={{ p: 2 }}>
@@ -186,17 +195,18 @@ const UserDataTableComponent = ({
         </thead>
         <tbody>
           {filteredUsers.flatMap((user) => {
-            const freshUser = users.find((u) => u.id === user.id) ?? user;
+            const freshUser =
+              users.find((u) => String(u.id) === String(user.id)) ?? user;
             const rows = [
               <tr
-                key={user.id}
+                key={String(user.id)}
                 style={{
                   cursor: 'pointer',
-                  background: activeUserId === user.id ? 50 : undefined,
+                  background: activeUserId === String(user.id) ? 50 : undefined,
                 }}
                 onClick={() =>
                   changeSelectedUserId(
-                    activeUserId === user.id ? null : user.id
+                    activeUserId === String(user.id) ? null : String(user.id)
                   )
                 }
               >
@@ -205,8 +215,8 @@ const UserDataTableComponent = ({
                   style={{ textAlign: 'center', width: 36 }}
                 >
                   <Checkbox
-                    checked={selectedUserIds.includes(user.id)}
-                    onChange={handleCheckboxChange(user.id)}
+                    checked={selectedUserIds.includes(String(user.id))}
+                    onChange={handleCheckboxChange(String(user.id))}
                     aria-label={`User ${freshUser.firstname} ${freshUser.lastname} auswählen`}
                   />
                 </td>
@@ -231,7 +241,7 @@ const UserDataTableComponent = ({
                         maxWidth: 160,
                       }}
                     >
-                      {freshUser.roles.map((role) => (
+                      {inferRolesFromUser(freshUser).map((role) => (
                         <Chip
                           key={role}
                           size="sm"
@@ -249,16 +259,14 @@ const UserDataTableComponent = ({
                     </Box>
                   </Box>
                 </td>
-                <td>{freshUser.birthdate}</td>
-                <td>
-                  {`${freshUser.street ?? ''} ${freshUser.housenumber ?? ''}, ${freshUser.zipcode ?? ''} ${freshUser.city ?? ''}`.trim()}
-                </td>
-                <td>{freshUser.phone}</td>
+                <td>{freshUser.date_of_birth}</td>
+                <td>{`${freshUser.address ?? ''}`.trim()}</td>
+                <td>{freshUser.phone_number}</td>
               </tr>,
             ];
-            if (activeUserId === user.id) {
+            if (activeUserId === String(user.id)) {
               rows.push(
-                <tr key={user.id + '-details'}>
+                <tr key={String(user.id) + '-details'}>
                   <td colSpan={5} style={{ padding: 0 }}>
                     <UserDataCardComponent
                       user={freshUser}

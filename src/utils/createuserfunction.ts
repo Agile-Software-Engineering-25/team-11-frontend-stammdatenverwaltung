@@ -1,12 +1,12 @@
 /* eslint-disable max-lines-per-function */
 'use server';
 import {
-  page1DynamicFieldsConfig,
+  persondataclass as page1DynamicFieldsConfig,
   roleFieldConfigs,
   availableRoles,
   fixedFieldNames,
-  users,
-} from './mockupdata';
+  mockUsers as users,
+} from './userdataclass';
 
 // Typisierung für dynamische Felder
 type DynamicField = {
@@ -81,8 +81,8 @@ export function createUser(data: string[], roleFromSelection?: string) {
     }
   });
 
-  // id generieren
-  const newId = users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1;
+  // id generieren (string-basiert, da mockUsers in userdataclass IDs als string haben)
+  const newId = `uid-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
   // Dynamisches User-Objekt: alle Felder aus dem ersten Mockup-User übernehmen
   const templateUser = users[0];
@@ -114,3 +114,5 @@ export function createUser(data: string[], roleFromSelection?: string) {
 
   return userObj;
 }
+
+

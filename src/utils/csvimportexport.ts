@@ -1,9 +1,9 @@
 /* eslint-disable max-lines-per-function */
 import {
-  users,
-  page1DynamicFieldsConfig,
+  mockUsers as users,
+  persondataclass as page1DynamicFieldsConfig,
   roleFieldConfigs,
-} from './mockupdata';
+} from './userdataclass';
 
 // Typ für ein User-Objekt
 type UserType = (typeof users)[number];
@@ -52,9 +52,11 @@ export function generateCsvTemplateForRole(role: string): string {
 }
 
 // Dynamischer Export der ausgewählten Nutzer als CSV (inkl. Basisdaten und rollenspezifischer Felder)
-export function exportUsersToCSV(selectedUserIds: number[]): string {
-  // Filtere die User
-  const selectedUsers = users.filter((u) => selectedUserIds.includes(u.id));
+export function exportUsersToCSV(selectedUserIds: string[]): string {
+  // Filtere die User (IDs als strings)
+  const selectedUsers = users.filter((u) =>
+    selectedUserIds.includes(String(u.id))
+  );
   if (selectedUsers.length === 0) return '';
 
   // Basisfelder (wie in generateCsvTemplateForRole, aber inkl. Rollen)
@@ -106,11 +108,16 @@ export function exportUsersToCSV(selectedUserIds: number[]): string {
 
   // Zeilen
   const rows = selectedUsers.map((user) => {
+    const rolesArr = Array.isArray(user.roles)
+      ? user.roles
+      : user.roles
+      ? [user.roles]
+      : [];
     const base = [
       user.firstname ?? '',
       user.lastname ?? '',
       user.email ?? '',
-      (user.roles ?? []).join(', '),
+      rolesArr.join(', '),
     ];
     const page1 = page1Fields.map((f) =>
       user[f.key as keyof UserType] !== undefined &&
@@ -118,14 +125,15 @@ export function exportUsersToCSV(selectedUserIds: number[]): string {
         ? String(user[f.key as keyof UserType])
         : ''
     );
-    const roleSpecific = roleFields.map((f) =>
-      user[f.key as keyof UserType] !== undefined &&
-      user[f.key as keyof UserType] !== null
-        ? String(user[f.key as keyof UserType])
-        : user.details && user.details[f.key]
-          ? user.details[f.key]
-          : ''
-    );
+    const roleSpecific = roleFields.map((f) => {
+      if (
+        user[f.key as keyof UserType] !== undefined &&
+        user[f.key as keyof UserType] !== null
+      ) {
+        return String(user[f.key as keyof UserType]);
+      }
+      return user.details && user.details[f.key] ? user.details[f.key] : '';
+    });
     return [...base, ...page1, ...roleSpecific];
   });
 

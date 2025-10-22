@@ -55,7 +55,10 @@
       "role_missing": "Please select a role first.",
       "no_role_specific_fields": "No additional information required for this role.",
       "successcreation": "User created successfully.",
-      "invalid_email": "Please enter a valid email address."
+      "invalid_email": "Please enter a valid email address.",
+      "group": "Group",
+      "choose_group": "Choose a group",
+      "choose": "Choose a "
     },
     "userDataTable": {
       "header": "User Data Table",

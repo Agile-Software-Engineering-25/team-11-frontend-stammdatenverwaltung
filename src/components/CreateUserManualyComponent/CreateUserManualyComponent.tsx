@@ -17,6 +17,7 @@ import {
   createUser,
   getPage1DynamicFields,
 } from '@/utils/createuserfunction';
+import { availableGroups } from '@/utils/userdataclass';
 import { useMessage } from '@/components/MessageProvider/MessageProvider'; // <--- Context importieren
 
 // Typen für dynamische Felder
@@ -33,8 +34,9 @@ type FormState = {
   firstname: string;
   lastname: string;
   email: string;
-  roles: string[];
-  [key: string]: string | string[];
+  roles: string[]; // bleibt Array (Single-Select stored as 1-element array)
+  groups: string; // nun ein einzelner string (Pflichtfeld)
+  [key: string]: string | string[] | undefined;
 };
 
 const initialState: FormState = {
@@ -42,10 +44,11 @@ const initialState: FormState = {
   lastname: '',
   email: '',
   roles: [],
+  groups: '',
   // dynamische Felder werden nach Bedarf ergänzt
 };
 
-const requiredFieldsPage1 = ['firstname', 'lastname', 'email', 'roles'];
+const requiredFieldsPage1 = ['firstname', 'lastname', 'email']; // roles/groups prüfen wir separat
 
 const CreateUser = ({ onClose }: { onClose?: () => void }) => {
   const [step, setStep] = useState<number>(1);
@@ -69,19 +72,23 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
     ).values()
   ) as DynamicField[];
 
+  // Page1 Validierung: roles (array) UND groups (string) sind Pflicht; plus page1 dynamic required
   const isPage1Valid =
-    requiredFieldsPage1.every((field) => !!form[field]) &&
-    page1DynamicFields.every(
-      (field) => !field.required || !!form[field.name]
-    ) &&
     Array.isArray(form.roles) &&
-    form.roles.length > 0;
+    form.roles.length > 0 &&
+    typeof form.groups === 'string' &&
+    form.groups.trim().length > 0 &&
+    requiredFieldsPage1.every((field) => !!form[field]) &&
+    page1DynamicFields.every((field) => !field.required || !!form[field.name]);
 
   const isPage2Valid = dynamicFields.every(
     (field) => !field.required || !!form[field.name]
   );
 
   const { t } = useTranslation();
+  // Helper: generischer Placeholder "choose + label"
+  const choosePlaceholder = (label: string) =>
+    `${t('components.createusermanually.choose')} ${label}`;
   const navigate = useNavigate();
   const { setMessage } = useMessage(); // <--- Context Hook verwenden
 
@@ -111,14 +118,20 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
           delete cleanedForm[key];
         }
       });
+      // ensure kept fields exist
+      Array.from(keepFields).forEach((f) => {
+        if (!(f in cleanedForm)) cleanedForm[f] = '';
+      });
       return {
         ...cleanedForm,
         roles: rolesArr,
-        ...Object.fromEntries(
-          Array.from(keepFields).map((field) => [field, prev[field] ?? ''])
-        ),
       };
     });
+  };
+
+  // Gruppen-Select Handler (Pflichtfeld)
+  const handleGroupChange = (_: any, value: string | null) => {
+    setForm((prev) => ({ ...prev, groups: value ?? '' }));
   };
 
   const finish = () => {
@@ -172,7 +185,7 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
         rows.push(
           <Box
             key={page1DynamicFields[i].name}
-            sx={{ display: 'flex', gap: 2 }}
+            sx={{ display: 'flex', gap: 2, mb: 2 }}
           >
             <Box sx={{ flex: 1 }}>
               <Typography level="body-xs" sx={{ mb: 0.5 }}>
@@ -238,64 +251,89 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
   };
 
   // Hilfsfunktion für 2er-Gruppierung der dynamischen Rollen-Felder (Seite 2)
+  // - semester: number-Eingabe soll in normalem Input (type="text") gerendert werden
+  // - select-Felder (z.B. study_status) werden als Select mit options gerendert
   const renderRoleDynamicFieldsRows = () => {
     const rows: JSX.Element[] = [];
     for (let i = 0; i < dynamicFields.length; i += 2) {
+      const renderField = (field: DynamicField) => {
+        if (field.type === 'select') {
+          return (
+            <Select
+              value={(form[field.name] as string) ?? ''}
+              onChange={(_: any, val: string | null) =>
+                setForm((prev) => ({ ...prev, [field.name]: val ?? '' }))
+              }
+              required={field.required}
+            >
+              <Option value="" disabled>
+                {choosePlaceholder(field.label)}
+              </Option>
+              {(field.options ?? []).map((opt) => (
+                <Option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </Option>
+              ))}
+            </Select>
+          );
+        }
+        // semester or any 'number' field: use normal text input
+        if (field.type === 'number') {
+          return (
+            <Input
+              type="text"
+              value={(form[field.name] as string) ?? ''}
+              onChange={handleInputChange(field.name)}
+              required={field.required}
+              placeholder={field.name === 'semester' ? 'z. B. 3' : undefined}
+            />
+          );
+        }
+        // fallback: normal input
+        return (
+          <Input
+            required={field.required}
+            type={field.type}
+            value={(form[field.name] as string) ?? ''}
+            onChange={handleInputChange(field.name)}
+          />
+        );
+      };
+
       if (dynamicFields[i + 1]) {
         rows.push(
-          <Box key={dynamicFields[i].name} sx={{ display: 'flex', gap: 2 }}>
+          <Box
+            key={dynamicFields[i].name}
+            sx={{ display: 'flex', gap: 2, mb: 2 }}
+          >
             <Box sx={{ flex: 1 }}>
               <Typography level="body-xs" sx={{ mb: 0.5 }}>
                 {dynamicFields[i].label}
                 {dynamicFields[i].required && ' *'}
               </Typography>
-              <Input
-                required={dynamicFields[i].required}
-                type={dynamicFields[i].type}
-                value={
-                  typeof form[dynamicFields[i].name] === 'string'
-                    ? (form[dynamicFields[i].name] as string)
-                    : ''
-                }
-                onChange={handleInputChange(dynamicFields[i].name)}
-              />
+              {renderField(dynamicFields[i])}
             </Box>
             <Box sx={{ flex: 1 }}>
               <Typography level="body-xs" sx={{ mb: 0.5 }}>
                 {dynamicFields[i + 1].label}
                 {dynamicFields[i + 1].required && ' *'}
               </Typography>
-              <Input
-                required={dynamicFields[i + 1].required}
-                type={dynamicFields[i + 1].type}
-                value={
-                  typeof form[dynamicFields[i + 1].name] === 'string'
-                    ? (form[dynamicFields[i + 1].name] as string)
-                    : ''
-                }
-                onChange={handleInputChange(dynamicFields[i + 1].name)}
-              />
+              {renderField(dynamicFields[i + 1])}
             </Box>
           </Box>
         );
       } else {
         rows.push(
-          <Box key={dynamicFields[i].name} sx={{ display: 'flex', gap: 2 }}>
+          <Box
+            key={dynamicFields[i].name}
+            sx={{ display: 'flex', gap: 2, mb: 2 }}
+          >
             <Box sx={{ flex: 1 }}>
               <Typography level="body-xs" sx={{ mb: 0.5 }}>
                 {dynamicFields[i].label}
                 {dynamicFields[i].required && ' *'}
               </Typography>
-              <Input
-                required={dynamicFields[i].required}
-                type={dynamicFields[i].type}
-                value={
-                  typeof form[dynamicFields[i].name] === 'string'
-                    ? (form[dynamicFields[i].name] as string)
-                    : ''
-                }
-                onChange={handleInputChange(dynamicFields[i].name)}
-              />
+              {renderField(dynamicFields[i])}
             </Box>
             <Box sx={{ flex: 1 }} />
           </Box>
@@ -344,7 +382,28 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
           </Box>
           {/* Dynamische Felder für Seite 1 in 2er-Zeilen */}
           {renderDynamicFieldsRows()}
-          <Box sx={{ mt: -2 }}>
+
+          {/* Gruppen-Select (Pflicht) */}
+          <Box sx={{ mt: 1, mb: 1 }}>
+            <Typography level="body-xs" sx={{ mb: 0.5 }}>
+              {t('components.createusermanually.group')} *
+            </Typography>
+            <Select
+              placeholder={t('components.createusermanually.choose_group')}
+              value={form.groups ?? ''}
+              onChange={handleGroupChange}
+              required
+              sx={{ width: '68%' }}
+            >
+              {availableGroups.map((g) => (
+                <Option key={g} value={g}>
+                  {g}
+                </Option>
+              ))}
+            </Select>
+          </Box>
+
+          <Box sx={{ mt: -1 }}>
             <Typography level="body-xs" sx={{ mb: 0.5 }}>
               {t('components.createusermanually.role')} *
             </Typography>

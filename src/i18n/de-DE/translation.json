@@ -55,7 +55,10 @@
         "role_missing": "Bitte wählen Sie zuerst eine Rolle aus.",
         "no_role_specific_fields": "Für diese Rolle sind keine weiteren Angaben erforderlich.",
         "successcreate": "Benutzer erfolgreich angelegt.",
-        "errorcreate": "Fehler beim Anlegen des Benutzers. Bitte versuchen Sie es erneut."
+        "errorcreate": "Fehler beim Anlegen des Benutzers. Bitte versuchen Sie es erneut.",
+        "choose_group": "Wählen Sie eine Gruppe",
+        "group": "Gruppe",
+        "choose": "Wählen Sie ein/ eine "
       },
     "userDataTable": {
       "header": "Benutzerdatentabelle",

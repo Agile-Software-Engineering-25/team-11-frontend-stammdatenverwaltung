@@ -1,10 +1,10 @@
 import {
-  users,
-  page1DynamicFieldsConfig,
+  mockUsers as users,
+  persondataclass as page1DynamicFieldsConfig,
   roleFieldConfigs,
   availableRoles,
   fixedFieldNames,
-} from './mockupdata';
+} from './userdataclass';
 
 // Typen für dynamische Felder und Karten
 type User = (typeof users)[number];
@@ -28,7 +28,54 @@ function getAllRoles(): string[] {
   return availableRoles;
 }
 
-// Karten-Konfiguration für Rollen
+/**
+ * Rolle(n) aus Benutzerdaten ableiten.
+ * - Liefert Array mit möglichen Rollen: 'Student', 'Employees', 'Lecturer' oder 'Person' (Fallback)
+ * - Entscheidet anhand vorhandener Felder (Matriculation, employee_id/employee_number, lecturer-spezifisch ...)
+ */
+function inferRolesFromUser(user: Record<string, any>): string[] {
+  // Priorität: Lecturer → wenn Lecturer-Felder vorhanden sind,
+  // gilt der User ausschließlich als Lecturer.
+  const isLecturer =
+    Boolean(user.field_chair) ||
+    Boolean(user.title) ||
+    Boolean(user.employment_status);
+
+  if (isLecturer) {
+    return ['Lecturer'];
+  }
+
+  const roles = new Set<string>();
+
+  // Employees
+  if (
+    user.employee_number ||
+    user.employee_id ||
+    user.department ||
+    user.office_number ||
+    user.working_time_model
+  ) {
+    roles.add('Employees');
+  }
+
+  // Students
+  if (
+    user.matriculation_number ||
+    user.degree_program ||
+    user.semester !== undefined ||
+    user.study_status ||
+    user.cohort
+  ) {
+    roles.add('Student');
+  }
+
+  // Falls nichts erkennbar: Person
+  if (roles.size === 0) roles.add('Person');
+
+  return Array.from(roles);
+}
+
+// Karten-Konfiguration für Rollen (bleibt unverändert)
 function getCardsForRoles(roles: string[]): CardConfig[] {
   const dynamicFields = getDynamicUserFields();
   const cards: CardConfig[] = [
@@ -62,12 +109,18 @@ function getCardsForRoles(roles: string[]): CardConfig[] {
   return cards;
 }
 
+// Neue Convenience-Funktion: Karten basierend auf einem User-Objekt zurückgeben
+function getCardsForUser(user: User): CardConfig[] {
+  const inferredRoles = inferRolesFromUser(user);
+  return getCardsForRoles(inferredRoles);
+}
+
 // Userdaten aktualisieren
 function updateUserData(
-  id: number,
+  id: string,
   updatedFields: Record<string, string>
 ): boolean {
-  const user = users.find((u) => u.id === id);
+  const user = users.find((u) => String(u.id) === String(id));
   if (!user) return false;
   Object.keys(updatedFields).forEach((key) => {
     if (fixedFieldNames.includes(key)) {
@@ -83,8 +136,8 @@ function updateUserData(
 }
 
 // User löschen
-function deleteUserById(id: number): boolean {
-  const idx = users.findIndex((u) => u.id === id);
+function deleteUserById(id: string): boolean {
+  const idx = users.findIndex((u) => String(u.id) === String(id));
   if (idx !== -1) {
     users.splice(idx, 1);
     return true;
@@ -97,6 +150,8 @@ export {
   getAllUsers,
   getAllRoles,
   getCardsForRoles,
+  getCardsForUser,
+  inferRolesFromUser,
   updateUserData,
   getDynamicUserFields,
   deleteUserById,

@@ -1,5 +1,5 @@
 /* eslint-disable max-lines-per-function */
-import { Box, Typography, CardContent, Sheet, Input, Button } from '@mui/joy';
+import { Box, Typography, CardContent, Sheet, Input, Button, Chip } from '@mui/joy';
 //import { Card } from '@agile-software/shared-components';
 import { useState, useEffect } from 'react';
 import {
@@ -9,6 +9,8 @@ import {
 } from '../../utils/showuserdatafunctions';
 import { useTranslation } from 'react-i18next';
 import { Card, Modal as SharedModal } from '@agile-software/shared-components';
+import type { UserType } from '@/utils/showuserdatafunctions';
+import { inferRolesFromUser } from '@/utils/showuserdatafunctions';
 
 interface CardField {
   key: string;
@@ -19,13 +21,6 @@ interface CardType {
   key: string;
   title: string;
   fields: CardField[];
-}
-
-interface UserType {
-  id: number;
-  roles: string[];
-  details?: Record<string, string>;
-  [key: string]: any;
 }
 
 const UserDataCardComponent = ({
@@ -47,7 +42,9 @@ const UserDataCardComponent = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [, forceUpdate] = useState(0);
 
-  const cards: CardType[] = user ? getCardsForRoles(user.roles) : [];
+  // Rollen aus Daten ableiten und für Card-Generierung verwenden
+  const rolesForCards = user ? inferRolesFromUser(user) : [];
+  const cards: CardType[] = user ? getCardsForRoles(rolesForCards) : [];
   const [activeCard, setActiveCard] = useState<string>(
     cards[0]?.key ?? 'basis'
   );
@@ -88,7 +85,7 @@ const UserDataCardComponent = ({
   const handleEdit = () => setEditMode(true);
 
   const handleSave = () => {
-    const result = updateUserData(user.id, inputValues);
+    const result = updateUserData(String(user.id), inputValues);
     if (result) {
       setEditMode(false);
       forceUpdate((n) => n + 1);
@@ -122,7 +119,7 @@ const UserDataCardComponent = ({
   };
 
   const confirmDelete = () => {
-    const result = deleteUserById(user.id);
+    const result = deleteUserById(String(user.id));
     setShowDeleteDialog(false);
     if (result) {
       if (onUserUpdate) onUserUpdate();
@@ -206,18 +203,53 @@ const UserDataCardComponent = ({
       <Typography level="h4" sx={{ mb: 1 }}>
         {t('components.userDataTable.detailedview')}
       </Typography>
-      <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-        {cards.map((card) => (
-          <Button
-            key={card.key}
-            size="sm"
-            variant={activeCard === card.key ? 'solid' : 'outlined'}
-            color={activeCard === card.key ? 'primary' : 'neutral'}
-            onClick={() => setActiveCard(card.key)}
-          >
-            {card.title}
-          </Button>
-        ))}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          mb: 1,
+        }}
+      >
+        {/* Buttons und Gruppen-Icon zusammen, links neben den Cards */}
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          {cards.map((card) => (
+            <Button
+              key={card.key}
+              size="sm"
+              variant={activeCard === card.key ? 'solid' : 'outlined'}
+              color={activeCard === card.key ? 'primary' : 'neutral'}
+              onClick={() => setActiveCard(card.key)}
+            >
+              {card.title}
+            </Button>
+          ))}
+
+          {/* Nur ein Icon für die Gruppe (nicht für die Rolle) direkt neben den Buttons */}
+          {(() => {
+            const group = Array.isArray(user.groups)
+              ? user.groups[0]
+              : user.groups;
+            if (!group) return null;
+            return (
+              <Chip
+                key={`group-${group}`}
+                size="sm"
+                variant="soft"
+                color="neutral"
+                startDecorator={
+                  <Box component="span" sx={{ mr: 0.5 }}>
+                    👥
+                  </Box>
+                }
+                sx={{ height: 26, px: 1 }}
+                aria-label={`Gruppe: ${group}`}
+              >
+                {group}
+              </Chip>
+            );
+          })()}
+        </Box>
       </Box>
       {currentCard && (
         <Card>
