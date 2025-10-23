@@ -44,11 +44,11 @@ export function generateCsvTemplateForRole(role: string): string {
   const csv = header
     .map((val) =>
       typeof val === 'string' &&
-      (val.includes(',') || val.includes('"') || val.includes('\n'))
+      (val.includes(';') || val.includes('"') || val.includes('\n'))
         ? `"${val.replace(/"/g, '""')}"`
         : val
     )
-    .join(',');
+    .join(';');
 
   return csv;
 }
@@ -153,17 +153,17 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
     return [...base, ...page1, ...roleSpecific];
   });
 
-  // CSV-String bauen
+  // CSV-String bauen (Semikolon als Delimiter)
   const csv = [header, ...rows]
     .map((row) =>
       row
         .map((val) =>
           typeof val === 'string' &&
-          (val.includes(',') || val.includes('"') || val.includes('\n'))
+          (val.includes(';') || val.includes('"') || val.includes('\n'))
             ? `"${val.replace(/"/g, '""')}"`
             : val
         )
-        .join(',')
+        .join(';')
     )
     .join('\r\n');
 
