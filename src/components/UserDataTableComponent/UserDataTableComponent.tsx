@@ -12,7 +12,11 @@ import { SearchBar } from '@agile-software/shared-components'; // <--- Import de
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import UserDataCardComponent from '../UserDataCardComponent/UserDataCardComponent';
-import { getAllUsers, getAllRoles, inferRolesFromUser } from '../../utils/showuserdatafunctions';
+import {
+  getAllUsers,
+  getAllRoles,
+  inferRolesFromUser,
+} from '../../utils/showuserdatafunctions';
 
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,
