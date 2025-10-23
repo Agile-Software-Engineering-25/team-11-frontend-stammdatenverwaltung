@@ -448,7 +448,9 @@ const UserCsvImportComponent = ({
               <Dropzone
                 types={['CSV']}
                 multiple={false}
-                onFileSelect={(file: any[] | SetStateAction<File | null>) => {
+                onFileSelect={(
+                  file: unknown[] | SetStateAction<File | null>
+                ) => {
                   // file ist entweder File oder File[]
                   if (Array.isArray(file)) {
                     setSelectedFile(file[0] ?? null);

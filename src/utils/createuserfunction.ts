@@ -96,14 +96,15 @@ export function createUser(data: string[], roleFromSelection?: string) {
   // Feste Felder dynamisch zuweisen
   fixedFieldNames.forEach((field) => {
     if (field !== 'roles' && field in userObj) {
-      (userObj as Record<string, any>)[field] = result[field] ?? '';
+      (userObj as Record<string, unknown>)[field] = result[field] ?? '';
     }
   });
 
   // Dynamische Felder Seite 1 zuweisen
   page1DynamicFieldsConfig.forEach((field) => {
     if (field.name in userObj) {
-      (userObj as Record<string, any>)[field.name] = result[field.name] ?? '';
+      (userObj as Record<string, unknown>)[field.name] =
+        result[field.name] ?? '';
     }
   });
 
@@ -114,5 +115,3 @@ export function createUser(data: string[], roleFromSelection?: string) {
 
   return userObj;
 }
-
-

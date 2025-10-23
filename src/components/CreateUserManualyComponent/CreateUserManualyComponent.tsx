@@ -99,7 +99,7 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
     };
 
   // Einzel-Auswahl für Rollen (nur eine Rolle möglich)
-  const handleRoleChange = (_: any, value: string | null) => {
+  const handleRoleChange = (_: unknown, value: string | null) => {
     setForm((prev) => {
       const rolesArr = value ? [value] : [];
       // Leere dynamische Felder zurücksetzen, die nicht mehr gebraucht werden
@@ -130,7 +130,7 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
   };
 
   // Gruppen-Select Handler (Pflichtfeld)
-  const handleGroupChange = (_: any, value: string | null) => {
+  const handleGroupChange = (_: unknown, value: string | null) => {
     setForm((prev) => ({ ...prev, groups: value ?? '' }));
   };
 
@@ -261,7 +261,7 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
           return (
             <Select
               value={(form[field.name] as string) ?? ''}
-              onChange={(_: any, val: string | null) =>
+              onChange={(_: unknown, val: string | null) =>
                 setForm((prev) => ({ ...prev, [field.name]: val ?? '' }))
               }
               required={field.required}

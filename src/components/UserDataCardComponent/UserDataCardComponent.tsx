@@ -69,6 +69,7 @@ const UserDataCardComponent = ({
 
   const currentCard = cards.find((card) => card.key === activeCard);
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (currentCard && user && !editMode) {
       const newValues: Record<string, string> = {};

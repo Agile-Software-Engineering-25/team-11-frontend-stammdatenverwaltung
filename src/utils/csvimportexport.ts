@@ -111,8 +111,8 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
     const rolesArr = Array.isArray(user.roles)
       ? user.roles
       : user.roles
-      ? [user.roles]
-      : [];
+        ? [user.roles]
+        : [];
     const base = [
       user.firstname ?? '',
       user.lastname ?? '',
