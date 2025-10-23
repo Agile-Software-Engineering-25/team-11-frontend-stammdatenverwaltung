@@ -67,7 +67,7 @@ export function createUser(data: string[], roleFromSelection?: string) {
   ];
 
   // Objekt mit Namen und Wert aus dem Array erzeugen
-  const result: Record<string, any> = {};
+  const result: Record<string, unknown> = {};
   allFieldNames.forEach((name, idx) => {
     result[name] = data[idx] ?? '';
   });

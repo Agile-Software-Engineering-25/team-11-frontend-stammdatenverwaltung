@@ -33,7 +33,7 @@ function getAllRoles(): string[] {
  * - Liefert Array mit möglichen Rollen: 'Student', 'Employees', 'Lecturer' oder 'Person' (Fallback)
  * - Entscheidet anhand vorhandener Felder (Matriculation, employee_id/employee_number, lecturer-spezifisch ...)
  */
-function inferRolesFromUser(user: Record<string, any>): string[] {
+function inferRolesFromUser(user: Record<string, unknown>): string[] {
   // Priorität: Lecturer → wenn Lecturer-Felder vorhanden sind,
   // gilt der User ausschließlich als Lecturer.
   const isLecturer =
@@ -124,9 +124,9 @@ function updateUserData(
   if (!user) return false;
   Object.keys(updatedFields).forEach((key) => {
     if (fixedFieldNames.includes(key)) {
-      (user as Record<string, any>)[key] = updatedFields[key];
+      (user as Record<string, unknown>)[key] = updatedFields[key];
     } else if (page1DynamicFieldsConfig.some((f) => f.name === key)) {
-      (user as Record<string, any>)[key] = updatedFields[key];
+      (user as Record<string, unknown>)[key] = updatedFields[key];
     } else {
       if (!user.details) user.details = {};
       (user.details as Record<string, string>)[key] = updatedFields[key];
