@@ -4,6 +4,7 @@ import {
   persondataclass as page1DynamicFieldsConfig,
   roleFieldConfigs,
 } from './userdataclass';
+import { inferRolesFromUser } from './showuserdatafunctions';
 
 // Typ für ein User-Objekt
 type UserType = (typeof users)[number];
@@ -20,6 +21,7 @@ export function generateCsvTemplateForRole(role: string): string {
     { key: 'firstname', label: 'Vorname' },
     { key: 'lastname', label: 'Nachname' },
     { key: 'email', label: 'E-Mail' },
+    { key: 'groups', label: 'Gruppen' },
   ];
   // Dynamische Felder (Seite 1)
   const page1Fields = page1DynamicFieldsConfig.map((f) => ({
@@ -65,6 +67,7 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
     { key: 'lastname', label: 'Nachname' },
     { key: 'email', label: 'E-Mail' },
     { key: 'roles', label: 'Rollen' },
+    { key: 'groups', label: 'Gruppen' },
   ];
   // Dynamische Felder (Seite 1)
   const page1Fields = page1DynamicFieldsConfig.map((f) => ({
@@ -75,24 +78,32 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
   // Alle rollenspezifischen Felder, die bei mindestens einem User vorkommen
   const roleFieldSet = new Set<string>();
   selectedUsers.forEach((user) => {
-    user.roles.forEach((role) => {
+    const userRoles: string[] = Array.isArray(user.roles)
+      ? user.roles
+      : user.roles
+        ? [user.roles]
+        : inferRolesFromUser(user);
+
+    userRoles.forEach((role) => {
       const config = roleFieldConfigs[role as keyof typeof roleFieldConfigs];
       if (config) {
         config.forEach((f: FieldConfig) => roleFieldSet.add(f.name));
       }
     });
+
     // Auch Felder aus details aufnehmen, falls sie nicht in der Config stehen
     if (user.details) {
       Object.keys(user.details).forEach((key) => roleFieldSet.add(key));
     }
   });
+
   // Rollenspezifische Felder als Array mit Label
   const roleFields = Array.from(roleFieldSet).map((fieldName) => {
     // Label suchen
     for (const role in roleFieldConfigs) {
       const found = roleFieldConfigs[
         role as keyof typeof roleFieldConfigs
-      ].find((f: FieldConfig) => f.name === fieldName);
+      ]?.find((f: FieldConfig) => f.name === fieldName);
       if (found) return { key: fieldName, label: found.label };
     }
     // Fallback: Feldname als Label
@@ -108,23 +119,27 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
 
   // Zeilen
   const rows = selectedUsers.map((user) => {
-    const rolesArr = Array.isArray(user.roles)
+    const rolesArr: string[] = Array.isArray(user.roles)
       ? user.roles
       : user.roles
         ? [user.roles]
-        : [];
+        : inferRolesFromUser(user);
+
     const base = [
       user.firstname ?? '',
       user.lastname ?? '',
       user.email ?? '',
       rolesArr.join(', '),
+      user.groups ?? '',
     ];
+
     const page1 = page1Fields.map((f) =>
       user[f.key as keyof UserType] !== undefined &&
       user[f.key as keyof UserType] !== null
         ? String(user[f.key as keyof UserType])
         : ''
     );
+
     const roleSpecific = roleFields.map((f) => {
       if (
         user[f.key as keyof UserType] !== undefined &&
@@ -134,6 +149,7 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
       }
       return user.details && user.details[f.key] ? user.details[f.key] : '';
     });
+
     return [...base, ...page1, ...roleSpecific];
   });
 
