@@ -3,6 +3,16 @@
 // Alle verfügbaren Rollen
 export const availableRoles = ['Student', 'Lecturer', 'Employees'];
 export const cohorts = ['2018', '2019', '2020', '2021', '2022', '2023'];
+export const departments = [
+  'Business Informatics',
+  'Computer Science',
+  'Analytical Chemistry',
+  'Organic Chemistry',
+  'Mechanical Engineering',
+  'Electrical Engineering',
+  'Business Administration',
+  'Economics',
+];
 export const availableGroups = [
   'Mitarbeiter',
   'Student',
@@ -127,8 +137,9 @@ export const roleFieldConfigs = {
       name: 'department',
       label: 'Abteilung',
       labeleng: 'Department',
-      type: 'text',
+      type: 'select',
       required: false,
+      options: toOptions(departments),
     },
     {
       name: 'office_number',

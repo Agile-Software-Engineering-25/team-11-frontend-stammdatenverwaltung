@@ -152,7 +152,7 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
     if (result) {
       setMessage({
         type: 'success',
-        text: t('components.createusermanually.successcreation'),
+        text: t('components.createusermanually.successcreate'),
       });
       setForm(initialState);
       if (onClose) onClose();
@@ -160,7 +160,7 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
     } else {
       setMessage({
         type: 'error',
-        text: t('components.createusermanually.creationerror'),
+        text: t('components.createusermanually.errorcreate'),
       });
     }
   };
