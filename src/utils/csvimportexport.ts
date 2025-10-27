@@ -35,7 +35,8 @@ function labelWithOptions(f?: {
 
 // Normalisiert Header-Label: BOM/Quotes entfernen, angehängte "(...)" Teile entfernen, Leerzeichen zusammenfassen, trim
 export function normalizeHeaderLabel(label: string): string {
-  return String(label ?? '')
+  return (
+    String(label ?? '')
       // remove BOM
       .replace(/^\uFEFF/, '')
       // remove surrounding quotes and unescape doubled quotes if present
@@ -44,7 +45,8 @@ export function normalizeHeaderLabel(label: string): string {
       .replace(/\s*\([^)]*\)\s*$/, '')
       // collapse multiple spaces
       .replace(/\s+/g, ' ')
-      .trim();
+      .trim()
+  );
 }
 
 // Case-insensitive compare helper (locale aware)
