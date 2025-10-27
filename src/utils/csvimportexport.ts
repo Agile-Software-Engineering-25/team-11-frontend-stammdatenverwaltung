@@ -214,6 +214,7 @@ export function generateCsvTemplateForRole(
       );
     }
   });
+  /*
   if (role === 'Student') {
     roleOptionLines.push(
       `${lang === 'de' ? 'Studienstatus' : 'Study Status'}: ${studyStatus.join(' | ')}`
@@ -232,6 +233,7 @@ export function generateCsvTemplateForRole(
       `${lang === 'de' ? 'Beschäftigungsstatus' : 'Employment Status'}: ${employmentStatus.join(' | ')}`
     );
   }
+  */
 
   // Trennlinie, Header-Zeile (nur Labels), dann leere Beispielzeile
   const separator =
