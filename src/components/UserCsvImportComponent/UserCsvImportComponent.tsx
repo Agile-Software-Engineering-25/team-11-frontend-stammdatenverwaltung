@@ -24,6 +24,9 @@ import {
   downloadCSV,
   isCsvHeaderCompatible,
   getExpectedCsvHeaderForRole,
+  normalizeHeaderLabel,
+  removeRolesColumnFromHeader,
+  equalsIgnoreCase,
 } from '@/utils/csvimportexport';
 import { Dropzone } from '@agile-software/shared-components';
 
@@ -66,29 +69,42 @@ const UserCsvImportComponent = ({
   onShowMessage?: (type: 'success' | 'error', text: string) => void;
   onFailedCsv?: (csv: string, filename: string) => void;
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // --- fehlende State-/Ref-Deklarationen ergänzt ---
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [step, setStep] = useState<'select' | 'preview' | 'edit'>('select');
+
   const [csvRowsObj, setCsvRowsObj] = useState<Record<number, CsvRow>>({});
   const [csvHeader, setCsvHeader] = useState<string[]>([]);
   const [requiredFields, setRequiredFields] = useState<string[]>([]);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [headerError, setHeaderError] = useState<string | null>(null);
+
   const [editRows, setEditRows] = useState<number[]>([]);
   const [editRowsObj, setEditRowsObj] = useState<Record<number, CsvRow>>({});
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
+
   const roles = getAvailableRoles();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // --- Ende Ergänzungen ---
 
   // CSV-Template für die ausgewählte Rolle generieren (ohne Rollen-Spalte)
   const { csvString, filename } = useMemo(() => {
     if (!selectedRole) return { csvString: '', filename: '' };
-    const csvString = generateCsvTemplateForRole(selectedRole);
+    const lang =
+      i18n?.language && i18n.language.toLowerCase().startsWith('en')
+        ? 'en'
+        : 'de';
+    const csvString = generateCsvTemplateForRole(
+      selectedRole,
+      lang as 'de' | 'en'
+    );
     const filename = `${selectedRole}_SAU_IMPORT.csv`;
     return { csvString, filename };
-  }, [selectedRole]);
+  }, [selectedRole, i18n]);
 
   const handleDownloadTemplate = () => {
     if (csvString && filename) {
@@ -110,12 +126,70 @@ const UserCsvImportComponent = ({
     ];
   }, [selectedRole]);
 
-  // Hilfsfunktion: CSV parsen (nur einfache CSV, keine Sonderzeichen/Quotes)
-  function parseCsv(text: string): string[][] {
-    return text
-      .split(/\r?\n/)
-      .map((line) => line.split(',').map((cell) => cell.trim()))
-      .filter((row) => row.some((cell) => cell.length > 0));
+  // Hilfsfunktion: CSV parsen (Semikolon-Delimiter, vollständiger Quote-aware Parser)
+  // eslint-disable-next-line func-style
+  function parseCsv(text: string, delimiter = ';'): string[][] {
+    const rows: string[][] = [];
+    let curRow: string[] = [];
+    let curCell = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      const next = text[i + 1];
+
+      if (ch === '"') {
+        if (inQuotes && next === '"') {
+          // escaped quote
+          curCell += '"';
+          i++; // skip next
+        } else {
+          // toggle quote state
+          inQuotes = !inQuotes;
+        }
+        continue;
+      }
+
+      if (!inQuotes && ch === delimiter) {
+        curRow.push(curCell);
+        curCell = '';
+        continue;
+      }
+
+      // handle CRLF / LF newlines when not in quotes
+      if (!inQuotes && ch === '\r' && next === '\n') {
+        curRow.push(curCell);
+        rows.push(curRow);
+        curRow = [];
+        curCell = '';
+        i++; // skip \n
+        continue;
+      }
+      if (!inQuotes && (ch === '\n' || ch === '\r')) {
+        curRow.push(curCell);
+        rows.push(curRow);
+        curRow = [];
+        curCell = '';
+        continue;
+      }
+
+      curCell += ch;
+    }
+
+    // push last cell/row
+    // if any content remains or at least one empty cell expected
+    if (inQuotes) {
+      // unbalanced quotes — try to continue anyway
+      inQuotes = false;
+    }
+    // push last cell
+    curRow.push(curCell);
+    // if last row is not empty (or there is exactly one empty row) add it
+    if (curRow.length > 1 || curRow[0].trim() !== '' || rows.length === 0) {
+      rows.push(curRow);
+    }
+
+    // trim whitespace from unquoted cells (quoted cells preserved already)
+    return rows.map((r) => r.map((c) => c.trim()));
   }
 
   // Hilfsfunktion: Validierung der Pflichtfelder
@@ -157,66 +231,123 @@ const UserCsvImportComponent = ({
   };
   */
 
+  // Hilfs: finde die Header-Zeile (suche nur bis maxSearchRows, default 200)
+  function findHeaderIndex(rows: string[][], role: string, maxSearchRows = 200): number {
+    const limit = Math.min(rows.length, maxSearchRows);
+    for (let i = 0; i < limit; i++) {
+      const candidate = rows[i];
+      // candidate ist eine Zeile (Array von Zellen) -> prüfen, ob sie als Header passt
+      try {
+        if (isCsvHeaderCompatible(candidate, role)) {
+          return i;
+        }
+      } catch (e) {
+        // defensive: falls isCsvHeaderCompatible unerwartet wirft, weiter machen
+        // eslint-disable-next-line no-console
+        console.warn('Header check error at row', i, e);
+        continue;
+      }
+    }
+    return -1;
+  }
+
   // Weiter-Button: CSV einlesen und in Tabelle anzeigen
   const handleNext = async () => {
     setHeaderError(null);
     if (!selectedFile || !selectedRole) return;
     setImporting(true);
 
-    const text = await selectedFile.text();
-    let rows = parseCsv(text);
-    if (rows.length < 1) {
-      setImporting(false);
-      alert(t('components.userCsvImportComponent.importerrorempty'));
-      return;
-    }
-    let header = rows[0];
+    try {
+      const text = await selectedFile.text();
+      let rows = parseCsv(text);
+      if (rows.length < 1) {
+        alert(t('components.userCsvImportComponent.importerrorempty'));
+        return;
+      }
 
-    // Prüfe, ob es sich um einen Export handelt (Rollen-Spalte vorhanden)
-    const expectedHeader = getExpectedCsvHeaderForRole(selectedRole);
-    if (
-      header.length === expectedHeader.length + 1 &&
-      header.includes('Rollen')
-    ) {
-      // Entferne die Rollen-Spalte aus Header und allen Datenzeilen
-      const rollenIdx = header.indexOf('Rollen');
-      header = header.filter((h) => h !== 'Rollen');
-      rows = rows.map((row) => row.filter((_, idx) => idx !== rollenIdx));
-    }
+      // suche echte Header-Zeile (Intro/Optionen/separator sind optional)
+      let headerIndex = findHeaderIndex(rows, selectedRole, 200);
+      if (headerIndex === -1) {
+        // fallback: erste Zeile verwenden
+        headerIndex = 0;
+      }
 
-    // Header-Kompatibilität prüfen
-    if (!isCsvHeaderCompatible(header, selectedRole)) {
-      setImporting(false);
-      setHeaderError(t('components.userCsvImportComponent.headerincompatible'));
-      return;
-    }
+      // nimm die gefundene Header-Zeile
+      let header = rows[headerIndex];
 
-    const dataRows = rows.slice(1);
+      // Entferne ggf. vorhandene "Rollen"-Spalte (auch wenn mit Optionen angehängt)
+      const normalizedHeader = header.map(normalizeHeaderLabel);
+      const rollenIdx = normalizedHeader.findIndex((h) =>
+        equalsIgnoreCase(h, normalizeHeaderLabel('Rollen')) ||
+        equalsIgnoreCase(h, normalizeHeaderLabel('Role')) ||
+        equalsIgnoreCase(h, normalizeHeaderLabel('Roles'))
+      );
+      if (rollenIdx !== -1) {
+        header = header.filter((_, idx) => idx !== rollenIdx);
+        rows = rows.map((row) => row.filter((_, idx) => idx !== rollenIdx));
+        if (headerIndex >= rows.length) headerIndex = 0;
+      }
 
-    const reqFields = getRequiredFields();
+      // Validierung: Header jetzt gegen erwartete Felder prüfen
+      if (!isCsvHeaderCompatible(header, selectedRole)) {
+        setHeaderError(t('components.userCsvImportComponent.headerincompatible'));
+        return;
+      }
 
-    // Zeilen als Objekt
-    const csvRowsObj: Record<number, CsvRow> = {};
-    dataRows.forEach((row, idx) => {
-      const obj: CsvRow = {};
-      header.forEach((col, colIdx) => {
-        obj[col] = row[colIdx] ?? '';
+      const dataRows = rows.slice(headerIndex + 1);
+
+      const reqFields = getRequiredFields();
+
+      // Erzeuge Map mit erlaubten Werten für Select-Spalten (Label -> allowedValues[])
+      const allowedValuesMap: Record<string, string[] | undefined> = {};
+      {
+        const page1Fields = getPage1DynamicFields();
+        const roleFields = dynamicInputFields(selectedRole).fields;
+        page1Fields.forEach((f) => {
+          if (f.type === 'select' && (f as unknown).options) {
+            allowedValuesMap[f.label] = (f as unknown).options.map((o: unknown) => o.value);
+          }
+        });
+        roleFields.forEach((f) => {
+          if (f.type === 'select' && (f as unknown).options) {
+            allowedValuesMap[f.label] = (f as unknown).options.map((o: unknown) => o.value);
+          }
+        });
+      }
+
+      // Zeilen als Objekt
+      const csvRowsObj: Record<number, CsvRow> = {};
+      dataRows.forEach((row, idx) => {
+        const obj: CsvRow = {};
+        header.forEach((col, colIdx) => {
+          const raw = row[colIdx] ?? '';
+          const allowed = allowedValuesMap[col];
+          if (allowed && allowed.length > 0) {
+            obj[col] = raw && allowed.includes(raw) ? raw : NOVALUE;
+          } else {
+            obj[col] = raw;
+          }
+        });
+        reqFields.forEach((field) => {
+          if (!obj[field] || obj[field].trim() === '') {
+            obj[field] = NOVALUE;
+          }
+        });
+        csvRowsObj[idx] = obj;
       });
-      reqFields.forEach((field) => {
-        if (!obj[field] || obj[field].trim() === '') {
-          obj[field] = NOVALUE;
-        }
-      });
-      csvRowsObj[idx] = obj;
-    });
 
-    setCsvHeader(header);
-    setCsvRowsObj(csvRowsObj);
-    setRequiredFields(reqFields);
-    setStep('preview');
-    setImporting(false);
-
-    setColumnWidths(getColumnWidths(header, Object.values(csvRowsObj)));
+      setCsvHeader(header);
+      setCsvRowsObj(csvRowsObj);
+      setRequiredFields(reqFields);
+      setStep('preview');
+      setColumnWidths(getColumnWidths(header, Object.values(csvRowsObj)));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Import error', err);
+      setHeaderError(t('components.userCsvImportComponent.importerror'));
+    } finally {
+      setImporting(false);
+    }
   };
 
   // Prüfe, ob noch Pflichtfelder fehlen
@@ -274,15 +405,16 @@ const UserCsvImportComponent = ({
     if (failedRows.length > 0) {
       // Fehlerhafte Zeilen als CSV zum Download bereitstellen (nicht automatisch downloaden)
       const failedCsv = [allLabels, ...failedRows]
-        .map((row) =>
-          row
-            .map((val) =>
-              typeof val === 'string' &&
-              (val.includes(',') || val.includes('"') || val.includes('\n'))
-                ? `"${val.replace(/"/g, '""')}"`
-                : val
-            )
-            .join(',')
+        .map(
+          (row) =>
+            row
+              .map((val) =>
+                typeof val === 'string' &&
+                (val.includes(';') || val.includes('"') || val.includes('\n'))
+                  ? `"${val.replace(/"/g, '""')}"`
+                  : val
+              )
+              .join(';') // <-- Semikolon verwenden
         )
         .join('\r\n');
       const errorFileName = `${t('components.userCsvImportComponent.importerrorfilename')}${selectedRole}_SAU.csv`;
