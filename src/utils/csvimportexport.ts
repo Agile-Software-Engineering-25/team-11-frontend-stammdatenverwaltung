@@ -4,11 +4,6 @@ import {
   persondataclass as page1DynamicFieldsConfig,
   roleFieldConfigs,
   availableGroups,
-  studyStatus,
-  departments,
-  workingTimeModels,
-  employmentStatus,
-  cohorts,
 } from './userdataclass';
 import { inferRolesFromUser } from './showuserdatafunctions';
 
@@ -171,7 +166,7 @@ export function generateCsvTemplateForRole(
     key: f.name,
     label: lang === 'de' ? f.label : ((f as unknown).labeleng ?? f.label),
     type: f.type,
-    options: (f as any).options,
+    options: (f as unknown).options,
   }));
   const roleCfg = (roleFieldConfigs[role as keyof typeof roleFieldConfigs] ??
     []) as FieldConfig[];
@@ -275,7 +270,7 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
     key: f.name,
     label: f.label,
     type: f.type,
-    options: (f as any).options,
+    options: (f as unknown).options,
   }));
 
   // Alle rollenspezifischen Felder, die bei mindestens einem User vorkommen
@@ -354,7 +349,7 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
         (user as unknown)[f.key] !== undefined &&
         (user as unknown)[f.key] !== null
       ) {
-        return String((user as any)[f.key]);
+        return String((user as unknown)[f.key]);
       }
       return user.details && (user.details as Record<string, string>)[f.key]
         ? (user.details as Record<string, string>)[f.key]
