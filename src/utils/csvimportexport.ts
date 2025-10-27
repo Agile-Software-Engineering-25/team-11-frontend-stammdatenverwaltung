@@ -24,6 +24,7 @@ interface FieldConfig {
 }
 
 // Hilfs: label mit Optionen für Select-Felder (Optionen durch | getrennt in Klammer)
+/*
 function labelWithOptions(f?: {
   label: string;
   type?: string;
@@ -35,6 +36,7 @@ function labelWithOptions(f?: {
   }
   return f.label;
 }
+*/
 
 // Normalisiert Header-Label: BOM/Quotes entfernen, angehängte "(...)" Teile entfernen, Leerzeichen zusammenfassen, trim
 export function normalizeHeaderLabel(label: string): string {
@@ -65,7 +67,9 @@ export function equalsIgnoreCase(a: string, b: string): boolean {
 function canonicalLabel(raw: string): string {
   const normalized = normalizeHeaderLabel(raw);
   // remove diacritics
-  const noDiacritics = normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const noDiacritics = normalized
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
   // remove non-alphanumeric chars
   const alnum = noDiacritics.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
 
@@ -156,18 +160,24 @@ export function generateCsvTemplateForRole(
     { key: 'firstname', label: lang === 'de' ? 'Vorname' : 'First name' },
     { key: 'lastname', label: lang === 'de' ? 'Nachname' : 'Last name' },
     { key: 'email', label: lang === 'de' ? 'E-Mail' : 'E-mail' },
-    { key: 'groups', label: lang === 'de' ? 'Gruppe' : 'Group', type: 'select', options: availableGroups.map((g) => ({ label: g, value: g })) },
+    {
+      key: 'groups',
+      label: lang === 'de' ? 'Gruppe' : 'Group',
+      type: 'select',
+      options: availableGroups.map((g) => ({ label: g, value: g })),
+    },
   ];
   const page1Fields = page1DynamicFieldsConfig.map((f) => ({
     key: f.name,
-    label: lang === 'de' ? f.label : (f as any).labeleng ?? f.label,
+    label: lang === 'de' ? f.label : ((f as unknown).labeleng ?? f.label),
     type: f.type,
     options: (f as any).options,
   }));
-  const roleCfg = (roleFieldConfigs[role as keyof typeof roleFieldConfigs] ?? []) as FieldConfig[];
+  const roleCfg = (roleFieldConfigs[role as keyof typeof roleFieldConfigs] ??
+    []) as FieldConfig[];
   const roleFields = roleCfg.map((f) => ({
     key: f.name,
-    label: lang === 'de' ? f.label : f.labeleng ?? f.label,
+    label: lang === 'de' ? f.label : (f.labeleng ?? f.label),
     type: f.type,
     options: f.options,
   }));
@@ -199,20 +209,33 @@ export function generateCsvTemplateForRole(
   const roleOptionLines: string[] = [];
   roleFields.forEach((f) => {
     if (f.type === 'select' && f.options && f.options.length > 0) {
-      roleOptionLines.push(`${f.label}: ${(f.options as any).map((o: any) => o.value).join(' | ')}`);
+      roleOptionLines.push(
+        `${f.label}: ${(f.options as unknown).map((o: unknown) => o.value).join(' | ')}`
+      );
     }
   });
   if (role === 'Student') {
-    roleOptionLines.push(`${lang === 'de' ? 'Studienstatus' : 'Study Status'}: ${studyStatus.join(' | ')}`);
-    roleOptionLines.push(`${lang === 'de' ? 'Jahrgang' : 'Cohort'}: ${cohorts.join(' | ')}`);
+    roleOptionLines.push(
+      `${lang === 'de' ? 'Studienstatus' : 'Study Status'}: ${studyStatus.join(' | ')}`
+    );
+    roleOptionLines.push(
+      `${lang === 'de' ? 'Jahrgang' : 'Cohort'}: ${cohorts.join(' | ')}`
+    );
   } else if (role === 'Employees' || role === 'Lecturer') {
-    roleOptionLines.push(`${lang === 'de' ? 'Abteilung' : 'Department'}: ${departments.join(' | ')}`);
-    roleOptionLines.push(`${lang === 'de' ? 'Arbeitszeitmodell' : 'Working Time Model'}: ${workingTimeModels.join(' | ')}`);
-    roleOptionLines.push(`${lang === 'de' ? 'Beschäftigungsstatus' : 'Employment Status'}: ${employmentStatus.join(' | ')}`);
+    roleOptionLines.push(
+      `${lang === 'de' ? 'Abteilung' : 'Department'}: ${departments.join(' | ')}`
+    );
+    roleOptionLines.push(
+      `${lang === 'de' ? 'Arbeitszeitmodell' : 'Working Time Model'}: ${workingTimeModels.join(' | ')}`
+    );
+    roleOptionLines.push(
+      `${lang === 'de' ? 'Beschäftigungsstatus' : 'Employment Status'}: ${employmentStatus.join(' | ')}`
+    );
   }
 
   // Trennlinie, Header-Zeile (nur Labels), dann leere Beispielzeile
-  const separator = '################################################################';
+  const separator =
+    '################################################################';
   const finalLines = [
     ...intro,
     '',
@@ -380,7 +403,7 @@ export function getExpectedCsvHeaderForRole(
       : ['First name', 'Last name', 'E-mail', 'Group'];
 
   const page1Fields = page1DynamicFieldsConfig.map((f) =>
-    lang === 'de' ? f.label : (f as any).labeleng ?? f.label
+    lang === 'de' ? f.label : ((f as unknown).labeleng ?? f.label)
   );
 
   const allowedRoles = Object.keys(roleFieldConfigs) as Array<
@@ -390,7 +413,7 @@ export function getExpectedCsvHeaderForRole(
     ? (role as keyof typeof roleFieldConfigs)
     : allowedRoles[0];
   const roleFields = (roleFieldConfigs[roleKey] ?? []).map((f) =>
-    lang === 'de' ? f.label : (f as any).labeleng ?? f.label
+    lang === 'de' ? f.label : ((f as unknown).labeleng ?? f.label)
   );
 
   return [...baseFields, ...page1Fields, ...roleFields];

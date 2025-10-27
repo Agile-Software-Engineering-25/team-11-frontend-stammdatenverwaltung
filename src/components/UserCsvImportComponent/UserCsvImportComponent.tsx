@@ -23,9 +23,7 @@ import {
   generateCsvTemplateForRole,
   downloadCSV,
   isCsvHeaderCompatible,
-  getExpectedCsvHeaderForRole,
   normalizeHeaderLabel,
-  removeRolesColumnFromHeader,
   equalsIgnoreCase,
 } from '@/utils/csvimportexport';
 import { Dropzone } from '@agile-software/shared-components';
@@ -232,7 +230,11 @@ const UserCsvImportComponent = ({
   */
 
   // Hilfs: finde die Header-Zeile (suche nur bis maxSearchRows, default 200)
-  function findHeaderIndex(rows: string[][], role: string, maxSearchRows = 200): number {
+  function findHeaderIndex(
+    rows: string[][],
+    role: string,
+    maxSearchRows = 200
+  ): number {
     const limit = Math.min(rows.length, maxSearchRows);
     for (let i = 0; i < limit; i++) {
       const candidate = rows[i];
@@ -277,10 +279,11 @@ const UserCsvImportComponent = ({
 
       // Entferne ggf. vorhandene "Rollen"-Spalte (auch wenn mit Optionen angehängt)
       const normalizedHeader = header.map(normalizeHeaderLabel);
-      const rollenIdx = normalizedHeader.findIndex((h) =>
-        equalsIgnoreCase(h, normalizeHeaderLabel('Rollen')) ||
-        equalsIgnoreCase(h, normalizeHeaderLabel('Role')) ||
-        equalsIgnoreCase(h, normalizeHeaderLabel('Roles'))
+      const rollenIdx = normalizedHeader.findIndex(
+        (h) =>
+          equalsIgnoreCase(h, normalizeHeaderLabel('Rollen')) ||
+          equalsIgnoreCase(h, normalizeHeaderLabel('Role')) ||
+          equalsIgnoreCase(h, normalizeHeaderLabel('Roles'))
       );
       if (rollenIdx !== -1) {
         header = header.filter((_, idx) => idx !== rollenIdx);
@@ -290,7 +293,9 @@ const UserCsvImportComponent = ({
 
       // Validierung: Header jetzt gegen erwartete Felder prüfen
       if (!isCsvHeaderCompatible(header, selectedRole)) {
-        setHeaderError(t('components.userCsvImportComponent.headerincompatible'));
+        setHeaderError(
+          t('components.userCsvImportComponent.headerincompatible')
+        );
         return;
       }
 
@@ -305,12 +310,16 @@ const UserCsvImportComponent = ({
         const roleFields = dynamicInputFields(selectedRole).fields;
         page1Fields.forEach((f) => {
           if (f.type === 'select' && (f as unknown).options) {
-            allowedValuesMap[f.label] = (f as unknown).options.map((o: unknown) => o.value);
+            allowedValuesMap[f.label] = (f as unknown).options.map(
+              (o: unknown) => o.value
+            );
           }
         });
         roleFields.forEach((f) => {
           if (f.type === 'select' && (f as unknown).options) {
-            allowedValuesMap[f.label] = (f as unknown).options.map((o: unknown) => o.value);
+            allowedValuesMap[f.label] = (f as unknown).options.map(
+              (o: unknown) => o.value
+            );
           }
         });
       }
