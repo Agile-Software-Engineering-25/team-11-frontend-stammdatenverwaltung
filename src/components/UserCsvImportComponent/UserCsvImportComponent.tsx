@@ -23,13 +23,9 @@ import {
   generateCsvTemplateForRole,
   downloadCSV,
   isCsvHeaderCompatible,
-  normalizeHeaderLabel,
-  equalsIgnoreCase,
   canonicalLabel, // <-- neu
-  removeRolesColumnFromHeader, // <-- falls noch nicht importiert
 } from '@/utils/csvimportexport';
 import { Dropzone } from '@agile-software/shared-components';
-import { availableGroups } from '@/utils/userdataclass'; // <-- hinzugefügt
 
 type CsvRow = { [key: string]: string };
 
@@ -132,24 +128,17 @@ const UserCsvImportComponent = ({
     const map: Record<string, string[]> = {};
     if (!selectedRole) return map;
     const page1 = getPage1DynamicFields();
-    page1.forEach((f: any) => {
+    page1.forEach((f: unknown) => {
       if (f.type === 'select' && f.options) {
-        map[f.label] = (f.options as any).map((o: any) => o.value);
+        map[f.label] = (f.options as unknown).map((o: unknown) => o.value);
       }
     });
     const roleFields = dynamicInputFields(selectedRole).fields;
-    roleFields.forEach((f: any) => {
+    roleFields.forEach((f: unknown) => {
       if (f.type === 'select' && f.options) {
-        map[f.label] = (f.options as any).map((o: any) => o.value);
+        map[f.label] = (f.options as unknown).map((o: unknown) => o.value);
       }
     });
-    // Gruppen-Optionen für verschiedene Label-Varianten sicherstellen
-    if (availableGroups && availableGroups.length > 0) {
-      ['Gruppe','Gruppen','Group','Groups'].forEach((k) => {
-        if (!map[k]) map[k] = availableGroups.slice();
-      });
-    }
-    return map;
   }, [selectedRole]);
 
   // Hilfsfunktion: CSV parsen (Semikolon-Delimiter, vollständiger Quote-aware Parser)
