@@ -3,7 +3,6 @@ import {
   mockUsers as users,
   persondataclass as page1DynamicFieldsConfig,
   roleFieldConfigs,
-  availableGroups,
 } from './userdataclass';
 import { inferRolesFromUser } from './showuserdatafunctions';
 
@@ -61,7 +60,7 @@ export function equalsIgnoreCase(a: string, b: string): boolean {
 // - Diakritika entfernt
 // - Nicht-alphanumerische Zeichen entfernt
 // - einfache Synonym-Mappings für DE/EN angewendet
-function canonicalLabel(raw: string): string {
+export function canonicalLabel(raw: string): string {
   const normalized = normalizeHeaderLabel(raw);
   // remove diacritics
   const noDiacritics = normalized
@@ -77,12 +76,6 @@ function canonicalLabel(raw: string): string {
     nachname: 'lastname',
     lastname: 'lastname',
     email: 'email',
-    emailmail: 'email', // defensive
-    emial: 'email',
-    gruppe: 'group',
-    gruppen: 'group',
-    group: 'group',
-    groups: 'group',
     rollen: 'role',
     rolle: 'role',
     role: 'role',
@@ -157,12 +150,6 @@ export function generateCsvTemplateForRole(
     { key: 'firstname', label: lang === 'de' ? 'Vorname' : 'First name' },
     { key: 'lastname', label: lang === 'de' ? 'Nachname' : 'Last name' },
     { key: 'email', label: lang === 'de' ? 'E-Mail' : 'E-mail' },
-    {
-      key: 'groups',
-      label: lang === 'de' ? 'Gruppe' : 'Group',
-      type: 'select',
-      options: availableGroups.map((g) => ({ label: g, value: g })),
-    },
   ];
   const page1Fields = page1DynamicFieldsConfig.map((f) => ({
     key: f.name,
@@ -190,13 +177,13 @@ export function generateCsvTemplateForRole(
   const introLinesDe = [
     'Diese Excel-Tabelle ist für die Anlegung von Usern entwickelt worden',
     'Bitte halten Sie sich an das Beispiel und geben keine anderen Werte ein. Erstellen Sie bitte auch keine neuen Spalten.',
-    `Die Spalte "Gruppe" füllen Sie bitte ENTWEDER mit "${availableGroups.join('" / "')}" aus. Alle anderen Werte führen zu Fehlern.`,
+    //`Die Spalte "Gruppe" füllen Sie bitte ENTWEDER mit "${availableGroups.join('" / "')}" aus. Alle anderen Werte führen zu Fehlern.`,
     'Wenden Sie sich bei Fragen bitte an Team 10',
   ];
   const introLinesEn = [
     'This Excel template is designed to create users',
     'Please follow the example and do not add other values or new columns.',
-    `Fill the "Group" column with one of: ${availableGroups.join(' | ')}.`,
+    //`Fill the "Group" column with one of: ${availableGroups.join(' | ')}.`,
     'If you have questions contact Team 10',
   ];
 
@@ -265,7 +252,6 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
     { key: 'lastname', label: 'Nachname' },
     { key: 'email', label: 'E-Mail' },
     { key: 'roles', label: 'Rollen' },
-    { key: 'groups', label: 'Gruppen' },
   ];
   // Dynamische Felder (Seite 1)
   const page1Fields = page1DynamicFieldsConfig.map((f) => ({
@@ -336,7 +322,6 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
       user.lastname ?? '',
       user.email ?? '',
       rolesArr.join(', '),
-      user.groups ?? '',
     ];
 
     const page1 = page1Fields.map((f) =>
@@ -398,8 +383,8 @@ export function getExpectedCsvHeaderForRole(
 ): string[] {
   const baseFields =
     lang === 'de'
-      ? ['Vorname', 'Nachname', 'E-Mail', 'Gruppen']
-      : ['First name', 'Last name', 'E-mail', 'Group'];
+      ? ['Vorname', 'Nachname', 'E-Mail']
+      : ['First name', 'Last name', 'E-mail'];
 
   const page1Fields = page1DynamicFieldsConfig.map((f) =>
     lang === 'de' ? f.label : ((f as unknown).labeleng ?? f.label)

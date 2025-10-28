@@ -236,13 +236,11 @@ const UserDataCardComponent = ({
 
           {/* Nur ein Icon für die Gruppe (nicht für die Rolle) direkt neben den Buttons */}
           {(() => {
-            const group = Array.isArray(user.groups)
-              ? user.groups[0]
-              : user.groups;
-            if (!group) return null;
+            const role = Array.isArray(user.roles) ? user.roles[0] : user.roles;
+            if (!role) return null;
             return (
               <Chip
-                key={`group-${group}`}
+                key={`role-${role}`}
                 size="sm"
                 variant="soft"
                 color="neutral"
@@ -252,9 +250,9 @@ const UserDataCardComponent = ({
                   </Box>
                 }
                 sx={{ height: 26, px: 1 }}
-                aria-label={`Gruppe: ${group}`}
+                aria-label={`Rolle: ${role}`}
               >
-                {group}
+                {role}
               </Chip>
             );
           })()}

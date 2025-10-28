@@ -46,14 +46,8 @@ export const workingTimeModels = [
   'INTERNSHIP',
 ];
 
-// Die festen Felder (immer vorhanden)
-export const fixedFieldNames = [
-  'firstname',
-  'lastname',
-  'email',
-  'roles',
-  'groups',
-];
+// Die festen Felder (immer vorhanden) — groups entfernt
+export const fixedFieldNames = ['firstname', 'lastname', 'email', 'roles'];
 
 // Dynamische Felder für Seite 1 (außer Vorname, Nachname, Email, Rolle)
 export const persondataclass = [
@@ -169,8 +163,9 @@ export const roleFieldConfigs = {
       name: 'department',
       label: 'Abteilung',
       labeleng: 'Department',
-      type: 'text',
+      type: 'select',
       required: false,
+      options: toOptions(departments),
     },
     {
       name: 'office_number',
@@ -212,7 +207,7 @@ export const roleFieldConfigs = {
   ],
 };
 
-// Beispiel-Mockupdaten für User
+// Beispiel-Mockupdaten für User — properties "groups" entfernt
 export const mockUsers = [
   {
     id: 'a1b2c3d4-e5f6-11ee-9c99-001122334401',
@@ -223,7 +218,6 @@ export const mockUsers = [
     date_of_birth: '02.02.1992',
     address: 'Beispielweg 2, 10115 Berlin',
     roles: 'Student',
-    groups: 'Student',
     matriculation_number: 'S2023001',
     degree_program: 'Informatik',
     semester: 3,
@@ -239,7 +233,6 @@ export const mockUsers = [
     date_of_birth: '15.05.1988',
     address: 'Musterstraße 1, 20095 Hamburg',
     roles: 'Employees',
-    groups: 'Mitarbeiter',
     employee_id: 'E10002',
     department: 'IT',
     office_number: 'B-201',
@@ -254,7 +247,6 @@ export const mockUsers = [
     date_of_birth: '04.04.1985',
     address: 'Dozentenweg 4, 60311 Frankfurt',
     roles: 'Lecturer',
-    groups: 'Dozent',
     employee_id: 'L10003',
     department: 'Personal',
     office_number: 'C-101',
@@ -272,7 +264,6 @@ export const mockUsers = [
     date_of_birth: '03.03.1993',
     address: 'Musterweg 3, 80331 München',
     roles: 'Employees',
-    groups: 'Mitarbeiter',
     employee_id: 'E10004',
     department: 'Entwicklung',
     office_number: 'A-303',
@@ -287,7 +278,6 @@ export const mockUsers = [
     date_of_birth: '12.07.1990',
     address: 'Schulstraße 7, 40210 Düsseldorf',
     roles: 'Student',
-    groups: 'Student',
     matriculation_number: 'S2023005',
     degree_program: 'BWL',
     semester: 2,
@@ -303,7 +293,6 @@ export const mockUsers = [
     date_of_birth: '21.09.1987',
     address: 'Bauernweg 5, 04109 Leipzig',
     roles: 'Employees',
-    groups: 'Mitarbeiter',
     employee_id: 'E10006',
     department: 'Vertrieb',
     office_number: 'D-102',
@@ -318,7 +307,6 @@ export const mockUsers = [
     date_of_birth: '30.11.1991',
     address: 'Fischerstraße 9, 55116 Mainz',
     roles: 'Lecturer',
-    groups: 'Dozent',
     employee_id: 'L10007',
     department: 'Support',
     office_number: 'E-210',
@@ -336,7 +324,6 @@ export const mockUsers = [
     date_of_birth: '18.01.1989',
     address: 'Beckerweg 11, 76133 Karlsruhe',
     roles: 'Employees',
-    groups: 'Mitarbeiter',
     employee_id: 'E10008',
     department: 'IT',
     office_number: 'B-202',
@@ -351,7 +338,6 @@ export const mockUsers = [
     date_of_birth: '25.12.1994',
     address: 'Wagnerstraße 13, 30159 Hannover',
     roles: 'Student',
-    groups: 'Student',
     matriculation_number: 'S2023010',
     degree_program: 'Psychologie',
     semester: 1,
@@ -367,7 +353,6 @@ export const mockUsers = [
     date_of_birth: '09.08.1992',
     address: 'Kleine Gasse 15, 86150 Augsburg',
     roles: 'Lecturer',
-    groups: 'Dozent',
     employee_id: 'L10010',
     department: 'Personal',
     office_number: 'C-102',

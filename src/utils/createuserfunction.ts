@@ -39,79 +39,123 @@ export function getAvailableRoles(): string[] {
 }
 
 // Erstellt eine neue Person aus einem Datenarray und fügt sie zu den Mockupdaten hinzu
+// eslint-disable-next-line func-style
 export function createUser(data: string[], roleFromSelection?: string) {
-  const roles = roleFromSelection
-    ? [roleFromSelection]
-    : (data[fixedFieldNames.indexOf('roles')] ?? '')
-        .split(',')
-        .map((r) => r.trim())
-        .filter(Boolean);
+  try {
+    console.debug('createUser: input data', data, 'roleFromSelection', roleFromSelection);
 
-  // Dynamische Felder für alle Rollen bestimmen (ohne Duplikate)
-  const dynamicFields = Array.from(
-    new Map(
-      roles.flatMap((role) =>
-        ((roleFieldConfigs as RoleFieldConfigs)[role] ?? []).map(
-          (field: DynamicField) => [field.name, field]
-        )
-      )
-    ).values()
-  );
-  const dynamicFieldNames = dynamicFields.map((field) => field.name);
+    const selectedRole = roleFromSelection ?? '';
 
-  // Alle Feldnamen in der richtigen Reihenfolge
-  const allFieldNames = [
-    ...fixedFieldNames.filter((f) => f !== 'roles'), // 'roles' NICHT aus CSV!
-    ...page1DynamicFieldsConfig.map((f) => f.name),
-    ...dynamicFieldNames,
-  ];
+    const page1 = getPage1DynamicFields();
+    const roleFields = dynamicInputFields(selectedRole).fields;
 
-  // Objekt mit Namen und Wert aus dem Array erzeugen
-  const result: Record<string, unknown> = {};
-  allFieldNames.forEach((name, idx) => {
-    result[name] = data[idx] ?? '';
-  });
+    // Reihenfolge der Preview-Labels MUSS mit dem Import/Manual-Form übereinstimmen
+    // "Gruppe" entfernt komplett
+    const previewLabels = [
+      'Vorname',
+      'Nachname',
+      'E-Mail',
+      ...page1.map((f) => f.label),
+      ...roleFields.map((f) => f.label),
+    ];
 
-  // details für rollenbasierte Felder
-  const details: Record<string, string> = {};
-  dynamicFieldNames.forEach((name) => {
-    if (result[name]) {
-      details[name] = result[name];
-      delete result[name];
+    const normalizeLabel = (s: string) =>
+      String(s ?? '')
+        .replace(/^\uFEFF/, '')
+        .replace(/^"(.*)"$/, (_, inner) => inner.replace(/""/g, '"'))
+        .replace(/\s*\([^)]*\)\s*$/, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+
+    const canonical = (raw: string) => {
+      const n = normalizeLabel(raw);
+      const noDiacritics = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const al = noDiacritics.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
+      const map: Record<string, string> = {
+        vorname: 'firstname',
+        firstname: 'firstname',
+        nachname: 'lastname',
+        lastname: 'lastname',
+        email: 'email',
+        // groups/group entfernt
+        rollen: 'roles',
+        rolle: 'roles',
+        role: 'roles',
+        roles: 'roles',
+      };
+      if (al in map) return map[al];
+      if (al.endsWith('en')) return al.slice(0, -2);
+      if (al.endsWith('s')) return al.slice(0, -1);
+      return al;
+    };
+
+    // Mappen der eingehenden Werte anhand previewLabels
+    const mapped: Record<string, string> = {};
+    for (let i = 0; i < Math.max(previewLabels.length, data.length); i++) {
+      const label = previewLabels[i] ?? `col${i}`;
+      const value = String(data[i] ?? '').trim();
+      const key = canonical(label);
+      if (value !== '') mapped[key] = value;
+      else if (!(key in mapped)) mapped[key] = value;
     }
-  });
+    console.debug('createUser: initial mapped values', mapped);
 
-  // id generieren (string-basiert, da mockUsers in userdataclass IDs als string haben)
-  const newId = `uid-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    // Baue userObj VON NULL AUF (keine Mock-Werte übernehmen)
+    const newId = `uid-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const userObj: Record<string, unknown> = {
+      id: newId,
+      roles: selectedRole || '',
+      // setze Standard-Felder leer
+      firstname: '',
+      lastname: '',
+      email: '',
+      details: {}, // falls später noch genutzt
+    };
 
-  // Dynamisches User-Objekt: alle Felder aus dem ersten Mockup-User übernehmen
-  const templateUser = users[0];
-  const userObj: typeof templateUser = {
-    ...templateUser,
-    id: newId,
-    roles,
-    details,
-  };
+    // Feste Felder (firstname/lastname/email) aus mapped übernehmen
+    userObj.firstname = mapped['firstname'] ?? '';
+    userObj.lastname = mapped['lastname'] ?? '';
+    userObj.email = mapped['email'] ?? '';
 
-  // Feste Felder dynamisch zuweisen
-  fixedFieldNames.forEach((field) => {
-    if (field !== 'roles' && field in userObj) {
-      (userObj as Record<string, unknown>)[field] = result[field] ?? '';
+    // Seite1-Felder (telefon, geburt, adresse) TOP-LEVEL setzen (keine Mock-Defaults)
+    page1.forEach((f) => {
+      const key = canonical(f.label);
+      (userObj as Record<string, unknown>)[f.name] = mapped[key] ?? '';
+    });
+
+    // Rollenspezifische Felder ebenfalls TOP-LEVEL setzen (falls vorhanden)
+    roleFields.forEach((f) => {
+      const key = canonical(f.label);
+      const val = mapped[key] ?? '';
+      // Falls number-Feld und als string übergeben wurde, konvertiere, sonst string belassen
+      if (f.type === 'number' && val !== '') {
+        const n = Number(val);
+        (userObj as Record<string, unknown>)[f.name] = Number.isNaN(n) ? val : n;
+      } else {
+        (userObj as Record<string, unknown>)[f.name] = val;
+      }
+    });
+
+    // Debug: Ausgabe vor Validierung
+    console.debug('createUser: built userObj before validation', userObj);
+
+    // Pflichtprüfung
+    const missing: string[] = [];
+    if (!String(userObj.firstname ?? '').trim()) missing.push('firstname');
+    if (!String(userObj.lastname ?? '').trim()) missing.push('lastname');
+    if (!String(userObj.email ?? '').trim()) missing.push('email');
+    if (missing.length) {
+      console.warn('createUser: fehlende Pflichtfelder', missing, 'mapped', mapped);
+      return null;
     }
-  });
 
-  // Dynamische Felder Seite 1 zuweisen
-  page1DynamicFieldsConfig.forEach((field) => {
-    if (field.name in userObj) {
-      (userObj as Record<string, unknown>)[field.name] =
-        result[field.name] ?? '';
-    }
-  });
-
-  // User in die Mockupdaten einfügen
-  users.push(userObj);
-
-  console.log('createUser: Neuer User hinzugefügt:', userObj);
-
-  return userObj;
+    // Push in Mock-Daten
+    users.push(userObj as any);
+    console.info('createUser: Neuer User hinzugefügt:', userObj);
+    return userObj;
+  } catch (err) {
+    console.error('createUser: Fehler beim Anlegen des Users', err, 'input data', data);
+    return null;
+  }
 }

@@ -17,7 +17,6 @@ import {
   createUser,
   getPage1DynamicFields,
 } from '@/utils/createuserfunction';
-import { availableGroups } from '@/utils/userdataclass';
 import { useMessage } from '@/components/MessageProvider/MessageProvider'; // <--- Context importieren
 
 // Typen für dynamische Felder
@@ -35,7 +34,6 @@ type FormState = {
   lastname: string;
   email: string;
   roles: string[]; // bleibt Array (Single-Select stored as 1-element array)
-  groups: string; // nun ein einzelner string (Pflichtfeld)
   [key: string]: string | string[] | undefined;
 };
 
@@ -44,11 +42,10 @@ const initialState: FormState = {
   lastname: '',
   email: '',
   roles: [],
-  groups: '',
   // dynamische Felder werden nach Bedarf ergänzt
 };
 
-const requiredFieldsPage1 = ['firstname', 'lastname', 'email']; // roles/groups prüfen wir separat
+const requiredFieldsPage1 = ['firstname', 'lastname', 'email']; // groups entfernt
 
 const CreateUser = ({ onClose }: { onClose?: () => void }) => {
   const [step, setStep] = useState<number>(1);
@@ -72,12 +69,10 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
     ).values()
   ) as DynamicField[];
 
-  // Page1 Validierung: roles (array) UND groups (string) sind Pflicht; plus page1 dynamic required
+  // Page1 Validierung: roles (array) sind Pflicht; plus page1 dynamic required
   const isPage1Valid =
     Array.isArray(form.roles) &&
     form.roles.length > 0 &&
-    typeof form.groups === 'string' &&
-    form.groups.trim().length > 0 &&
     requiredFieldsPage1.every((field) => !!form[field]) &&
     page1DynamicFields.every((field) => !field.required || !!form[field.name]);
 
@@ -129,15 +124,10 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
     });
   };
 
-  // Gruppen-Select Handler (Pflichtfeld)
-  const handleGroupChange = (_: unknown, value: string | null) => {
-    setForm((prev) => ({ ...prev, groups: value ?? '' }));
-  };
-
   const finish = () => {
-    // Sammle alle Feldnamen in der gewünschten Reihenfolge
+    // Sammle alle Feldnamen in der gewünschten Reihenfolge (groups entfernt)
     const allFieldNames = [
-      ...requiredFieldsPage1.filter((f) => f !== 'roles'), // <--- 'roles' entfernen!
+      ...requiredFieldsPage1.filter((f) => f !== 'roles'),
       ...page1DynamicFields.map((f) => f.name),
       ...dynamicFields.map((field) => field.name),
     ];
@@ -147,7 +137,7 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
       return Array.isArray(value) ? value.join(',') : (value ?? '');
     });
 
-    // Übergabe an createUser: Rolle nur als zweiten Parameter!
+    // Übergabe an createUser: Rolle als zweiten Parameter
     const result = createUser(values, form.roles[0]);
     if (result) {
       setMessage({
@@ -251,8 +241,6 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
   };
 
   // Hilfsfunktion für 2er-Gruppierung der dynamischen Rollen-Felder (Seite 2)
-  // - semester: number-Eingabe soll in normalem Input (type="text") gerendert werden
-  // - select-Felder (z.B. study_status) werden als Select mit options gerendert
   const renderRoleDynamicFieldsRows = () => {
     const rows: JSX.Element[] = [];
     for (let i = 0; i < dynamicFields.length; i += 2) {
@@ -277,7 +265,6 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
             </Select>
           );
         }
-        // semester or any 'number' field: use normal text input
         if (field.type === 'number') {
           return (
             <Input
@@ -289,7 +276,6 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
             />
           );
         }
-        // fallback: normal input
         return (
           <Input
             required={field.required}
@@ -382,26 +368,6 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
           </Box>
           {/* Dynamische Felder für Seite 1 in 2er-Zeilen */}
           {renderDynamicFieldsRows()}
-
-          {/* Gruppen-Select (Pflicht) */}
-          <Box sx={{ mt: 1, mb: 1 }}>
-            <Typography level="body-xs" sx={{ mb: 0.5 }}>
-              {t('components.createusermanually.group')} *
-            </Typography>
-            <Select
-              placeholder={t('components.createusermanually.choose_group')}
-              value={form.groups ?? ''}
-              onChange={handleGroupChange}
-              required
-              sx={{ width: '68%' }}
-            >
-              {availableGroups.map((g) => (
-                <Option key={g} value={g}>
-                  {g}
-                </Option>
-              ))}
-            </Select>
-          </Box>
 
           <Box sx={{ mt: -1 }}>
             <Typography level="body-xs" sx={{ mb: 0.5 }}>
