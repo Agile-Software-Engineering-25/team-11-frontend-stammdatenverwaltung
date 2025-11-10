@@ -22,6 +22,7 @@ import { Card, Modal as SharedModal } from '@agile-software/shared-components';
 import type { UserType } from '@/utils/showuserdatafunctions';
 import { inferRolesFromUser } from '@/utils/showuserdatafunctions';
 import { persondataclass, roleFieldConfigs } from '@/utils/userdataclass';
+import { formatDateForDisplay } from '@/utils/showuserdatafunctions';
 
 interface CardField {
   key: string;
@@ -424,6 +425,33 @@ const UserDataCardComponent = ({
                             </Option>
                           ))}
                         </Select>
+                      );
+                    }
+
+                    // Im Render-Abschnitt: wenn def.type === 'date' -> editMode nutzt input type="date" (ISO),
+                    // in read-only Anzeige das formatierte tt.mm.jjjj zeigen:
+                    if (def && def.type === 'date') {
+                      return (
+                        <Input
+                          type={editMode ? 'date' : 'text'}
+                          value={
+                            editMode
+                              ? (inputValues[field.key] ?? '')
+                              : formatDateForDisplay(inputValues[field.key])
+                          }
+                          disabled={isReadonly || !editMode}
+                          onChange={handleInputChange(field.key)}
+                          sx={{
+                            mt: 0,
+                            mb: 0,
+                            '& .Mui-disabled': {
+                              color: '#000',
+                            },
+                            '& input:disabled': {
+                              color: '#000',
+                            },
+                          }}
+                        />
                       );
                     }
 

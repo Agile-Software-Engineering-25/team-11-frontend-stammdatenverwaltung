@@ -187,6 +187,33 @@ function deleteUserById(id: string): boolean {
   return false;
 }
 
+// Hilfsfunktion: Datum für die UI anzeigen im Format tt.mm.jjjj
+function formatDateForDisplay(raw?: string | null): string {
+  if (!raw) return '';
+  const s = String(raw).trim();
+
+  // already dd.mm.yyyy or dd-mm-yyyy or dd/mm/yyyy
+  const dmy = s.match(/^(\d{2})[.\-\/](\d{2})[.\-\/](\d{4})$/);
+  if (dmy) return `${dmy[1]}.${dmy[2]}.${dmy[3]}`;
+
+  // ISO yyyy-mm-dd
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[3]}.${iso[2]}.${iso[1]}`;
+
+  // fallback: versuche generisches Parsen und formatiere
+  const parsed = Date.parse(s);
+  if (!Number.isNaN(parsed)) {
+    const d = new Date(parsed);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}.${mm}.${yyyy}`;
+  }
+
+  // sonst Originalstring zurückgeben
+  return s;
+}
+
 export type { User, CardConfig, CardField };
 export {
   getAllUsers,
@@ -197,4 +224,5 @@ export {
   updateUserData,
   getDynamicUserFields,
   deleteUserById,
+  formatDateForDisplay, // <-- hinzugefügt
 };

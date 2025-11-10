@@ -17,6 +17,7 @@ import {
   getAllRoles,
   inferRolesFromUser,
 } from '../../utils/showuserdatafunctions';
+import { formatDateForDisplay } from '../../utils/showuserdatafunctions';
 
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,
@@ -263,7 +264,7 @@ const UserDataTableComponent = ({
                     </Box>
                   </Box>
                 </td>
-                <td>{freshUser.date_of_birth}</td>
+                <td>{/* vorher: {freshUser.date_of_birth} */ formatDateForDisplay(freshUser.date_of_birth)}</td>
                 <td>{`${freshUser.address ?? ''}`.trim()}</td>
                 <td>{freshUser.phone_number}</td>
               </tr>,
