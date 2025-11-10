@@ -122,16 +122,58 @@ function updateUserData(
 ): boolean {
   const user = users.find((u) => String(u.id) === String(id));
   if (!user) return false;
+
+  // Debug: Eingangsdaten und aktueller Zustand
+  console.debug('updateUserData: input updatedFields', updatedFields);
+  console.debug(
+    'updateUserData: before user snapshot',
+    JSON.parse(JSON.stringify(user))
+  );
+
+  const roleFieldNames = Object.values(roleFieldConfigs)
+    .flat()
+    .map((f) => f.name);
+
   Object.keys(updatedFields).forEach((key) => {
+    const value = updatedFields[key];
+
+    // Fixed top-level fields
     if (fixedFieldNames.includes(key)) {
-      (user as Record<string, unknown>)[key] = updatedFields[key];
-    } else if (page1DynamicFieldsConfig.some((f) => f.name === key)) {
-      (user as Record<string, unknown>)[key] = updatedFields[key];
-    } else {
-      if (!user.details) user.details = {};
-      (user.details as Record<string, string>)[key] = updatedFields[key];
+      (user as Record<string, unknown>)[key] = value;
+      return;
     }
+
+    // page1 dynamic fields -> top-level
+    if (page1DynamicFieldsConfig.some((f) => f.name === key)) {
+      (user as Record<string, unknown>)[key] = value;
+      return;
+    }
+
+    // rollenspezifische Felder -> in details ablegen; Typkonvertierung für number Felder
+    if (roleFieldNames.includes(key)) {
+      if (!user.details) user.details = {};
+      // Versuche Typ-Konvertierung: falls in roleFieldConfigs als number definiert -> Number
+      let converted: unknown = value;
+      const roleFieldDef = Object.values(roleFieldConfigs)
+        .flat()
+        .find((f) => f.name === key);
+      if (roleFieldDef && roleFieldDef.type === 'number') {
+        const n = Number(value);
+        converted = Number.isNaN(n) ? value : n;
+      }
+      (user.details as Record<string, unknown>)[key] = converted;
+      return;
+    }
+
+    // Fallback: setze top-level
+    (user as Record<string, unknown>)[key] = value;
   });
+
+  // Debug: After snapshot und welche Keys nun in details stehen
+  console.debug(
+    'updateUserData: after user snapshot',
+    JSON.parse(JSON.stringify(user))
+  );
   return true;
 }
 

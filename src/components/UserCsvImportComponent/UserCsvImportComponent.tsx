@@ -423,10 +423,12 @@ const UserCsvImportComponent = ({
       });
 
       if (missing) {
-        failedRows.push(allLabels.map((label, i) => {
+        failedRows.push(
+          allLabels.map((label, i) => {
             const mapped = headerForPreview[i];
             return mapped ? (rowObj[mapped] ?? '') : '';
-        }));
+          })
+        );
         continue;
       }
 
@@ -442,10 +444,12 @@ const UserCsvImportComponent = ({
       // createUser aufrufen
       const result = createUser(userData, selectedRole!);
       if (!result) {
-        failedRows.push(allLabels.map((label, i) => {
+        failedRows.push(
+          allLabels.map((label, i) => {
             const mapped = headerForPreview[i];
             return mapped ? (rowObj[mapped] ?? '') : '';
-        }));
+          })
+        );
       } else {
         successCount++;
       }

@@ -62,7 +62,7 @@ export const persondataclass = [
     name: 'date_of_birth',
     label: 'Geburtsdatum',
     labeleng: 'Date of Birth',
-    type: 'text',
+    type: 'date',
     required: true,
   },
   {

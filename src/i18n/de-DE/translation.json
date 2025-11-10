@@ -78,7 +78,8 @@
       "successupdate": "Benutzer erfolgreich aktualisiert.",
       "errorupdate": "Fehler beim Aktualisieren des Benutzers. Bitte versuchen Sie es erneut.",
       "errordelete": "Fehler beim Löschen des Benutzers. Bitte versuchen Sie es erneut.",
-      "successdelete": "Benutzer erfolgreich gelöscht."
+      "successdelete": "Benutzer erfolgreich gelöscht.",
+      "editreadonlyinfo": "Im Bearbeitungsmodus können die folgenden Felder nicht geändert werden: Rolle, Vorname, Nachname, E-Mail."
     },
     "userCsvImportComponent": {
       "title": "Benutzer per CSV anlegen",

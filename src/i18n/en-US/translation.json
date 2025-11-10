@@ -78,7 +78,8 @@
       "successupdate": "User updated successfully.",
       "errorupdate": "Error updating user. Please try again.",
       "errordelete": "Error deleting user. Please try again.",
-      "successdelete": "User deleted successfully."
+      "successdelete": "User deleted successfully.",
+      "editreadonlyinfo": "In edit mode the following fields cannot be changed: Role, First name, Last name, E-Mail."
     },
     "userCsvImportComponent": {
       "title": "Import Users via CSV",

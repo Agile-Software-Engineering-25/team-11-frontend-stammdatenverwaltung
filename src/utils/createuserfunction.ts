@@ -42,7 +42,12 @@ export function getAvailableRoles(): string[] {
 // eslint-disable-next-line func-style
 export function createUser(data: string[], roleFromSelection?: string) {
   try {
-    console.debug('createUser: input data', data, 'roleFromSelection', roleFromSelection);
+    console.debug(
+      'createUser: input data',
+      data,
+      'roleFromSelection',
+      roleFromSelection
+    );
 
     const selectedRole = roleFromSelection ?? '';
 
@@ -146,16 +151,26 @@ export function createUser(data: string[], roleFromSelection?: string) {
     if (!String(userObj.lastname ?? '').trim()) missing.push('lastname');
     if (!String(userObj.email ?? '').trim()) missing.push('email');
     if (missing.length) {
-      console.warn('createUser: fehlende Pflichtfelder', missing, 'mapped', mapped);
+      console.warn(
+        'createUser: fehlende Pflichtfelder',
+        missing,
+        'mapped',
+        mapped
+      );
       return null;
     }
 
     // Push in Mock-Daten
-    users.push(userObj as any);
+    users.push(userObj as unknown);
     console.info('createUser: Neuer User hinzugefügt:', userObj);
     return userObj;
   } catch (err) {
-    console.error('createUser: Fehler beim Anlegen des Users', err, 'input data', data);
+    console.error(
+      'createUser: Fehler beim Anlegen des Users',
+      err,
+      'input data',
+      data
+    );
     return null;
   }
 }
