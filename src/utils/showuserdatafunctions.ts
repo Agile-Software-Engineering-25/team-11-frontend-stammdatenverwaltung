@@ -1,9 +1,7 @@
-import axios from 'axios';
 import {
   persondataclass as page1DynamicFieldsConfig,
   roleFieldConfigs,
   availableRoles,
-  fixedFieldNames,
 } from './userdataclass';
 import useAxiosInstance from '../hooks/useAxiosInstance';
 
@@ -58,9 +56,13 @@ function getAllRoles(): string[] {
  */
 function inferRolesFromUser(user: Record<string, unknown>): string[] {
   const isLecturer =
-    Boolean(user.field_chair) ||
+    Boolean(user.fieldChair) ||
     Boolean(user.title) ||
-    Boolean(user.employment_status);
+    user.employeeNumber ||
+    user.department ||
+    user.officeNumber ||
+    user.workingTimeModel ||
+    Boolean(user.employmentStatus);
 
   if (isLecturer) {
     return ['Lecturer'];
@@ -69,20 +71,19 @@ function inferRolesFromUser(user: Record<string, unknown>): string[] {
   const roles = new Set<string>();
 
   if (
-    user.employee_number ||
-    user.employee_id ||
+    user.employeeNumber ||
     user.department ||
-    user.office_number ||
-    user.working_time_model
+    user.officeNumber ||
+    user.workingTimeModel
   ) {
     roles.add('Employees');
   }
 
   if (
-    user.matriculation_number ||
-    user.degree_program ||
+    user.matriculationNumber ||
+    user.degreeProgram ||
     user.semester !== undefined ||
-    user.study_status ||
+    user.studyStatus ||
     user.cohort
   ) {
     roles.add('Student');
@@ -108,8 +109,8 @@ function getCardsForRoles(roles: string[]): CardConfig[] {
       key: 'basis',
       title: 'Basis',
       fields: [
-        { label: 'Vorname', key: 'firstname' },
-        { label: 'Nachname', key: 'lastname' },
+        { label: 'Vorname', key: 'firstName' },
+        { label: 'Nachname', key: 'lastName' },
         { label: 'E-Mail', key: 'email' },
         ...dynamicFields,
       ],

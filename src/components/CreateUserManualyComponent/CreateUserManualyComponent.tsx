@@ -30,16 +30,16 @@ interface DynamicField {
 
 // Typ für das Formular
 type FormState = {
-  firstname: string;
-  lastname: string;
+  firstName: string;
+  lastName: string;
   email: string;
   roles: string[]; // bleibt Array (Single-Select stored as 1-element array)
   [key: string]: string | string[] | undefined;
 };
 
 const initialState: FormState = {
-  firstname: '',
-  lastname: '',
+  firstName: '',
+  lastName: '',
   email: '',
   roles: [],
   // dynamische Felder werden nach Bedarf ergänzt
@@ -340,8 +340,8 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
               </Typography>
               <Input
                 required
-                value={typeof form.firstname === 'string' ? form.firstname : ''}
-                onChange={handleInputChange('firstname')}
+                value={typeof form.firstName === 'string' ? form.firstName : ''}
+                onChange={handleInputChange('firstName')}
               />
             </Box>
             <Box sx={{ flex: 1 }}>
@@ -350,8 +350,8 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
               </Typography>
               <Input
                 required
-                value={typeof form.lastname === 'string' ? form.lastname : ''}
-                onChange={handleInputChange('lastname')}
+                value={typeof form.lastName === 'string' ? form.lastName : ''}
+                onChange={handleInputChange('lastName')}
               />
             </Box>
           </Box>

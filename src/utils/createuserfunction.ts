@@ -1,12 +1,9 @@
 /* eslint-disable max-lines-per-function */
 'use server';
-import axios from 'axios';
 import {
   persondataclass as page1DynamicFieldsConfig,
   roleFieldConfigs,
   availableRoles,
-  fixedFieldNames,
-  mockUsers as users,
 } from './userdataclass';
 import useAxiosInstance from '../hooks/useAxiosInstance';
 // Typisierung für dynamische Felder

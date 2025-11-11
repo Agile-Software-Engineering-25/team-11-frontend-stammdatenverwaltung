@@ -222,7 +222,7 @@ const UserDataTableComponent = ({
                   <Checkbox
                     checked={selectedUserIds.includes(String(user.id))}
                     onChange={handleCheckboxChange(String(user.id))}
-                    aria-label={`User ${freshUser.firstname} ${freshUser.lastname} auswählen`}
+                    aria-label={`User ${freshUser.firstName} ${freshUser.lastName} auswählen`}
                   />
                 </td>
                 <td
@@ -235,7 +235,7 @@ const UserDataTableComponent = ({
                 >
                   <Box>
                     <span style={{ display: 'block', fontWeight: 500 }}>
-                      {freshUser.firstname} {freshUser.lastname}
+                      {freshUser.firstName} {freshUser.lastName}
                     </span>
                     <Box
                       sx={{
@@ -264,9 +264,15 @@ const UserDataTableComponent = ({
                     </Box>
                   </Box>
                 </td>
-                <td>{/* vorher: {freshUser.date_of_birth} */ formatDateForDisplay(freshUser.date_of_birth)}</td>
+                <td>
+                  {
+                    /* vorher: {freshUser.date_of_birth} */ formatDateForDisplay(
+                      freshUser.dateOfBirth
+                    )
+                  }
+                </td>
                 <td>{`${freshUser.address ?? ''}`.trim()}</td>
-                <td>{freshUser.phone_number}</td>
+                <td>{freshUser.phoneNumber}</td>
               </tr>,
             ];
             if (activeUserId === String(user.id)) {

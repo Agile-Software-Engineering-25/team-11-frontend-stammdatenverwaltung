@@ -47,19 +47,19 @@ export const workingTimeModels = [
 ];
 
 // Die festen Felder (immer vorhanden) — groups entfernt
-export const fixedFieldNames = ['firstname', 'lastname', 'email', 'roles'];
+export const fixedFieldNames = ['firstName', 'lastName', 'email', 'roles'];
 
 // Dynamische Felder für Seite 1 (außer Vorname, Nachname, Email, Rolle)
 export const persondataclass = [
   {
-    name: 'phone_number',
+    name: 'phoneNumber',
     label: 'Telefon',
     labeleng: 'Phone',
     type: 'text',
     required: false,
   },
   {
-    name: 'date_of_birth',
+    name: 'dateOfBirth',
     label: 'Geburtsdatum',
     labeleng: 'Date of Birth',
     type: 'date',
@@ -83,14 +83,14 @@ function toOptions(arr: string[]) {
 export const roleFieldConfigs = {
   Student: [
     {
-      name: 'matriculation_number',
+      name: 'matriculationNumber',
       label: 'Matrikelnummer',
       labeleng: 'Matriculation Number',
       type: 'text',
       required: true,
     },
     {
-      name: 'degree_program',
+      name: 'degreeProgram',
       label: 'Studiengang',
       labeleng: 'Degree Program',
       type: 'text',
@@ -111,7 +111,7 @@ export const roleFieldConfigs = {
       required: false,
     },
     {
-      name: 'study_status',
+      name: 'studyStatus',
       label: 'Studienstatus',
       labeleng: 'Study Status',
       type: 'select',
@@ -121,9 +121,9 @@ export const roleFieldConfigs = {
   ],
   Employees: [
     {
-      name: 'employee_id',
+      name: 'employeeNumber',
       label: 'Mitarbeiternummer',
-      labeleng: 'Employee ID',
+      labeleng: 'Employee Number',
       type: 'text',
       required: false,
     },
@@ -136,14 +136,14 @@ export const roleFieldConfigs = {
       options: toOptions(departments),
     },
     {
-      name: 'office_number',
+      name: 'officeNumber',
       label: 'Büro Nummer',
       labeleng: 'Office Number',
       type: 'text',
       required: false,
     },
     {
-      name: 'working_time_model',
+      name: 'workingTimeModel',
       label: 'Arbeitszeitmodell',
       labeleng: 'Working Time Model',
       type: 'select',
@@ -153,9 +153,9 @@ export const roleFieldConfigs = {
   ],
   Lecturer: [
     {
-      name: 'employee_id',
+      name: 'employeeNumber',
       label: 'Mitarbeiternummer',
-      labeleng: 'Employee ID',
+      labeleng: 'Employee Number',
       type: 'text',
       required: false,
     },
@@ -168,14 +168,14 @@ export const roleFieldConfigs = {
       options: toOptions(departments),
     },
     {
-      name: 'office_number',
+      name: 'officeNumber',
       label: 'Büro Nummer',
       labeleng: 'Office Number',
       type: 'text',
       required: false,
     },
     {
-      name: 'working_time_model',
+      name: 'workingTimeModel',
       label: 'Arbeitszeitmodell',
       labeleng: 'Working Time Model',
       type: 'select',
@@ -183,7 +183,7 @@ export const roleFieldConfigs = {
       options: toOptions(workingTimeModels),
     },
     {
-      name: 'field_chair',
+      name: 'fieldChair',
       label: 'Fachgebiet',
       labeleng: 'Field Chair',
       type: 'text',
@@ -197,7 +197,7 @@ export const roleFieldConfigs = {
       required: false,
     },
     {
-      name: 'employment_status',
+      name: 'employmentStatus',
       label: 'Beschäftigungsstatus',
       labeleng: 'Employment Status',
       type: 'select',
@@ -362,3 +362,5 @@ export const mockUsers = [
     employment_status: 'VISITING',
   },
 ];
+
+export const users = [{}];
