@@ -1,5 +1,6 @@
 /* eslint-disable max-lines-per-function */
 'use server';
+import axios from 'axios';
 import {
   persondataclass as page1DynamicFieldsConfig,
   roleFieldConfigs,
@@ -7,7 +8,7 @@ import {
   fixedFieldNames,
   mockUsers as users,
 } from './userdataclass';
-
+import useAxiosInstance from '../hooks/useAxiosInstance';
 // Typisierung für dynamische Felder
 type DynamicField = {
   name: string;
@@ -38,9 +39,14 @@ export function getAvailableRoles(): string[] {
   return availableRoles;
 }
 
-// Erstellt eine neue Person aus einem Datenarray und fügt sie zu den Mockupdaten hinzu
+// Axios-Instance für Server-Aufrufe
+//const axiosInstance = useAxiosInstance('https://sau-portal.de/team-11-api');
+
 // eslint-disable-next-line func-style
-export function createUser(data: string[], roleFromSelection?: string) {
+export async function createUser(
+  data: string[],
+  roleFromSelection?: string
+): Promise<Record<string, unknown> | null> {
   try {
     console.debug(
       'createUser: input data',
@@ -48,14 +54,13 @@ export function createUser(data: string[], roleFromSelection?: string) {
       'roleFromSelection',
       roleFromSelection
     );
-
+    
     const selectedRole = roleFromSelection ?? '';
 
     const page1 = getPage1DynamicFields();
     const roleFields = dynamicInputFields(selectedRole).fields;
 
     // Reihenfolge der Preview-Labels MUSS mit dem Import/Manual-Form übereinstimmen
-    // "Gruppe" entfernt komplett
     const previewLabels = [
       'Vorname',
       'Nachname',
@@ -107,23 +112,15 @@ export function createUser(data: string[], roleFromSelection?: string) {
     console.debug('createUser: initial mapped values', mapped);
 
     // Baue userObj VON NULL AUF (keine Mock-Werte übernehmen)
-    const newId = `uid-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const userObj: Record<string, unknown> = {
-      id: newId,
+      // id wird NICHT mehr vorab gesetzt
       roles: selectedRole || '',
-      // setze Standard-Felder leer
-      firstname: '',
-      lastname: '',
-      email: '',
-      details: {}, // falls später noch genutzt
+      firstname: mapped['firstname'] ?? '',
+      lastname: mapped['lastname'] ?? '',
+      email: mapped['email'] ?? '',
     };
 
-    // Feste Felder (firstname/lastname/email) aus mapped übernehmen
-    userObj.firstname = mapped['firstname'] ?? '';
-    userObj.lastname = mapped['lastname'] ?? '';
-    userObj.email = mapped['email'] ?? '';
-
-    // Seite1-Felder (telefon, geburt, adresse) TOP-LEVEL setzen (keine Mock-Defaults)
+    // Seite1-Felder (telefon, geburt, adresse) TOP-LEVEL setzen
     page1.forEach((f) => {
       const key = canonical(f.label);
       (userObj as Record<string, unknown>)[f.name] = mapped[key] ?? '';
@@ -136,14 +133,13 @@ export function createUser(data: string[], roleFromSelection?: string) {
       // Falls number-Feld und als string übergeben wurde, konvertiere, sonst string belassen
       if (f.type === 'number' && val !== '') {
         const n = Number(val);
-        (userObj as Record<string, unknown>)[f.name] = Number.isNaN(n) ? val : n;
+        (userObj as Record<string, unknown>)[f.name] = Number.isNaN(n)
+          ? val
+          : n;
       } else {
         (userObj as Record<string, unknown>)[f.name] = val;
       }
     });
-
-    // Debug: Ausgabe vor Validierung
-    console.debug('createUser: built userObj before validation', userObj);
 
     // Pflichtprüfung
     const missing: string[] = [];
@@ -160,10 +156,79 @@ export function createUser(data: string[], roleFromSelection?: string) {
       return null;
     }
 
-    // Push in Mock-Daten
-    users.push(userObj as unknown);
-    console.info('createUser: Neuer User hinzugefügt:', userObj);
-    return userObj;
+    // Baue API-Payload (keine "details"-Einbettung, keine "roles"-Eigenschaft)
+    const payload: Record<string, unknown> = {
+      // username wird hier mit der email belegt (Beispiel aus Vorgabe)
+      username: userObj.email ?? '',
+      firstName: userObj.firstname ?? '',
+      lastName: userObj.lastname ?? '',
+      email: userObj.email ?? '',
+      // dynamische Felder (ggf. vorhandene snake_case keys auf camelCase mappen)
+      dateOfBirth:
+        (userObj as unknown).date_of_birth ??
+        (userObj as unknown).dateOfBirth ??
+        '',
+      address: (userObj as unknown).address ?? '',
+      phoneNumber: (userObj as unknown).phone_number ?? '',
+      matriculationNumber: (userObj as unknown).matriculation_number ?? '',
+      degreeProgram: (userObj as unknown).degree_program ?? '',
+      semester: (userObj as unknown).semester ?? undefined,
+      studyStatus: (userObj as unknown).study_status ?? '',
+      cohort: (userObj as unknown).cohort ?? '',
+      employmentStatus: (userObj as unknown).employment_status ?? '',
+      workingTimeModel: (userObj as unknown).working_time_model ?? '',
+      department: (userObj as unknown).department ?? '',
+      officeNumber: (userObj as unknown).office_number ?? '',
+      // weitere Felder aus userObj können bei Bedarf ergänzt werden, ohne "details" wrapper
+    };
+
+    // Entferne undefined Werte
+    Object.keys(payload).forEach((k) => {
+      if (payload[k] === undefined || payload[k] === '') {
+        // wir behalten leere Strings, aber entferne undefined
+        if (payload[k] === undefined) delete payload[k];
+      }
+    });
+    const axiosInstance = useAxiosInstance('https://sau-portal.de/team-11-api');
+    // Bestimme Endpoint anhand Rolle aus dem Frontend
+    const roleKey = String(selectedRole ?? '').toLowerCase();
+    let endpoint = '/api/v1/users';
+    if (roleKey === 'student' || roleKey === 'students') {
+      endpoint = '/api/v1/users/students';
+    } else if (
+      roleKey === 'lecturer' ||
+      roleKey === 'dozent' ||
+      roleKey === 'lecturers'
+    ) {
+      endpoint = '/api/v1/users/lecturer';
+    } else if (
+      roleKey === 'employees' ||
+      roleKey === 'employee' ||
+      roleKey === 'mitarbeiter'
+    ) {
+      endpoint = '/api/v1/users/employees';
+    }
+
+    // POST an die API
+    try {
+      const res = await axiosInstance.post(endpoint, payload);
+      if (res && res.status === 201) {
+        console.info(
+          'createUser: User erfolgreich erstellt, api response',
+          res.data
+        );
+        return res.data || null;
+      }
+      console.warn(
+        'createUser: unerwartete API-Antwort',
+        res?.status,
+        res?.data
+      );
+      return null;
+    } catch (apiErr) {
+      console.error('createUser: API-Fehler beim Erstellen des Users', apiErr);
+      return null;
+    }
   } catch (err) {
     console.error(
       'createUser: Fehler beim Anlegen des Users',

@@ -1,27 +1,52 @@
+import axios from 'axios';
 import {
-  mockUsers as users,
   persondataclass as page1DynamicFieldsConfig,
   roleFieldConfigs,
   availableRoles,
   fixedFieldNames,
 } from './userdataclass';
+import useAxiosInstance from '../hooks/useAxiosInstance';
 
 // Typen für dynamische Felder und Karten
-type User = (typeof users)[number];
+type User = Record<string, unknown>;
 
 type CardField = { label: string; key: string };
 type CardConfig = { key: string; title: string; fields: CardField[] };
 
-// Dynamische Felder für die Kartenansicht (außer feste Felder)
-function getDynamicUserFields(): CardField[] {
-  return page1DynamicFieldsConfig.map((f) => ({
-    key: f.name,
-    label: f.label,
-  }));
-}
+// --- interne User-Cache (ersetzt bisherigen mockUsers) ---
+let cachedUsers: User[] = [];
 
+// Axios-Instance für API-Aufrufe (Basis-URL wie gewünscht)
+const axiosInstance = useAxiosInstance('https://sau-portal.de/team-11-api');
+
+// Hintergrund-Fetch beim Modul-Import (nicht-blockierend)
+async function fetchUsersFromApi(): Promise<void> {
+  try {
+    const res = await axiosInstance.get('/api/v1/users', {
+      params: { flag: true },
+    });
+    if (res && res.data && Array.isArray(res.data)) {
+      cachedUsers = res.data;
+      console.debug(
+        'fetchUsersFromApi: loaded users from API, count=',
+        cachedUsers.length
+      );
+    } else {
+      console.warn(
+        'fetchUsersFromApi: unexpected API response shape, falling back to empty list'
+      );
+      cachedUsers = [];
+    }
+  } catch (err) {
+    console.error('fetchUsersFromApi: error fetching users from API', err);
+    cachedUsers = [];
+  }
+}
+void fetchUsersFromApi();
+
+// Utility: synchroner Zugriff auf aktuelle Users (wird von Komponenten genutzt)
 function getAllUsers(): User[] {
-  return users;
+  return cachedUsers;
 }
 
 function getAllRoles(): string[] {
@@ -30,12 +55,8 @@ function getAllRoles(): string[] {
 
 /**
  * Rolle(n) aus Benutzerdaten ableiten.
- * - Liefert Array mit möglichen Rollen: 'Student', 'Employees', 'Lecturer' oder 'Person' (Fallback)
- * - Entscheidet anhand vorhandener Felder (Matriculation, employee_id/employee_number, lecturer-spezifisch ...)
  */
 function inferRolesFromUser(user: Record<string, unknown>): string[] {
-  // Priorität: Lecturer → wenn Lecturer-Felder vorhanden sind,
-  // gilt der User ausschließlich als Lecturer.
   const isLecturer =
     Boolean(user.field_chair) ||
     Boolean(user.title) ||
@@ -47,7 +68,6 @@ function inferRolesFromUser(user: Record<string, unknown>): string[] {
 
   const roles = new Set<string>();
 
-  // Employees
   if (
     user.employee_number ||
     user.employee_id ||
@@ -58,7 +78,6 @@ function inferRolesFromUser(user: Record<string, unknown>): string[] {
     roles.add('Employees');
   }
 
-  // Students
   if (
     user.matriculation_number ||
     user.degree_program ||
@@ -69,13 +88,19 @@ function inferRolesFromUser(user: Record<string, unknown>): string[] {
     roles.add('Student');
   }
 
-  // Falls nichts erkennbar: Person
   if (roles.size === 0) roles.add('Person');
 
   return Array.from(roles);
 }
 
 // Karten-Konfiguration für Rollen (bleibt unverändert)
+function getDynamicUserFields(): CardField[] {
+  return (page1DynamicFieldsConfig ?? []).map((f: any) => ({
+    key: f.name,
+    label: f.label,
+  }));
+}
+
 function getCardsForRoles(roles: string[]): CardConfig[] {
   const dynamicFields = getDynamicUserFields();
   const cards: CardConfig[] = [
@@ -91,7 +116,6 @@ function getCardsForRoles(roles: string[]): CardConfig[] {
     },
   ];
   roles.forEach((role) => {
-    // Typisierung für roleFieldConfigs
     const config = (
       roleFieldConfigs as Record<string, { name: string; label: string }[]>
     )[role];
@@ -99,92 +123,76 @@ function getCardsForRoles(roles: string[]): CardConfig[] {
       cards.push({
         key: role.toLowerCase(),
         title: role,
-        fields: config.map((f) => ({
-          label: f.label,
-          key: f.name,
-        })),
+        fields: config.map((f) => ({ label: f.label, key: f.name })),
       });
     }
   });
   return cards;
 }
 
-// Neue Convenience-Funktion: Karten basierend auf einem User-Objekt zurückgeben
 function getCardsForUser(user: User): CardConfig[] {
   const inferredRoles = inferRolesFromUser(user);
   return getCardsForRoles(inferredRoles);
 }
 
-// Userdaten aktualisieren
-function updateUserData(
+// --- API-gestützte Update- und Delete-Operationen ---
+// updateUserData: sendet PUT /api/v1/users/{userid} mit payload (Änderungen)
+async function updateUserData(
   id: string,
   updatedFields: Record<string, string>
-): boolean {
-  const user = users.find((u) => String(u.id) === String(id));
-  if (!user) return false;
-
-  // Debug: Eingangsdaten und aktueller Zustand
-  console.debug('updateUserData: input updatedFields', updatedFields);
-  console.debug(
-    'updateUserData: before user snapshot',
-    JSON.parse(JSON.stringify(user))
-  );
-
-  const roleFieldNames = Object.values(roleFieldConfigs)
-    .flat()
-    .map((f) => f.name);
-
-  Object.keys(updatedFields).forEach((key) => {
-    const value = updatedFields[key];
-
-    // Fixed top-level fields
-    if (fixedFieldNames.includes(key)) {
-      (user as Record<string, unknown>)[key] = value;
-      return;
-    }
-
-    // page1 dynamic fields -> top-level
-    if (page1DynamicFieldsConfig.some((f) => f.name === key)) {
-      (user as Record<string, unknown>)[key] = value;
-      return;
-    }
-
-    // rollenspezifische Felder -> in details ablegen; Typkonvertierung für number Felder
-    if (roleFieldNames.includes(key)) {
-      if (!user.details) user.details = {};
-      // Versuche Typ-Konvertierung: falls in roleFieldConfigs als number definiert -> Number
-      let converted: unknown = value;
-      const roleFieldDef = Object.values(roleFieldConfigs)
-        .flat()
-        .find((f) => f.name === key);
-      if (roleFieldDef && roleFieldDef.type === 'number') {
-        const n = Number(value);
-        converted = Number.isNaN(n) ? value : n;
+): Promise<boolean> {
+  try {
+    const res = await axiosInstance.put(
+      `/api/v1/users/${encodeURIComponent(id)}`,
+      updatedFields
+    );
+    if (res && (res.status === 200 || res.status === 204)) {
+      // lokal cache updaten: merge changes in cachedUsers
+      const idx = cachedUsers.findIndex(
+        (u) => String((u as unknown).id) === String(id)
+      );
+      if (idx !== -1) {
+        cachedUsers[idx] = { ...(cachedUsers[idx] || {}), ...updatedFields };
+      } else if (res.data) {
+        // falls API das aktualisierte Objekt zurückgibt, ersetzen
+        if (typeof res.data === 'object') cachedUsers.push(res.data);
       }
-      (user.details as Record<string, unknown>)[key] = converted;
-      return;
+      return true;
     }
-
-    // Fallback: setze top-level
-    (user as Record<string, unknown>)[key] = value;
-  });
-
-  // Debug: After snapshot und welche Keys nun in details stehen
-  console.debug(
-    'updateUserData: after user snapshot',
-    JSON.parse(JSON.stringify(user))
-  );
-  return true;
+    console.warn('updateUserData: unexpected response', res?.status);
+    return false;
+  } catch (err) {
+    console.error('updateUserData: api error', err);
+    return false;
+  }
 }
 
-// User löschen
-function deleteUserById(id: string): boolean {
-  const idx = users.findIndex((u) => String(u.id) === String(id));
-  if (idx !== -1) {
-    users.splice(idx, 1);
-    return true;
+// deleteUserById: sendet POST /api/v1/users/delete mit Body {"user-id": "string"}
+async function deleteUserById(id: string): Promise<boolean> {
+  //const userid = String(id);
+  try {
+    const res = await axiosInstance.post(
+      `/api/v1/users/delete/${encodeURIComponent(id)}`
+    );
+    if (res && (res.status === 200 || res.status === 204)) {
+      // aus lokalem Cache entfernen
+      cachedUsers = cachedUsers.filter(
+        (u) => String((u as unknown).id) !== String(id)
+      );
+      return true;
+    }
+    console.warn('deleteUserById: unexpected response', res?.status);
+    return false;
+  } catch (err) {
+    console.error('deleteUserById: api error', err);
+    return false;
   }
-  return false;
+}
+
+// Falls Komponenten weiterhin synchronen Aufruf erwarten, zusätzliche helper:
+// refreshUsers: neue Liste vom API laden (async)
+async function refreshUsers(): Promise<void> {
+  await fetchUsersFromApi();
 }
 
 // Hilfsfunktion: Datum für die UI anzeigen im Format tt.mm.jjjj
@@ -192,15 +200,12 @@ function formatDateForDisplay(raw?: string | null): string {
   if (!raw) return '';
   const s = String(raw).trim();
 
-  // already dd.mm.yyyy or dd-mm-yyyy or dd/mm/yyyy
   const dmy = s.match(/^(\d{2})[.\-\/](\d{2})[.\-\/](\d{4})$/);
   if (dmy) return `${dmy[1]}.${dmy[2]}.${dmy[3]}`;
 
-  // ISO yyyy-mm-dd
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (iso) return `${iso[3]}.${iso[2]}.${iso[1]}`;
 
-  // fallback: versuche generisches Parsen und formatiere
   const parsed = Date.parse(s);
   if (!Number.isNaN(parsed)) {
     const d = new Date(parsed);
@@ -210,7 +215,6 @@ function formatDateForDisplay(raw?: string | null): string {
     return `${dd}.${mm}.${yyyy}`;
   }
 
-  // sonst Originalstring zurückgeben
   return s;
 }
 
@@ -224,5 +228,6 @@ export {
   updateUserData,
   getDynamicUserFields,
   deleteUserById,
-  formatDateForDisplay, // <-- hinzugefügt
+  formatDateForDisplay,
+  refreshUsers, // optional: kann von Komponenten genutzt werden, um neu zu laden
 };

@@ -1,13 +1,12 @@
 /* eslint-disable max-lines-per-function */
 import {
-  mockUsers as users,
   persondataclass as page1DynamicFieldsConfig,
   roleFieldConfigs,
 } from './userdataclass';
-import { inferRolesFromUser } from './showuserdatafunctions';
+import { inferRolesFromUser, getAllUsers } from './showuserdatafunctions';
 
-// Typ für ein User-Objekt
-type UserType = (typeof users)[number];
+// Typ für ein User-Objekt (basierend auf getAllUsers)
+type UserType = ReturnType<typeof getAllUsers>[number];
 
 // Typ für ein Feld (erweitert um type/options)
 interface FieldConfig {
@@ -80,7 +79,6 @@ export function canonicalLabel(raw: string): string {
     rolle: 'role',
     role: 'role',
     roles: 'role',
-    beruf: 'occupation',
     abteilung: 'department',
     department: 'department',
   };
@@ -240,9 +238,11 @@ export function generateCsvTemplateForRole(
 // Dynamischer Export der ausgewählten Nutzer als CSV (inkl. Basisdaten und rollenspezifischer Felder)
 // Wichtig: Export-Kopfzeile enthält keine Optionen in Klammern (nur reine Labels)
 export function exportUsersToCSV(selectedUserIds: string[]): string {
+  // Nutzer aus dem zentralen Cache/API holen
+  const allUsers = getAllUsers();
   // Filtere die User (IDs als strings)
-  const selectedUsers = users.filter((u) =>
-    selectedUserIds.includes(String(u.id))
+  const selectedUsers = allUsers.filter((u) =>
+    selectedUserIds.includes(String((u as any).id))
   );
   if (selectedUsers.length === 0) return '';
 

@@ -45,7 +45,7 @@ const UserDataCardComponent = ({
   user: UserType | null;
   onUserUpdate?: () => void;
   onClose?: () => void;
-  onSaveSuccess?: (userId: number) => void;
+  onSaveSuccess?: (userId: string) => void;
   onShowMessage?: (type: 'success' | 'error', text: string) => void;
 }) => {
   const { t } = useTranslation();
@@ -128,12 +128,12 @@ const UserDataCardComponent = ({
     // Felddefinitionen
     const page1 = persondataclass ?? [];
     const roleFields = rolesForCards.flatMap(
-      (role) => (roleFieldConfigs as Record<string, any[]>)[role] ?? []
+      (role) => (roleFieldConfigs as Record<string, unknown[]>)[role] ?? []
     );
 
     console.debug('UserDataCardComponent: field defs', {
-      page1: page1.map((f: any) => f.name),
-      roleFields: roleFields.map((f: any) => f.name),
+      page1: page1.map((f: unknown) => (f as { name: string }).name),
+      roleFields: roleFields.map((f: unknown) => (f as { name: string }).name),
       allKeys,
     });
 
