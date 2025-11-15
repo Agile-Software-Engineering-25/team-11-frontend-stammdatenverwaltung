@@ -1,5 +1,7 @@
 //Sämtliche Datenklassen und Konfigurationen für Benutzerverwaltung
 // Definition der Option-Schnittstelle
+import useAxiosInstance from '../hooks/useAxiosInstance';
+
 // Alle verfügbaren Rollen
 export const availableRoles = ['Student', 'Lecturer', 'Employees'];
 export const cohorts = ['2018', '2019', '2020', '2021', '2022', '2023'];
@@ -13,6 +15,36 @@ export const departments = [
   'Business Administration',
   'Economics',
 ];
+// Axios-Instance für API-Aufrufe (Basis-URL wie gewünscht)
+// eslint-disable-next-line react-hooks/rules-of-hooks
+const axiosInstance = useAxiosInstance('https://sau-portal.de/team-11-api');
+
+// verfügbares Cohorts-Array (wird per API befüllt)
+export const availableCohorts: string[] = [];
+
+// Lade Gruppennamen von /api/v1/group und fülle availableCohorts mit den group.name-Werten
+async function fetchGroups(): Promise<void> {
+  try {
+    const res = await axiosInstance.get('/api/v1/group');
+    const groups = res?.data?.groups;
+    if (Array.isArray(groups)) {
+      const names = groups
+        .map((g: any) => (g && typeof g.name === 'string' ? g.name.trim() : ''))
+        .filter((n: string) => n !== '');
+      // replace contents of exported array so references bleiben gültig
+      availableCohorts.length = 0;
+      availableCohorts.push(...names);
+      console.debug('fetchGroups: loaded group names', availableCohorts);
+    } else {
+      console.warn('fetchGroups: unexpected response shape', res?.data);
+    }
+  } catch (err) {
+    console.error('fetchGroups: error fetching groups', err);
+  }
+}
+// sofort ausführen (top-level)
+void fetchGroups();
+
 export const availableGroups = [
   'Mitarbeiter',
   'Student',

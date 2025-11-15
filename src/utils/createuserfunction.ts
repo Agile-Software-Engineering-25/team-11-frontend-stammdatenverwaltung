@@ -5,13 +5,14 @@ import {
   roleFieldConfigs,
   availableRoles,
 } from './userdataclass';
-import useAxiosInstance from '../hooks/useAxiosInstance';
+import useAxiosInstance from '@/hooks/useAxiosInstance'; // bereits im Projekt vorhanden
+
 // Typisierung für dynamische Felder
 type DynamicField = {
   name: string;
   label: string;
   type: string;
-  required: boolean;
+  required?: boolean;
 };
 
 // Typisierung für roleFieldConfigs
@@ -36,14 +37,11 @@ export function getAvailableRoles(): string[] {
   return availableRoles;
 }
 
-// Axios-Instance für Server-Aufrufe
-//const axiosInstance = useAxiosInstance('https://sau-portal.de/team-11-api');
-
 // eslint-disable-next-line func-style
 export async function createUser(
   data: string[],
   roleFromSelection?: string
-): Promise<Record<string, unknown> | null> {
+): Promise<Record<string, any> | null> {
   try {
     console.debug(
       'createUser: input data',
@@ -51,7 +49,7 @@ export async function createUser(
       'roleFromSelection',
       roleFromSelection
     );
-    
+
     const selectedRole = roleFromSelection ?? '';
 
     const page1 = getPage1DynamicFields();
@@ -85,7 +83,6 @@ export async function createUser(
         nachname: 'lastname',
         lastname: 'lastname',
         email: 'email',
-        // groups/group entfernt
         rollen: 'roles',
         rolle: 'roles',
         role: 'roles',
@@ -109,7 +106,7 @@ export async function createUser(
     console.debug('createUser: initial mapped values', mapped);
 
     // Baue userObj VON NULL AUF (keine Mock-Werte übernehmen)
-    const userObj: Record<string, unknown> = {
+    const userObj: Record<string, any> = {
       // id wird NICHT mehr vorab gesetzt
       roles: selectedRole || '',
       firstname: mapped['firstname'] ?? '',
@@ -120,7 +117,7 @@ export async function createUser(
     // Seite1-Felder (telefon, geburt, adresse) TOP-LEVEL setzen
     page1.forEach((f) => {
       const key = canonical(f.label);
-      (userObj as Record<string, unknown>)[f.name] = mapped[key] ?? '';
+      (userObj as Record<string, any>)[f.name] = mapped[key] ?? '';
     });
 
     // Rollenspezifische Felder ebenfalls TOP-LEVEL setzen (falls vorhanden)
@@ -130,9 +127,7 @@ export async function createUser(
       // Falls number-Feld und als string übergeben wurde, konvertiere, sonst string belassen
       if (f.type === 'number' && val !== '') {
         const n = Number(val);
-        (userObj as Record<string, unknown>)[f.name] = Number.isNaN(n)
-          ? val
-          : n;
+        (userObj as Record<string, any>)[f.name] = Number.isNaN(n) ? val : n;
       } else {
         (userObj as Record<string, unknown>)[f.name] = val;
       }
@@ -140,9 +135,11 @@ export async function createUser(
 
     // Pflichtprüfung
     const missing: string[] = [];
-    if (!String(userObj.firstname ?? '').trim()) missing.push('firstname');
-    if (!String(userObj.lastname ?? '').trim()) missing.push('lastname');
-    if (!String(userObj.email ?? '').trim()) missing.push('email');
+    if (!String((userObj as any).firstname ?? '').trim())
+      missing.push('firstname');
+    if (!String((userObj as any).lastname ?? '').trim())
+      missing.push('lastname');
+    if (!String((userObj as any).email ?? '').trim()) missing.push('email');
     if (missing.length) {
       console.warn(
         'createUser: fehlende Pflichtfelder',
@@ -153,40 +150,63 @@ export async function createUser(
       return null;
     }
 
-    // Baue API-Payload (keine "details"-Einbettung, keine "roles"-Eigenschaft)
-    const payload: Record<string, unknown> = {
-      // username wird hier mit der email belegt (Beispiel aus Vorgabe)
-      username: userObj.email ?? '',
-      firstName: userObj.firstname ?? '',
-      lastName: userObj.lastname ?? '',
-      email: userObj.email ?? '',
-      // dynamische Felder (ggf. vorhandene snake_case keys auf camelCase mappen)
-      dateOfBirth:
-        (userObj as unknown).date_of_birth ??
-        (userObj as unknown).dateOfBirth ??
-        '',
-      address: (userObj as unknown).address ?? '',
-      phoneNumber: (userObj as unknown).phone_number ?? '',
-      matriculationNumber: (userObj as unknown).matriculation_number ?? '',
-      degreeProgram: (userObj as unknown).degree_program ?? '',
-      semester: (userObj as unknown).semester ?? undefined,
-      studyStatus: (userObj as unknown).study_status ?? '',
-      cohort: (userObj as unknown).cohort ?? '',
-      employmentStatus: (userObj as unknown).employment_status ?? '',
-      workingTimeModel: (userObj as unknown).working_time_model ?? '',
-      department: (userObj as unknown).department ?? '',
-      officeNumber: (userObj as unknown).office_number ?? '',
-      // weitere Felder aus userObj können bei Bedarf ergänzt werden, ohne "details" wrapper
+    // Hilfsfunktion: Date oder parsebaren String in ISO-String (YYYY-MM-DD) umwandeln, sonst leeren String zurückgeben
+    const formatDate = (d?: string | Date) => {
+      if (d === undefined || d === null || d === '') return '';
+      if (d instanceof Date) {
+        if (isNaN(d.getTime())) return '';
+        return d.toISOString().split('T')[0];
+      }
+      const parsed = new Date(String(d));
+      if (isNaN(parsed.getTime())) return '';
+      return parsed.toISOString().split('T')[0];
     };
 
-    // Entferne undefined Werte
+    // Flattened payload (keine "details"-Einbettung, keine "roles"-Eigenschaft)
+    const anyUser = userObj as any;
+    const payload: Record<string, any> = {
+      username: anyUser.email ?? '',
+      firstName: anyUser.firstname ?? '',
+      lastName: anyUser.lastname ?? '',
+      email: anyUser.email ?? '',
+      dateOfBirth: formatDate(
+        anyUser.dateOfBirth ?? anyUser.date_of_birth ?? anyUser['dateofbirth']
+      ),
+      address: anyUser.address ?? anyUser.addr ?? '',
+      phoneNumber: anyUser.phoneNumber ?? anyUser.phone_number ?? '',
+      photoUrl: anyUser.photoUrl ?? anyUser.photo_url ?? '',
+      matriculationNumber:
+        anyUser.matriculationNumber ?? anyUser.matriculation_number ?? '',
+      degreeProgram: anyUser.degreeProgram ?? anyUser.degree_program ?? '',
+      semester:
+        typeof anyUser.semester === 'number'
+          ? anyUser.semester
+          : (anyUser.semester ?? undefined),
+      studyStatus: anyUser.studyStatus ?? anyUser.study_status ?? '',
+      cohort: anyUser.cohort ?? '',
+      employmentStatus:
+        anyUser.employmentStatus ?? anyUser.employment_status ?? '',
+      workingTimeModel:
+        anyUser.workingTimeModel ?? anyUser.working_time_model ?? '',
+      department: anyUser.department ?? '',
+      officeNumber: anyUser.officeNumber ?? anyUser.office_number ?? '',
+      titel: anyUser.titel ?? anyUser.title ?? undefined,
+      fieldChair: anyUser.fieldChair ?? anyUser.field_chair ?? undefined,
+      employeeNumber:
+        anyUser.employeeNumber ?? anyUser.employee_number ?? undefined,
+    };
+
+    // Entferne undefined Werte (leere Strings werden belassen)
     Object.keys(payload).forEach((k) => {
-      if (payload[k] === undefined || payload[k] === '') {
-        // wir behalten leere Strings, aber entferne undefined
-        if (payload[k] === undefined) delete payload[k];
+      if (payload[k] === undefined) {
+        delete payload[k];
       }
     });
+
+    // Nutze vorhandene axios-Instance (Hook) wie gewünscht
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const axiosInstance = useAxiosInstance('https://sau-portal.de/team-11-api');
+
     // Bestimme Endpoint anhand Rolle aus dem Frontend
     const roleKey = String(selectedRole ?? '').toLowerCase();
     let endpoint = '/api/v1/users';

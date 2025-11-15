@@ -19,12 +19,12 @@ import {
 } from '@/utils/createuserfunction';
 import { useMessage } from '@/components/MessageProvider/MessageProvider'; // <--- Context importieren
 
-// Typen für dynamische Felder
-interface DynamicField {
+// Lokaler Typ (anders benannt, damit kein Namenskonflikt mit externen Typen entsteht)
+interface LocalDynamicField {
   name: string;
   label: string;
   type: string;
-  required: boolean;
+  required?: boolean;
   options?: { label: string; value: string }[];
 }
 
@@ -45,7 +45,8 @@ const initialState: FormState = {
   // dynamische Felder werden nach Bedarf ergänzt
 };
 
-const requiredFieldsPage1 = ['firstname', 'lastname', 'email']; // groups entfernt
+// Pflichteingabefelder (Form-Keys)
+const requiredFieldsPage1 = ['firstName', 'lastName', 'email'];
 
 const CreateUser = ({ onClose }: { onClose?: () => void }) => {
   const [step, setStep] = useState<number>(1);
@@ -55,19 +56,20 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
   });
 
   const roles = getAvailableRoles();
-  const page1DynamicFields: DynamicField[] = getPage1DynamicFields();
+  const page1DynamicFields: LocalDynamicField[] =
+    getPage1DynamicFields() as LocalDynamicField[];
 
   // Alle dynamischen Felder für alle gewählten Rollen (ohne Duplikate)
-  const dynamicFields: DynamicField[] = Array.from(
+  const dynamicFields: LocalDynamicField[] = Array.from(
     new Map(
       (form.roles as string[]).flatMap((role: string) =>
-        dynamicInputFields(role).fields.map((field: DynamicField) => [
+        (dynamicInputFields(role).fields as any[]).map((field: any) => [
           field.name,
           field,
         ])
       )
     ).values()
-  ) as DynamicField[];
+  ) as LocalDynamicField[];
 
   // Page1 Validierung: roles (array) sind Pflicht; plus page1 dynamic required
   const isPage1Valid =
@@ -100,7 +102,7 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
       // Leere dynamische Felder zurücksetzen, die nicht mehr gebraucht werden
       const keepFields = new Set(
         rolesArr.flatMap((role: string) =>
-          dynamicInputFields(role).fields.map((f: DynamicField) => f.name)
+          (dynamicInputFields(role).fields as any[]).map((f: any) => f.name)
         )
       );
       const cleanedForm: FormState = { ...prev };
@@ -124,10 +126,10 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
     });
   };
 
-  const finish = () => {
+  const finish = async () => {
     // Sammle alle Feldnamen in der gewünschten Reihenfolge (groups entfernt)
     const allFieldNames = [
-      ...requiredFieldsPage1.filter((f) => f !== 'roles'),
+      ...requiredFieldsPage1,
       ...page1DynamicFields.map((f) => f.name),
       ...dynamicFields.map((field) => field.name),
     ];
@@ -138,7 +140,7 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
     });
 
     // Übergabe an createUser: Rolle als zweiten Parameter
-    const result = createUser(values, form.roles[0]);
+    const result = await createUser(values, form.roles[0]);
     if (result) {
       setMessage({
         type: 'success',
@@ -244,7 +246,7 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
   const renderRoleDynamicFieldsRows = () => {
     const rows: JSX.Element[] = [];
     for (let i = 0; i < dynamicFields.length; i += 2) {
-      const renderField = (field: DynamicField) => {
+      const renderField = (field: LocalDynamicField) => {
         if (field.type === 'select') {
           return (
             <Select

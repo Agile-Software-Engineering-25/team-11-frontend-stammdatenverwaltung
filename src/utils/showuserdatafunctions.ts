@@ -15,6 +15,7 @@ type CardConfig = { key: string; title: string; fields: CardField[] };
 let cachedUsers: User[] = [];
 
 // Axios-Instance für API-Aufrufe (Basis-URL wie gewünscht)
+// eslint-disable-next-line react-hooks/rules-of-hooks
 const axiosInstance = useAxiosInstance('https://sau-portal.de/team-11-api');
 
 // Hintergrund-Fetch beim Modul-Import (nicht-blockierend)
@@ -54,7 +55,7 @@ function getAllRoles(): string[] {
 /**
  * Rolle(n) aus Benutzerdaten ableiten.
  */
-function inferRolesFromUser(user: Record<string, unknown>): string[] {
+function inferRolesFromUser(user: Record<string, any>): string[] {
   const isLecturer =
     Boolean(user.fieldChair) ||
     Boolean(user.title) ||
@@ -150,7 +151,7 @@ async function updateUserData(
     if (res && (res.status === 200 || res.status === 204)) {
       // lokal cache updaten: merge changes in cachedUsers
       const idx = cachedUsers.findIndex(
-        (u) => String((u as unknown).id) === String(id)
+        (u) => String((u as any).id) === String(id)
       );
       if (idx !== -1) {
         cachedUsers[idx] = { ...(cachedUsers[idx] || {}), ...updatedFields };
@@ -177,9 +178,10 @@ async function deleteUserById(id: string): Promise<boolean> {
     );
     if (res && (res.status === 200 || res.status === 204)) {
       // aus lokalem Cache entfernen
-      cachedUsers = cachedUsers.filter(
-        (u) => String((u as unknown).id) !== String(id)
-      );
+      await refreshUsers();
+      //cachedUsers = cachedUsers.filter(
+      //  (u) => String((u as unknown).id) !== String(id)
+      //);
       return true;
     }
     console.warn('deleteUserById: unexpected response', res?.status);

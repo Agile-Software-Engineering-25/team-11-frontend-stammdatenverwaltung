@@ -18,6 +18,7 @@ import {
   inferRolesFromUser,
 } from '../../utils/showuserdatafunctions';
 import { formatDateForDisplay } from '../../utils/showuserdatafunctions';
+import type { User as UserType } from '../../utils/showuserdatafunctions';
 
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,
@@ -33,7 +34,7 @@ const UserDataTableComponent = ({
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('alle');
-  const [users, setUsers] = useState(getAllUsers());
+  const [users, setUsers] = useState<UserType[]>(getAllUsers() as UserType[]);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   const allRoles = getAllRoles();
@@ -201,17 +202,25 @@ const UserDataTableComponent = ({
         <tbody>
           {filteredUsers.flatMap((user) => {
             const freshUser =
-              users.find((u) => String(u.id) === String(user.id)) ?? user;
+              users.find((u) => String((u as any).id) === String((user as any).id)) ?? user;
+            const fu = freshUser as any;
+            const displayName = `${String(fu.firstName ?? fu.firstname ?? '')} ${String(
+              fu.lastName ?? fu.lastname ?? ''
+            )}`.trim();
+            const displayDate =
+              fu.dateOfBirth ?? fu.date_of_birth ?? fu.date ?? undefined;
+            const displayPhone = String(fu.phoneNumber ?? fu.phone_number ?? '');
+
             const rows = [
               <tr
-                key={String(user.id)}
+                key={String((user as any).id)}
                 style={{
                   cursor: 'pointer',
-                  background: activeUserId === String(user.id) ? 50 : undefined,
+                  background: activeUserId === String((user as any).id) ? 50 : undefined,
                 }}
                 onClick={() =>
                   changeSelectedUserId(
-                    activeUserId === String(user.id) ? null : String(user.id)
+                    activeUserId === String((user as any).id) ? null : String((user as any).id)
                   )
                 }
               >
@@ -220,9 +229,9 @@ const UserDataTableComponent = ({
                   style={{ textAlign: 'center', width: 36 }}
                 >
                   <Checkbox
-                    checked={selectedUserIds.includes(String(user.id))}
-                    onChange={handleCheckboxChange(String(user.id))}
-                    aria-label={`User ${freshUser.firstName} ${freshUser.lastName} auswählen`}
+                    checked={selectedUserIds.includes(String((user as any).id))}
+                    onChange={handleCheckboxChange(String((user as any).id))}
+                    aria-label={`User ${displayName} auswählen`}
                   />
                 </td>
                 <td
@@ -235,7 +244,7 @@ const UserDataTableComponent = ({
                 >
                   <Box>
                     <span style={{ display: 'block', fontWeight: 500 }}>
-                      {freshUser.firstName} {freshUser.lastName}
+                      {displayName}
                     </span>
                     <Box
                       sx={{
@@ -246,7 +255,7 @@ const UserDataTableComponent = ({
                         maxWidth: 160,
                       }}
                     >
-                      {inferRolesFromUser(freshUser).map((role) => (
+                      {inferRolesFromUser(fu as any).map((role: string) => (
                         <Chip
                           key={role}
                           size="sm"
@@ -264,15 +273,9 @@ const UserDataTableComponent = ({
                     </Box>
                   </Box>
                 </td>
-                <td>
-                  {
-                    /* vorher: {freshUser.date_of_birth} */ formatDateForDisplay(
-                      freshUser.dateOfBirth
-                    )
-                  }
-                </td>
-                <td>{`${freshUser.address ?? ''}`.trim()}</td>
-                <td>{freshUser.phoneNumber}</td>
+                <td>{formatDateForDisplay(displayDate)}</td>
+                <td>{`${String(fu.address ?? '')}`.trim()}</td>
+                <td>{displayPhone}</td>
               </tr>,
             ];
             if (activeUserId === String(user.id)) {

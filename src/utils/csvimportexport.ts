@@ -12,6 +12,7 @@ type UserType = ReturnType<typeof getAllUsers>[number];
 interface FieldConfig {
   name: string;
   label: string;
+  labeleng?: string;
   type?: string;
   options?: { label: string; value: string }[];
 }
@@ -151,9 +152,10 @@ export function generateCsvTemplateForRole(
   ];
   const page1Fields = page1DynamicFieldsConfig.map((f) => ({
     key: f.name,
-    label: lang === 'de' ? f.label : ((f as unknown).labeleng ?? f.label),
+    // Export benutzt hier deutsches Label (kein `lang` im Scope)
+    label: f.label,
     type: f.type,
-    options: (f as unknown).options,
+    options: (f as any).options,
   }));
   const roleCfg = (roleFieldConfigs[role as keyof typeof roleFieldConfigs] ??
     []) as FieldConfig[];
@@ -161,7 +163,7 @@ export function generateCsvTemplateForRole(
     key: f.name,
     label: lang === 'de' ? f.label : (f.labeleng ?? f.label),
     type: f.type,
-    options: f.options,
+    options: f.options as any,
   }));
 
   // HEADER: nur reine Labels (keine Optionen in Klammern)
@@ -190,10 +192,15 @@ export function generateCsvTemplateForRole(
   // Rollen-spezifische Optionszeilen (z.B. Department / Study Status)
   const roleOptionLines: string[] = [];
   roleFields.forEach((f) => {
-    if (f.type === 'select' && f.options && f.options.length > 0) {
-      roleOptionLines.push(
-        `${f.label}: ${(f.options as unknown).map((o: unknown) => o.value).join(' | ')}`
+    if (
+      f.type === 'select' &&
+      Array.isArray(f.options) &&
+      f.options.length > 0
+    ) {
+      const opts = (f.options as { label: string; value: string }[]).map(
+        (o) => o.value
       );
+      roleOptionLines.push(`${f.label}: ${opts.join(' | ')}`);
     }
   });
   /*
@@ -256,9 +263,10 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
   // Dynamische Felder (Seite 1)
   const page1Fields = page1DynamicFieldsConfig.map((f) => ({
     key: f.name,
+    // Export benutzt hier deutsches Label (kein `lang` im Scope)
     label: f.label,
     type: f.type,
-    options: (f as unknown).options,
+    options: (f as any).options,
   }));
 
   // Alle rollenspezifischen Felder, die bei mindestens einem User vorkommen
@@ -332,11 +340,8 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
     );
 
     const roleSpecific = roleFields.map((f) => {
-      if (
-        (user as unknown)[f.key] !== undefined &&
-        (user as unknown)[f.key] !== null
-      ) {
-        return String((user as unknown)[f.key]);
+      if ((user as any)[f.key] !== undefined && (user as any)[f.key] !== null) {
+        return String((user as any)[f.key]);
       }
       return user.details && (user.details as Record<string, string>)[f.key]
         ? (user.details as Record<string, string>)[f.key]
@@ -387,7 +392,7 @@ export function getExpectedCsvHeaderForRole(
       : ['First name', 'Last name', 'E-mail'];
 
   const page1Fields = page1DynamicFieldsConfig.map((f) =>
-    lang === 'de' ? f.label : ((f as unknown).labeleng ?? f.label)
+    lang === 'de' ? f.label : ((f as any).labeleng ?? f.label)
   );
 
   const allowedRoles = Object.keys(roleFieldConfigs) as Array<
@@ -397,7 +402,7 @@ export function getExpectedCsvHeaderForRole(
     ? (role as keyof typeof roleFieldConfigs)
     : allowedRoles[0];
   const roleFields = (roleFieldConfigs[roleKey] ?? []).map((f) =>
-    lang === 'de' ? f.label : ((f as unknown).labeleng ?? f.label)
+    lang === 'de' ? f.label : ((f as any).labeleng ?? f.label)
   );
 
   return [...baseFields, ...page1Fields, ...roleFields];

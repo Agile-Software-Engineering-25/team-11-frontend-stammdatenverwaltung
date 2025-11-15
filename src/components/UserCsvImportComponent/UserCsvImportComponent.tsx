@@ -12,7 +12,7 @@ import {
   Checkbox,
 } from '@mui/joy';
 import { useTranslation } from 'react-i18next';
-import { useRef, useState, useMemo, type SetStateAction } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import {
   getAvailableRoles,
   getPage1DynamicFields,
@@ -23,13 +23,22 @@ import {
   generateCsvTemplateForRole,
   downloadCSV,
   isCsvHeaderCompatible,
-  canonicalLabel, // <-- neu
+  canonicalLabel,
 } from '@/utils/csvimportexport';
 import { Dropzone } from '@agile-software/shared-components';
 
 type CsvRow = { [key: string]: string };
 
 const NOVALUE = '#novalue';
+
+// Lokaler Typ für dynamische Feld-Definitionen
+interface FieldConfig {
+  name: string;
+  label: string;
+  type?: string;
+  options?: { label: string; value: string }[];
+  required?: boolean;
+}
 
 function getTextWidth(text: string, font = '16px Arial') {
   if (typeof document === 'undefined') return 200;
@@ -68,7 +77,7 @@ const UserCsvImportComponent = ({
 }) => {
   const { t, i18n } = useTranslation();
 
-  // --- fehlende State-/Ref-Deklarationen ergänzt ---
+  // --- State-/Ref-Deklarationen ---
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
@@ -112,8 +121,8 @@ const UserCsvImportComponent = ({
   // Spaltennamen für Vorschau
   const previewColumns = useMemo(() => {
     if (!selectedRole) return [];
-    const page1Fields = getPage1DynamicFields();
-    const roleFields = dynamicInputFields(selectedRole).fields;
+    const page1Fields = getPage1DynamicFields() as FieldConfig[];
+    const roleFields = dynamicInputFields(selectedRole).fields as FieldConfig[];
     return [
       'Vorname',
       'Nachname',
@@ -124,21 +133,26 @@ const UserCsvImportComponent = ({
   }, [selectedRole]);
 
   // Optionen pro Spalten-Label (für Edit-Modus dropdowns)
-  const selectOptionsMap = useMemo(() => {
+  const selectOptionsMap = useMemo<Record<string, string[]>>(() => {
     const map: Record<string, string[]> = {};
     if (!selectedRole) return map;
-    const page1 = getPage1DynamicFields();
-    page1.forEach((f: unknown) => {
-      if (f.type === 'select' && f.options) {
-        map[f.label] = (f.options as unknown).map((o: unknown) => o.value);
+    const page1 = getPage1DynamicFields() as FieldConfig[];
+    page1.forEach((f) => {
+      if (f.type === 'select' && Array.isArray(f.options)) {
+        map[f.label] = (f.options as { label: string; value: string }[]).map(
+          (o) => o.value
+        );
       }
     });
-    const roleFields = dynamicInputFields(selectedRole).fields;
-    roleFields.forEach((f: unknown) => {
-      if (f.type === 'select' && f.options) {
-        map[f.label] = (f.options as unknown).map((o: unknown) => o.value);
+    const roleFields = dynamicInputFields(selectedRole).fields as FieldConfig[];
+    roleFields.forEach((f) => {
+      if (f.type === 'select' && Array.isArray(f.options)) {
+        map[f.label] = (f.options as { label: string; value: string }[]).map(
+          (o) => o.value
+        );
       }
     });
+    return map;
   }, [selectedRole]);
 
   // Hilfsfunktion: CSV parsen (Semikolon-Delimiter, vollständiger Quote-aware Parser)
@@ -191,27 +205,22 @@ const UserCsvImportComponent = ({
     }
 
     // push last cell/row
-    // if any content remains or at least one empty cell expected
     if (inQuotes) {
-      // unbalanced quotes — try to continue anyway
       inQuotes = false;
     }
-    // push last cell
     curRow.push(curCell);
-    // if last row is not empty (or there is exactly one empty row) add it
     if (curRow.length > 1 || curRow[0].trim() !== '' || rows.length === 0) {
       rows.push(curRow);
     }
 
-    // trim whitespace from unquoted cells (quoted cells preserved already)
     return rows.map((r) => r.map((c) => c.trim()));
   }
 
   // Hilfsfunktion: Validierung der Pflichtfelder
   function getRequiredFields(): string[] {
     if (!selectedRole) return [];
-    const page1Fields = getPage1DynamicFields();
-    const roleFields = dynamicInputFields(selectedRole).fields;
+    const page1Fields = getPage1DynamicFields() as FieldConfig[];
+    const roleFields = dynamicInputFields(selectedRole).fields as FieldConfig[];
     return [
       'Vorname',
       'Nachname',
@@ -236,17 +245,7 @@ const UserCsvImportComponent = ({
       fileInputRef.current.value = '';
     }
   };
-  /*
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
-    } else {
-      setSelectedFile(null);
-    }
-  };
-  */
 
-  // Hilfs: finde die Header-Zeile (suche nur bis maxSearchRows, default 200)
   function findHeaderIndex(
     rows: string[][],
     role: string,
@@ -255,13 +254,11 @@ const UserCsvImportComponent = ({
     const limit = Math.min(rows.length, maxSearchRows);
     for (let i = 0; i < limit; i++) {
       const candidate = rows[i];
-      // candidate ist eine Zeile (Array von Zellen) -> prüfen, ob sie als Header passt
       try {
         if (isCsvHeaderCompatible(candidate, role)) {
           return i;
         }
       } catch (e) {
-        // defensive: falls isCsvHeaderCompatible unerwartet wirft, weiter machen
         // eslint-disable-next-line no-console
         console.warn('Header check error at row', i, e);
         continue;
@@ -281,34 +278,30 @@ const UserCsvImportComponent = ({
       let rows = parseCsv(text);
       if (rows.length < 1) {
         alert(t('components.userCsvImportComponent.importerrorempty'));
+        setImporting(false);
         return;
       }
 
-      // suche echte Header-Zeile (Intro/Optionen/separator sind optional)
       let headerIndex = findHeaderIndex(rows, selectedRole, 200);
       if (headerIndex === -1) {
-        // fallback: erste Zeile verwenden
         headerIndex = 0;
       }
 
-      // nimm die gefundene Header-Zeile
       let header = rows[headerIndex];
 
-      // Entferne ggf. vorhandene "Rollen"-Spalte (sprachunabhängig) aus header und allen rows
       const headerCanon = header.map(canonicalLabel);
       const roleIdx = headerCanon.findIndex((h) => h === 'role');
       if (roleIdx !== -1) {
         rows = rows.map((row) => row.filter((_, idx) => idx !== roleIdx));
         header = header.filter((_, idx) => idx !== roleIdx);
-        // adjust headerIndex defensively
         if (headerIndex >= rows.length) headerIndex = 0;
       }
 
-      // Validierung: Header jetzt gegen erwartete Felder prüfen
       if (!isCsvHeaderCompatible(header, selectedRole)) {
         setHeaderError(
           t('components.userCsvImportComponent.headerincompatible')
         );
+        setImporting(false);
         return;
       }
 
@@ -318,29 +311,28 @@ const UserCsvImportComponent = ({
       // Erzeuge Map mit erlaubten Werten für Select-Spalten (Label -> allowedValues[])
       const allowedValuesMap: Record<string, string[] | undefined> = {};
       {
-        const page1Fields = getPage1DynamicFields();
-        const roleFields = dynamicInputFields(selectedRole).fields;
+        const page1Fields = getPage1DynamicFields() as FieldConfig[];
+        const roleFields = dynamicInputFields(selectedRole).fields as FieldConfig[];
         page1Fields.forEach((f) => {
-          if (f.type === 'select' && (f as unknown).options) {
-            allowedValuesMap[f.label] = (f as unknown).options.map(
-              (o: unknown) => o.value
+          if (f.type === 'select' && Array.isArray(f.options)) {
+            allowedValuesMap[f.label] = (f.options as { label: string; value: string }[]).map(
+              (o) => o.value
             );
           }
         });
         roleFields.forEach((f) => {
-          if (f.type === 'select' && (f as unknown).options) {
-            allowedValuesMap[f.label] = (f as unknown).options.map(
-              (o: unknown) => o.value
+          if (f.type === 'select' && Array.isArray(f.options)) {
+            allowedValuesMap[f.label] = (f.options as { label: string; value: string }[]).map(
+              (o) => o.value
             );
           }
         });
       }
 
       // Zeilen als Objekt (vorsichtig und robust bauen)
-      const csvRowsObj: Record<number, CsvRow> = {};
+      const csvRowsObjLocal: Record<number, CsvRow> = {};
       dataRows.forEach((row, idx) => {
         const obj: CsvRow = {};
-        // defensive: falls row undefined oder kürzer als header -> fehlende Werte füllen
         const safeRow = Array.isArray(row) ? row : [];
         header.forEach((col, colIdx) => {
           const raw = safeRow[colIdx] ?? '';
@@ -356,25 +348,23 @@ const UserCsvImportComponent = ({
             obj[field] = NOVALUE;
           }
         });
-        csvRowsObj[idx] = obj;
+        csvRowsObjLocal[idx] = obj;
       });
 
-      // zusätzliche Validierung: sicherstellen, dass wir mindestens eine Datenzeile haben
-      if (Object.keys(csvRowsObj).length === 0) {
+      if (Object.keys(csvRowsObjLocal).length === 0) {
         setHeaderError(t('components.userCsvImportComponent.importerrorempty'));
+        setImporting(false);
         return;
       }
 
       setCsvHeader(header);
-      setCsvRowsObj(csvRowsObj);
+      setCsvRowsObj(csvRowsObjLocal);
       setRequiredFields(reqFields);
       setStep('preview');
 
-      // Spaltengrößen berechnen, defensiv
       try {
-        setColumnWidths(getColumnWidths(header, Object.values(csvRowsObj)));
+        setColumnWidths(getColumnWidths(header, Object.values(csvRowsObjLocal)));
       } catch (err) {
-        // fallback: gleiche Default-Breite für alle Spalten
         // eslint-disable-next-line no-console
         console.warn('Column width calc failed, using defaults', err);
         const fallback: Record<string, number> = {};
@@ -393,14 +383,12 @@ const UserCsvImportComponent = ({
   };
 
   // Import-Funktion
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!selectedRole) return;
     setImporting(true);
 
-    // Reihenfolge der Felder für createUser (Preview-Labels)
     const allLabels = previewColumns;
 
-    // Build mapping: for each preview label find the actual csv header label (language-independent)
     const headerCanon = csvHeader.map(canonicalLabel);
     const previewCanon = allLabels.map(canonicalLabel);
     const headerForPreview: (string | null)[] = previewCanon.map((pc) => {
@@ -408,14 +396,11 @@ const UserCsvImportComponent = ({
       return idx >= 0 ? csvHeader[idx] : null;
     });
 
-    // Nutzer, die nicht importiert werden konnten
     const failedRows: string[][] = [];
     let successCount = 0;
 
     for (const rowObj of Object.values(csvRowsObj)) {
-      // Prüfe auf Pflichtfelder (verwende mapping: wenn Feld nicht in CSV vorhanden, treat as missing)
       const missing = requiredFields.some((fieldLabel) => {
-        // find mapped header for this required field (preview label)
         const idx = allLabels.indexOf(fieldLabel);
         const mappedHeader = headerForPreview[idx];
         const val = mappedHeader ? rowObj[mappedHeader] : '';
@@ -424,7 +409,7 @@ const UserCsvImportComponent = ({
 
       if (missing) {
         failedRows.push(
-          allLabels.map((label, i) => {
+          allLabels.map((_label, i) => {
             const mapped = headerForPreview[i];
             return mapped ? (rowObj[mapped] ?? '') : '';
           })
@@ -432,20 +417,18 @@ const UserCsvImportComponent = ({
         continue;
       }
 
-      // Werte in der richtigen Reihenfolge für createUser (mapped)
-      const userData: string[] = allLabels.map((label, i) => {
+      const userData: string[] = allLabels.map((_label, i) => {
         const mapped = headerForPreview[i];
         return mapped ? (rowObj[mapped] ?? '') : '';
       });
 
-      // Die Rolle als letztes Feld anhängen (selectedRole kommt aus UI)
       userData.push(selectedRole!);
 
-      // createUser aufrufen
-      const result = createUser(userData, selectedRole!);
+      // createUser aufrufen (await)
+      const result = await createUser(userData, selectedRole!);
       if (!result) {
         failedRows.push(
-          allLabels.map((label, i) => {
+          allLabels.map((_label, i) => {
             const mapped = headerForPreview[i];
             return mapped ? (rowObj[mapped] ?? '') : '';
           })
@@ -458,18 +441,16 @@ const UserCsvImportComponent = ({
     setImporting(false);
 
     if (failedRows.length > 0) {
-      // Fehlerhafte Zeilen als CSV zum Download bereitstellen (nicht automatisch downloaden)
       const failedCsv = [allLabels, ...failedRows]
-        .map(
-          (row) =>
-            row
-              .map((val) =>
-                typeof val === 'string' &&
-                (val.includes(';') || val.includes('"') || val.includes('\n'))
-                  ? `"${val.replace(/"/g, '""')}"`
-                  : val
-              )
-              .join(';') // <-- Semikolon verwenden
+        .map((row) =>
+          row
+            .map((val) =>
+              typeof val === 'string' &&
+              (val.includes(';') || val.includes('"') || val.includes('\n'))
+                ? `"${val.replace(/"/g, '""')}"`
+                : val
+            )
+            .join(';')
         )
         .join('\r\n');
       const errorFileName = `${t('components.userCsvImportComponent.importerrorfilename')}${selectedRole}_SAU.csv`;
@@ -582,7 +563,7 @@ const UserCsvImportComponent = ({
     });
   });
 
-  // --- Neu: fehlende Pflichtfelder in den importierten CSV-Zeilen (Vorschau) ---
+  // --- fehlende Pflichtfelder in der Vorschau ---
   const missingRequiredCells = useMemo(() => {
     const missing: { row: number; col: string }[] = [];
     Object.entries(csvRowsObj).forEach(([rowIdx, row]) => {
@@ -601,8 +582,8 @@ const UserCsvImportComponent = ({
   }, [csvRowsObj, requiredFields]);
 
   const hasMissingRequired = missingRequiredCells.length > 0;
-  // --- Ende Neu ---
-  
+  // --- Ende ---
+
   return (
     <Card>
       {/* Kompakter Header, sticky */}
@@ -656,14 +637,12 @@ const UserCsvImportComponent = ({
               <Dropzone
                 types={['CSV']}
                 multiple={false}
-                onFileSelect={(
-                  file: unknown[] | SetStateAction<File | null>
-                ) => {
-                  // file ist entweder File oder File[]
+                onFileSelect={(file: unknown) => {
                   if (Array.isArray(file)) {
-                    setSelectedFile(file[0] ?? null);
+                    const f = file[0] as File | undefined;
+                    setSelectedFile(f ?? null);
                   } else {
-                    setSelectedFile(file);
+                    setSelectedFile(file as File | null);
                   }
                 }}
                 dragDropText={t(
@@ -819,7 +798,6 @@ const UserCsvImportComponent = ({
                             {((row ?? {})[col] === NOVALUE) ? (
                               <span style={{ color: '#d32f2f', fontWeight: 500 }}>{NOVALUE}</span>
                             ) : (
-                              // fallback auf leeren String, damit Render nie undefined ausgibt
                               (row ?? {})[col] ?? ''
                             )}
                           </td>

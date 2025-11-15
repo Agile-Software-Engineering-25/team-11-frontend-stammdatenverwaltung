@@ -19,7 +19,7 @@ import {
 } from '../../utils/showuserdatafunctions';
 import { useTranslation } from 'react-i18next';
 import { Card, Modal as SharedModal } from '@agile-software/shared-components';
-import type { UserType } from '@/utils/showuserdatafunctions';
+import type { User as UserType } from '@/utils/showuserdatafunctions';
 import { inferRolesFromUser } from '@/utils/showuserdatafunctions';
 import { persondataclass, roleFieldConfigs } from '@/utils/userdataclass';
 import { formatDateForDisplay } from '@/utils/showuserdatafunctions';
@@ -55,7 +55,7 @@ const UserDataCardComponent = ({
   const [, forceUpdate] = useState(0);
 
   // Rollen aus Daten ableiten und für Card-Generierung verwenden
-  const rolesForCards = user ? inferRolesFromUser(user) : [];
+  const rolesForCards = user ? inferRolesFromUser(user as any) : [];
   const cards: CardType[] = user ? getCardsForRoles(rolesForCards) : [];
   const [activeCard, setActiveCard] = useState<string>(
     cards[0]?.key ?? 'basis'
@@ -63,15 +63,15 @@ const UserDataCardComponent = ({
 
   // Feld-Definitions-Map (page1 + rollenspezifische Felder)
   const fieldDefsMap = useMemo(() => {
-    const map: Record<string, unknown> = {};
-    (persondataclass ?? []).forEach((f: unknown) => {
-      map[f.name] = f;
+    const map: Record<string, any> = {};
+    (persondataclass ?? []).forEach((f: any) => {
+      if (f && f.name) map[f.name] = f;
     });
     rolesForCards.forEach((role) => {
-      const cfg = (roleFieldConfigs as Record<string, unknown[]>)[role];
+      const cfg = (roleFieldConfigs as Record<string, any[]>)[role];
       if (Array.isArray(cfg)) {
-        cfg.forEach((f) => {
-          map[f.name] = f;
+        cfg.forEach((f: any) => {
+          if (f && f.name) map[f.name] = f;
         });
       }
     });
@@ -91,7 +91,7 @@ const UserDataCardComponent = ({
     const fullValues: Record<string, string> = {};
     allKeys.forEach((k) => {
       fullValues[k] =
-        (user as unknown)[k] ?? (user.details ? user.details[k] : '') ?? '';
+        (user as any)[k] ?? (user as any).details ? (user as any).details?.[k] ?? '' : '';
     });
     setInputValues(fullValues);
     // nur neu ausführen, wenn sich der User ändert oder sich die Anzahl der Cards ändert
@@ -113,9 +113,9 @@ const UserDataCardComponent = ({
 
   const handleEdit = () => setEditMode(true);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     console.debug('UserDataCardComponent: handleSave START', {
-      userId: user?.id,
+      userId: (user as any)?.id,
       editMode,
       inputValues,
     });
@@ -128,25 +128,24 @@ const UserDataCardComponent = ({
     // Felddefinitionen
     const page1 = persondataclass ?? [];
     const roleFields = rolesForCards.flatMap(
-      (role) => (roleFieldConfigs as Record<string, unknown[]>)[role] ?? []
+      (role) => (roleFieldConfigs as Record<string, any[]>)[role] ?? []
     );
 
     console.debug('UserDataCardComponent: field defs', {
-      page1: page1.map((f: unknown) => (f as { name: string }).name),
-      roleFields: roleFields.map((f: unknown) => (f as { name: string }).name),
+      page1: page1.map((f: any) => f.name),
+      roleFields: roleFields.map((f: any) => f.name),
       allKeys,
     });
 
     // Erzeuge Diff: nur geänderte Felder in payload übernehmen
     const changes: Record<string, { from: unknown; to: unknown }> = {};
-    const payload: Record<string, unknown> = {};
-    const topLevelFixed = ['firstname', 'lastname', 'email', 'roles'];
+    const payload: Record<string, any> = {};
 
     allKeys.forEach((k) => {
       const after = inputValues[k] ?? '';
       const before =
-        (user as Record<string, unknown>)[k] ??
-        (user.details ? user.details[k] : undefined) ??
+        (user as any)[k] ??
+        ((user as any).details ? (user as any).details?.[k] : undefined) ??
         '';
 
       const beforeStr =
@@ -158,11 +157,11 @@ const UserDataCardComponent = ({
         changes[k] = { from: before, to: after };
 
         // Typkonvertierung für number-Felder falls definiert
-        const roleDef = roleFields.find((f) => f.name === k);
-        const page1Def = page1.find((f) => f.name === k);
+        const roleDef = (roleFields as any[]).find((f: any) => f.name === k);
+        const page1Def = (page1 as any[]).find((f: any) => f.name === k);
         if (
-          (roleDef && roleDef.type === 'number') ||
-          (page1Def && page1Def.type === 'number')
+          (roleDef && (roleDef as any).type === 'number') ||
+          (page1Def && (page1Def as any).type === 'number')
         ) {
           const n = Number(after);
           payload[k] = Number.isNaN(n) ? after : n;
@@ -187,19 +186,26 @@ const UserDataCardComponent = ({
       payload
     );
 
-    const result = updateUserData(String(user.id), payload);
-    console.debug('UserDataCardComponent: updateUserData result', { result });
+    // updateUserData ist async -> await und casten des payload
+    try {
+      const result = await updateUserData(String((user as any).id), payload as any);
+      console.debug('UserDataCardComponent: updateUserData result', { result });
 
-    if (result) {
-      setEditMode(false);
-      forceUpdate((n) => n + 1);
-      if (onUserUpdate) onUserUpdate();
-      if (onShowMessage)
-        onShowMessage('success', t('components.userDataTable.successupdate'));
-      if (onSaveSuccess) onSaveSuccess(user.id);
-      // Card schließen zuletzt
-      if (onClose) onClose();
-    } else {
+      if (result) {
+        setEditMode(false);
+        forceUpdate((n) => n + 1);
+        if (onUserUpdate) onUserUpdate();
+        if (onShowMessage)
+          onShowMessage('success', t('components.userDataTable.successupdate'));
+        if (onSaveSuccess) onSaveSuccess(String((user as any).id));
+        // Card schließen zuletzt
+        if (onClose) onClose();
+      } else {
+        if (onShowMessage)
+          onShowMessage('error', t('components.userDataTable.errorupdate'));
+      }
+    } catch (err) {
+      console.error('UserDataCardComponent: update failed', err);
       if (onShowMessage)
         onShowMessage('error', t('components.userDataTable.errorupdate'));
     }
@@ -214,7 +220,7 @@ const UserDataCardComponent = ({
       const fullValues: Record<string, string> = {};
       allKeys.forEach((k) => {
         fullValues[k] =
-          (user as unknown)[k] ?? (user.details ? user.details[k] : '') ?? '';
+          (user as any)[k] ?? ((user as any).details ? (user as any).details?.[k] : '') ?? '';
       });
       setInputValues(fullValues);
     }
@@ -225,15 +231,21 @@ const UserDataCardComponent = ({
     setShowDeleteDialog(true);
   };
 
-  const confirmDelete = () => {
-    const result = deleteUserById(String(user.id));
-    setShowDeleteDialog(false);
-    if (result) {
-      if (onUserUpdate) onUserUpdate();
-      if (onShowMessage)
-        onShowMessage('success', t('components.userDataTable.successdelete'));
-      if (onClose) onClose();
-    } else {
+  const confirmDelete = async () => {
+    try {
+      const result = await deleteUserById(String((user as any).id));
+      setShowDeleteDialog(false);
+      if (result) {
+        if (onUserUpdate) onUserUpdate();
+        if (onShowMessage)
+          onShowMessage('success', t('components.userDataTable.successdelete'));
+        if (onClose) onClose();
+      } else {
+        if (onShowMessage)
+          onShowMessage('error', t('components.userDataTable.errordelete'));
+      }
+    } catch (err) {
+      console.error('UserDataCardComponent: delete failed', err);
       if (onShowMessage)
         onShowMessage('error', t('components.userDataTable.errordelete'));
     }
@@ -340,7 +352,9 @@ const UserDataCardComponent = ({
 
           {/* Nur ein Icon für die Gruppe (nicht für die Rolle) direkt neben den Buttons */}
           {(() => {
-            const role = Array.isArray(user.roles) ? user.roles[0] : user.roles;
+            const role = Array.isArray((user as any).roles)
+              ? (user as any).roles[0]
+              : (user as any).roles;
             if (!role) return null;
             return (
               <Chip
@@ -393,15 +407,11 @@ const UserDataCardComponent = ({
                   {(() => {
                     // readonly for name/email fields
                     const readonlyKeys = ['firstname', 'lastname', 'email'];
-                    const def = fieldDefsMap[field.key];
+                    const def = fieldDefsMap[field.key] as any;
                     const isReadonly = readonlyKeys.includes(field.key);
 
                     // render select if field definition says so
-                    if (
-                      def &&
-                      def.type === 'select' &&
-                      Array.isArray(def.options)
-                    ) {
+                    if (def && def.type === 'select' && Array.isArray(def.options)) {
                       return (
                         <Select
                           value={inputValues[field.key] ?? ''}
@@ -419,7 +429,7 @@ const UserDataCardComponent = ({
                           }}
                         >
                           <Option value="">{/* blank option */}</Option>
-                          {def.options.map((opt: unknown) => (
+                          {(def.options as any[]).map((opt: any) => (
                             <Option key={opt.value} value={opt.value}>
                               {opt.label ?? opt.value}
                             </Option>
