@@ -55,7 +55,10 @@
       "role_missing": "Please select a role first.",
       "no_role_specific_fields": "No additional information required for this role.",
       "successcreation": "User created successfully.",
-      "invalid_email": "Please enter a valid email address."
+      "invalid_email": "Please enter a valid email address.",
+      "group": "Group",
+      "choose_group": "Choose a group",
+      "choose": "Choose a "
     },
     "userDataTable": {
       "header": "User Data Table",
@@ -75,7 +78,8 @@
       "successupdate": "User updated successfully.",
       "errorupdate": "Error updating user. Please try again.",
       "errordelete": "Error deleting user. Please try again.",
-      "successdelete": "User deleted successfully."
+      "successdelete": "User deleted successfully.",
+      "editreadonlyinfo": "In edit mode the following fields cannot be changed: Role, First name, Last name, E-Mail."
     },
     "userCsvImportComponent": {
       "title": "Import Users via CSV",

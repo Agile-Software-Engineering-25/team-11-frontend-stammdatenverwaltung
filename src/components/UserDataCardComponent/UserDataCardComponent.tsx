@@ -1,7 +1,17 @@
 /* eslint-disable max-lines-per-function */
-import { Box, Typography, CardContent, Sheet, Input, Button } from '@mui/joy';
+import {
+  Box,
+  Typography,
+  CardContent,
+  Sheet,
+  Input,
+  Button,
+  Chip,
+  Select,
+  Option,
+} from '@mui/joy';
 //import { Card } from '@agile-software/shared-components';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   getCardsForRoles,
   updateUserData,
@@ -9,6 +19,10 @@ import {
 } from '../../utils/showuserdatafunctions';
 import { useTranslation } from 'react-i18next';
 import { Card, Modal as SharedModal } from '@agile-software/shared-components';
+import type { User as UserType } from '@/utils/showuserdatafunctions';
+import { inferRolesFromUser } from '@/utils/showuserdatafunctions';
+import { persondataclass, roleFieldConfigs } from '@/utils/userdataclass';
+import { formatDateForDisplay } from '@/utils/showuserdatafunctions';
 
 interface CardField {
   key: string;
@@ -21,13 +35,6 @@ interface CardType {
   fields: CardField[];
 }
 
-interface UserType {
-  id: number;
-  roles: string[];
-  details?: Record<string, string>;
-  [key: string]: any;
-}
-
 const UserDataCardComponent = ({
   user,
   onUserUpdate,
@@ -38,7 +45,7 @@ const UserDataCardComponent = ({
   user: UserType | null;
   onUserUpdate?: () => void;
   onClose?: () => void;
-  onSaveSuccess?: (userId: number) => void;
+  onSaveSuccess?: (userId: string) => void;
   onShowMessage?: (type: 'success' | 'error', text: string) => void;
 }) => {
   const { t } = useTranslation();
@@ -47,35 +54,54 @@ const UserDataCardComponent = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [, forceUpdate] = useState(0);
 
-  const cards: CardType[] = user ? getCardsForRoles(user.roles) : [];
+  // Rollen aus Daten ableiten und für Card-Generierung verwenden
+  const rolesForCards = user ? inferRolesFromUser(user as any) : [];
+  const cards: CardType[] = user ? getCardsForRoles(rolesForCards) : [];
   const [activeCard, setActiveCard] = useState<string>(
     cards[0]?.key ?? 'basis'
   );
 
+  // Feld-Definitions-Map (page1 + rollenspezifische Felder)
+  const fieldDefsMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    (persondataclass ?? []).forEach((f: any) => {
+      if (f && f.name) map[f.name] = f;
+    });
+    rolesForCards.forEach((role) => {
+      const cfg = (roleFieldConfigs as Record<string, any[]>)[role];
+      if (Array.isArray(cfg)) {
+        cfg.forEach((f: any) => {
+          if (f && f.name) map[f.name] = f;
+        });
+      }
+    });
+    return map;
+  }, [rolesForCards]);
+
   useEffect(() => {
     if (!user) return;
+    // setze aktive Karte (bei Benutzerwechsel auf erste Karte zurück) und editMode zurücksetzen
     setActiveCard(cards[0]?.key ?? 'basis');
-    setInputValues({});
     setEditMode(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    // Sammle einmalig alle Feldkeys aller Cards und fülle die globale Edit-Map
+    const allKeys = Array.from(
+      new Set(cards.flatMap((c) => c.fields.map((f) => f.key)))
+    );
+    const fullValues: Record<string, string> = {};
+    allKeys.forEach((k) => {
+      fullValues[k] =
+        (user as any)[k] ?? (user as any).details ? (user as any).details?.[k] ?? '' : '';
+    });
+    setInputValues(fullValues);
+    // nur neu ausführen, wenn sich der User ändert oder sich die Anzahl der Cards ändert
   }, [user, cards.length]);
 
   if (!user) return null;
 
   const currentCard = cards.find((card) => card.key === activeCard);
 
-  useEffect(() => {
-    if (currentCard && user && !editMode) {
-      const newValues: Record<string, string> = {};
-      currentCard.fields.forEach((field) => {
-        newValues[field.key] =
-          user[field.key] ??
-          (user.details ? user.details[field.key] : '') ??
-          '';
-      });
-      setInputValues(newValues);
-    }
-  }, [currentCard, user, editMode]);
+  // (entfernt) -- inputValues werden jetzt global für alle Cards verwaltet
 
   const handleInputChange =
     (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,32 +113,116 @@ const UserDataCardComponent = ({
 
   const handleEdit = () => setEditMode(true);
 
-  const handleSave = () => {
-    const result = updateUserData(user.id, inputValues);
-    if (result) {
+  const handleSave = async () => {
+    console.debug('UserDataCardComponent: handleSave START', {
+      userId: (user as any)?.id,
+      editMode,
+      inputValues,
+    });
+
+    // Sammle alle Keys aller Cards
+    const allKeys = Array.from(
+      new Set(cards.flatMap((c) => c.fields.map((f) => f.key)))
+    );
+
+    // Felddefinitionen
+    const page1 = persondataclass ?? [];
+    const roleFields = rolesForCards.flatMap(
+      (role) => (roleFieldConfigs as Record<string, any[]>)[role] ?? []
+    );
+
+    console.debug('UserDataCardComponent: field defs', {
+      page1: page1.map((f: any) => f.name),
+      roleFields: roleFields.map((f: any) => f.name),
+      allKeys,
+    });
+
+    // Erzeuge Diff: nur geänderte Felder in payload übernehmen
+    const changes: Record<string, { from: unknown; to: unknown }> = {};
+    const payload: Record<string, any> = {};
+
+    allKeys.forEach((k) => {
+      const after = inputValues[k] ?? '';
+      const before =
+        (user as any)[k] ??
+        ((user as any).details ? (user as any).details?.[k] : undefined) ??
+        '';
+
+      const beforeStr =
+        before === undefined || before === null ? '' : String(before);
+      const afterStr =
+        after === undefined || after === null ? '' : String(after);
+
+      if (beforeStr !== afterStr) {
+        changes[k] = { from: before, to: after };
+
+        // Typkonvertierung für number-Felder falls definiert
+        const roleDef = (roleFields as any[]).find((f: any) => f.name === k);
+        const page1Def = (page1 as any[]).find((f: any) => f.name === k);
+        if (
+          (roleDef && (roleDef as any).type === 'number') ||
+          (page1Def && (page1Def as any).type === 'number')
+        ) {
+          const n = Number(after);
+          payload[k] = Number.isNaN(n) ? after : n;
+        } else {
+          payload[k] = after;
+        }
+      }
+    });
+
+    if (Object.keys(payload).length === 0) {
+      console.debug(
+        'UserDataCardComponent: no changes detected, nothing to save'
+      );
       setEditMode(false);
-      forceUpdate((n) => n + 1);
-      if (onUserUpdate) onUserUpdate();
-      if (onShowMessage)
-        onShowMessage('success', t('components.userDataTable.successupdate'));
-      if (onSaveSuccess) onSaveSuccess(user.id);
-    } else {
+      return;
+    }
+
+    // Debug: Änderungen und finales Payload
+    console.debug('UserDataCardComponent: detected changes to save', changes);
+    console.debug(
+      'UserDataCardComponent: calling updateUserData with payload',
+      payload
+    );
+
+    // updateUserData ist async -> await und casten des payload
+    try {
+      const result = await updateUserData(String((user as any).id), payload as any);
+      console.debug('UserDataCardComponent: updateUserData result', { result });
+
+      if (result) {
+        setEditMode(false);
+        forceUpdate((n) => n + 1);
+        if (onUserUpdate) onUserUpdate();
+        if (onShowMessage)
+          onShowMessage('success', t('components.userDataTable.successupdate'));
+        if (onSaveSuccess) onSaveSuccess(String((user as any).id));
+        // Card schließen zuletzt
+        if (onClose) onClose();
+      } else {
+        if (onShowMessage)
+          onShowMessage('error', t('components.userDataTable.errorupdate'));
+      }
+    } catch (err) {
+      console.error('UserDataCardComponent: update failed', err);
       if (onShowMessage)
         onShowMessage('error', t('components.userDataTable.errorupdate'));
-      if (onClose) onClose();
     }
   };
 
   const handleCancel = () => {
-    if (currentCard && user) {
-      const newValues: Record<string, string> = {};
-      currentCard.fields.forEach((field) => {
-        newValues[field.key] =
-          user[field.key] ??
-          (user.details ? user.details[field.key] : '') ??
-          '';
+    // Abbrechen: stelle alle Werte aus dem User-Objekt wieder her (alle Cards)
+    if (user) {
+      const allKeys = Array.from(
+        new Set(cards.flatMap((c) => c.fields.map((f) => f.key)))
+      );
+      const fullValues: Record<string, string> = {};
+      allKeys.forEach((k) => {
+        fullValues[k] =
+          (user as any)[k] ?? ((user as any).details ? (user as any).details?.[k] : '') ?? '';
       });
-      setInputValues(newValues);
+      setInputValues(fullValues);
     }
     setEditMode(false);
   };
@@ -121,15 +231,21 @@ const UserDataCardComponent = ({
     setShowDeleteDialog(true);
   };
 
-  const confirmDelete = () => {
-    const result = deleteUserById(user.id);
-    setShowDeleteDialog(false);
-    if (result) {
-      if (onUserUpdate) onUserUpdate();
-      if (onShowMessage)
-        onShowMessage('success', t('components.userDataTable.successdelete'));
-      if (onClose) onClose();
-    } else {
+  const confirmDelete = async () => {
+    try {
+      const result = await deleteUserById(String((user as any).id));
+      setShowDeleteDialog(false);
+      if (result) {
+        if (onUserUpdate) onUserUpdate();
+        if (onShowMessage)
+          onShowMessage('success', t('components.userDataTable.successdelete'));
+        if (onClose) onClose();
+      } else {
+        if (onShowMessage)
+          onShowMessage('error', t('components.userDataTable.errordelete'));
+      }
+    } catch (err) {
+      console.error('UserDataCardComponent: delete failed', err);
       if (onShowMessage)
         onShowMessage('error', t('components.userDataTable.errordelete'));
     }
@@ -206,24 +322,71 @@ const UserDataCardComponent = ({
       <Typography level="h4" sx={{ mb: 1 }}>
         {t('components.userDataTable.detailedview')}
       </Typography>
-      <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-        {cards.map((card) => (
-          <Button
-            key={card.key}
-            size="sm"
-            variant={activeCard === card.key ? 'solid' : 'outlined'}
-            color={activeCard === card.key ? 'primary' : 'neutral'}
-            onClick={() => setActiveCard(card.key)}
-          >
-            {card.title}
-          </Button>
-        ))}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          mb: 1,
+        }}
+      >
+        {/* Buttons und Gruppen-Icon zusammen, links neben den Cards */}
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          {cards.map((card) => (
+            <Button
+              key={card.key}
+              size="sm"
+              variant={activeCard === card.key ? 'solid' : 'outlined'}
+              color={activeCard === card.key ? 'primary' : 'neutral'}
+              onClick={() => {
+                console.debug('UserDataCardComponent: switchCard clicked', {
+                  cardKey: card.key,
+                  inputValues,
+                });
+                setActiveCard(card.key);
+              }}
+            >
+              {card.title}
+            </Button>
+          ))}
+
+          {/* Nur ein Icon für die Gruppe (nicht für die Rolle) direkt neben den Buttons */}
+          {(() => {
+            const role = Array.isArray((user as any).roles)
+              ? (user as any).roles[0]
+              : (user as any).roles;
+            if (!role) return null;
+            return (
+              <Chip
+                key={`role-${role}`}
+                size="sm"
+                variant="soft"
+                color="neutral"
+                startDecorator={
+                  <Box component="span" sx={{ mr: 0.5 }}>
+                    👥
+                  </Box>
+                }
+                sx={{ height: 26, px: 1 }}
+                aria-label={`Rolle: ${role}`}
+              >
+                {role}
+              </Chip>
+            );
+          })()}
+        </Box>
       </Box>
       {currentCard && (
         <Card>
           <Typography level="h4" sx={{ mb: 1, fontSize: 16, fontWeight: 700 }}>
             {currentCard.title}
           </Typography>
+          {/* Hinweis auf Basis-Card im Edit-Modus */}
+          {currentCard.key === 'basis' && editMode && (
+            <Typography level="body-xs" sx={{ mb: 1, color: 'neutral.500' }}>
+              {t('components.userDataTable.editreadonlyinfo')}
+            </Typography>
+          )}
           <CardContent sx={{ p: 0 }}>
             <Box
               sx={{
@@ -241,21 +404,86 @@ const UserDataCardComponent = ({
                   <Typography level="body-sm" sx={{ mb: 0.5 }}>
                     {field.label}
                   </Typography>
-                  <Input
-                    value={inputValues[field.key] ?? ''}
-                    disabled={!editMode}
-                    onChange={handleInputChange(field.key)}
-                    sx={{
-                      mt: 0,
-                      mb: 0,
-                      '& .Mui-disabled': {
-                        color: '#000',
-                      },
-                      '& input:disabled': {
-                        color: '#000',
-                      },
-                    }}
-                  />
+                  {(() => {
+                    // readonly for name/email fields
+                    const readonlyKeys = ['firstname', 'lastname', 'email'];
+                    const def = fieldDefsMap[field.key] as any;
+                    const isReadonly = readonlyKeys.includes(field.key);
+
+                    // render select if field definition says so
+                    if (def && def.type === 'select' && Array.isArray(def.options)) {
+                      return (
+                        <Select
+                          value={inputValues[field.key] ?? ''}
+                          disabled={isReadonly || !editMode}
+                          onChange={(_: unknown, val: string | null) =>
+                            setInputValues((prev) => ({
+                              ...prev,
+                              [field.key]: val ?? '',
+                            }))
+                          }
+                          sx={{
+                            mt: 0,
+                            mb: 0,
+                            width: '100%',
+                          }}
+                        >
+                          <Option value="">{/* blank option */}</Option>
+                          {(def.options as any[]).map((opt: any) => (
+                            <Option key={opt.value} value={opt.value}>
+                              {opt.label ?? opt.value}
+                            </Option>
+                          ))}
+                        </Select>
+                      );
+                    }
+
+                    // Im Render-Abschnitt: wenn def.type === 'date' -> editMode nutzt input type="date" (ISO),
+                    // in read-only Anzeige das formatierte tt.mm.jjjj zeigen:
+                    if (def && def.type === 'date') {
+                      return (
+                        <Input
+                          type={editMode ? 'date' : 'text'}
+                          value={
+                            editMode
+                              ? (inputValues[field.key] ?? '')
+                              : formatDateForDisplay(inputValues[field.key])
+                          }
+                          disabled={isReadonly || !editMode}
+                          onChange={handleInputChange(field.key)}
+                          sx={{
+                            mt: 0,
+                            mb: 0,
+                            '& .Mui-disabled': {
+                              color: '#000',
+                            },
+                            '& input:disabled': {
+                              color: '#000',
+                            },
+                          }}
+                        />
+                      );
+                    }
+
+                    // default: text input (readOnly if name/email or not editMode)
+                    return (
+                      <Input
+                        value={inputValues[field.key] ?? ''}
+                        disabled={isReadonly || !editMode}
+                        onChange={handleInputChange(field.key)}
+                        sx={{
+                          mt: 0,
+                          mb: 0,
+                          '& .Mui-disabled': {
+                            color: '#000',
+                          },
+                          '& input:disabled': {
+                            color: '#000',
+                          },
+                        }}
+                      />
+                    );
+                  })()}
                 </Box>
               ))}
             </Box>

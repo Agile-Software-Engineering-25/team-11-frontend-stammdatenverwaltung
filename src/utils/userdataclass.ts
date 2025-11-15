@@ -1,6 +1,50 @@
-/*
+//Sämtliche Datenklassen und Konfigurationen für Benutzerverwaltung
+// Definition der Option-Schnittstelle
+import useAxiosInstance from '../hooks/useAxiosInstance';
+
 // Alle verfügbaren Rollen
-export const availableRoles = ['Person', 'Student', 'Lecturer', 'Employees'];
+export const availableRoles = ['Student', 'Lecturer', 'Employees'];
+export const cohorts = ['2018', '2019', '2020', '2021', '2022', '2023'];
+export const departments = [
+  'Business Informatics',
+  'Computer Science',
+  'Analytical Chemistry',
+  'Organic Chemistry',
+  'Mechanical Engineering',
+  'Electrical Engineering',
+  'Business Administration',
+  'Economics',
+];
+// Axios-Instance für API-Aufrufe (Basis-URL wie gewünscht)
+// eslint-disable-next-line react-hooks/rules-of-hooks
+const axiosInstance = useAxiosInstance('https://sau-portal.de/team-11-api');
+
+// verfügbares Cohorts-Array (wird per API befüllt)
+export const availableCohorts: string[] = [];
+
+// Lade Gruppennamen von /api/v1/group und fülle availableCohorts mit den group.name-Werten
+async function fetchGroups(): Promise<void> {
+  try {
+    const res = await axiosInstance.get('/api/v1/group');
+    const groups = res?.data?.groups;
+    if (Array.isArray(groups)) {
+      const names = groups
+        .map((g: any) => (g && typeof g.name === 'string' ? g.name.trim() : ''))
+        .filter((n: string) => n !== '');
+      // replace contents of exported array so references bleiben gültig
+      availableCohorts.length = 0;
+      availableCohorts.push(...names);
+      console.debug('fetchGroups: loaded group names', availableCohorts);
+    } else {
+      console.warn('fetchGroups: unexpected response shape', res?.data);
+    }
+  } catch (err) {
+    console.error('fetchGroups: error fetching groups', err);
+  }
+}
+// sofort ausführen (top-level)
+void fetchGroups();
+
 export const availableGroups = [
   'Mitarbeiter',
   'Student',
@@ -34,82 +78,51 @@ export const workingTimeModels = [
   'INTERNSHIP',
 ];
 
-
-
-// Die festen Felder (immer vorhanden)
-export const fixedFieldNames = [
-  'firstname',
-  'lastname',
-  'email',
-  'roles', // Mehrfachauswahl!
-];
-
+// Die festen Felder (immer vorhanden) — groups entfernt
+export const fixedFieldNames = ['firstName', 'lastName', 'email', 'roles'];
 
 // Dynamische Felder für Seite 1 (außer Vorname, Nachname, Email, Rolle)
 export const persondataclass = [
   {
-    name: 'phone_number',
+    name: 'phoneNumber',
     label: 'Telefon',
     labeleng: 'Phone',
     type: 'text',
     required: false,
   },
   {
-    name: 'date_of_birth',
+    name: 'dateOfBirth',
     label: 'Geburtsdatum',
     labeleng: 'Date of Birth',
-    type: 'text',
+    type: 'date',
     required: true,
   },
   {
-    name: 'city',
-    label: 'Stadt',
-    labeleng: 'City',
-    type: 'text',
-    required: false,
-  },
-  {
-    name: 'street',
-    label: 'Straße',
-    labeleng: 'Street',
-    type: 'text',
-    required: false,
-  },
-  {
-    name: 'housenumber',
-    label: 'Hausnummer',
-    labeleng: 'House Number',
-    type: 'text',
-    required: false,
-  },
-  {
-    name: 'zipcode',
-    label: 'PLZ',
-    labeleng: 'ZIP Code',
-    type: 'text',
-    required: false,
-  },
-  {
-    name: 'country',
-    label: 'Land',
-    labeleng: 'Country',
+    name: 'address',
+    label: 'Adresse',
+    labeleng: 'Address',
     type: 'text',
     required: false,
   },
 ];
 
+// Hilfsfunktion für Options-Arrays
+function toOptions(arr: string[]) {
+  return arr.map((v) => ({ label: v, value: v }));
+}
+
 // Konfiguration für rollenbasierte Felder
 export const roleFieldConfigs = {
   Student: [
     {
-      name: 'matriculation_number',
+      name: 'matriculationNumber',
       label: 'Matrikelnummer',
       labeleng: 'Matriculation Number',
       type: 'text',
       required: true,
     },
     {
-      name: 'degree_program',
+      name: 'degreeProgram',
       label: 'Studiengang',
       labeleng: 'Degree Program',
       type: 'text',
@@ -126,28 +139,260 @@ export const roleFieldConfigs = {
       name: 'cohort',
       label: 'Jahrgang',
       labeleng: 'Cohort',
-      type: 'text',
+      type: 'string',
       required: false,
     },
     {
-      name: 'study_status',
+      name: 'studyStatus',
       label: 'Studienstatus',
       labeleng: 'Study Status',
       type: 'select',
       required: true,
-      options: Option(studyStatus),
-    }
+      options: toOptions(studyStatus),
+    },
   ],
   Employees: [
-    
-    
+    {
+      name: 'employeeNumber',
+      label: 'Mitarbeiternummer',
+      labeleng: 'Employee Number',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'department',
+      label: 'Abteilung',
+      labeleng: 'Department',
+      type: 'select',
+      required: false,
+      options: toOptions(departments),
+    },
+    {
+      name: 'officeNumber',
+      label: 'Büro Nummer',
+      labeleng: 'Office Number',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'workingTimeModel',
+      label: 'Arbeitszeitmodell',
+      labeleng: 'Working Time Model',
+      type: 'select',
+      required: false,
+      options: toOptions(workingTimeModels),
+    },
   ],
   Lecturer: [
-    
+    {
+      name: 'employeeNumber',
+      label: 'Mitarbeiternummer',
+      labeleng: 'Employee Number',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'department',
+      label: 'Abteilung',
+      labeleng: 'Department',
+      type: 'select',
+      required: false,
+      options: toOptions(departments),
+    },
+    {
+      name: 'officeNumber',
+      label: 'Büro Nummer',
+      labeleng: 'Office Number',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'workingTimeModel',
+      label: 'Arbeitszeitmodell',
+      labeleng: 'Working Time Model',
+      type: 'select',
+      required: false,
+      options: toOptions(workingTimeModels),
+    },
+    {
+      name: 'fieldChair',
+      label: 'Fachgebiet',
+      labeleng: 'Field Chair',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'title',
+      label: 'Titel',
+      labeleng: 'Title',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'employmentStatus',
+      label: 'Beschäftigungsstatus',
+      labeleng: 'Employment Status',
+      type: 'select',
+      required: false,
+      options: toOptions(employmentStatus),
+    },
   ],
 };
 
+// Beispiel-Mockupdaten für User — properties "groups" entfernt
+export const mockUsers = [
+  {
+    id: 'a1b2c3d4-e5f6-11ee-9c99-001122334401',
+    firstname: 'Anna',
+    lastname: 'Muster',
+    email: 'anna.muster@example.com',
+    phone_number: '+49 30 1234567',
+    date_of_birth: '02.02.1992',
+    address: 'Beispielweg 2, 10115 Berlin',
+    roles: 'Student',
+    matriculation_number: 'S2023001',
+    degree_program: 'Informatik',
+    semester: 3,
+    cohort: '2022',
+    study_status: 'ENROLLED',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-11ee-9c99-001122334402',
+    firstname: 'Max',
+    lastname: 'Mustermann',
+    email: 'max.mustermann@example.com',
+    phone_number: '+49 40 9876543',
+    date_of_birth: '15.05.1988',
+    address: 'Musterstraße 1, 20095 Hamburg',
+    roles: 'Employees',
+    employee_id: 'E10002',
+    department: 'IT',
+    office_number: 'B-201',
+    working_time_model: 'FULL_TIME',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-11ee-9c99-001122334403',
+    firstname: 'Doris',
+    lastname: 'Dozent',
+    email: 'doris.dozent@example.com',
+    phone_number: '+49 69 1122334',
+    date_of_birth: '04.04.1985',
+    address: 'Dozentenweg 4, 60311 Frankfurt',
+    roles: 'Lecturer',
+    employee_id: 'L10003',
+    department: 'Personal',
+    office_number: 'C-101',
+    working_time_model: 'PART_TIME',
+    field_chair: 'BWL',
+    title: 'Prof. Dr.',
+    employment_status: 'FULL_TIME_PERMANENT',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-11ee-9c99-001122334404',
+    firstname: 'Josef',
+    lastname: 'Furt',
+    email: 'josef.furt@example.com',
+    phone_number: '+49 89 2233445',
+    date_of_birth: '03.03.1993',
+    address: 'Musterweg 3, 80331 München',
+    roles: 'Employees',
+    employee_id: 'E10004',
+    department: 'Entwicklung',
+    office_number: 'A-303',
+    working_time_model: 'CONTRACT',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-11ee-9c99-001122334405',
+    firstname: 'Lena',
+    lastname: 'Schmidt',
+    email: 'lena.schmidt@example.com',
+    phone_number: '+49 211 123456',
+    date_of_birth: '12.07.1990',
+    address: 'Schulstraße 7, 40210 Düsseldorf',
+    roles: 'Student',
+    matriculation_number: 'S2023005',
+    degree_program: 'BWL',
+    semester: 2,
+    cohort: '2023',
+    study_status: 'REGISTERED',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-11ee-9c99-001122334406',
+    firstname: 'Paul',
+    lastname: 'Bauer',
+    email: 'paul.bauer@example.com',
+    phone_number: '+49 341 122334',
+    date_of_birth: '21.09.1987',
+    address: 'Bauernweg 5, 04109 Leipzig',
+    roles: 'Employees',
+    employee_id: 'E10006',
+    department: 'Vertrieb',
+    office_number: 'D-102',
+    working_time_model: 'FULL_TIME',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-11ee-9c99-001122334407',
+    firstname: 'Julia',
+    lastname: 'Fischer',
+    email: 'julia.fischer@example.com',
+    phone_number: '+49 611 122334',
+    date_of_birth: '30.11.1991',
+    address: 'Fischerstraße 9, 55116 Mainz',
+    roles: 'Lecturer',
+    employee_id: 'L10007',
+    department: 'Support',
+    office_number: 'E-210',
+    working_time_model: 'MINI_JOB',
+    field_chair: 'Mathematik',
+    title: 'Dr.',
+    employment_status: 'ASSISTANT',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-11ee-9c99-001122334408',
+    firstname: 'Tim',
+    lastname: 'Becker',
+    email: 'tim.becker@example.com',
+    phone_number: '+49 721 122334',
+    date_of_birth: '18.01.1989',
+    address: 'Beckerweg 11, 76133 Karlsruhe',
+    roles: 'Employees',
+    employee_id: 'E10008',
+    department: 'IT',
+    office_number: 'B-202',
+    working_time_model: 'PART_TIME',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-11ee-9c99-001122334409',
+    firstname: 'Sophie',
+    lastname: 'Wagner',
+    email: 'sophie.wagner@example.com',
+    phone_number: '+49 511 122334',
+    date_of_birth: '25.12.1994',
+    address: 'Wagnerstraße 13, 30159 Hannover',
+    roles: 'Student',
+    matriculation_number: 'S2023010',
+    degree_program: 'Psychologie',
+    semester: 1,
+    cohort: '2023',
+    study_status: 'ENROLLED',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-11ee-9c99-001122334410',
+    firstname: 'Moritz',
+    lastname: 'Klein',
+    email: 'moritz.klein@example.com',
+    phone_number: '+49 811 122334',
+    date_of_birth: '09.08.1992',
+    address: 'Kleine Gasse 15, 86150 Augsburg',
+    roles: 'Lecturer',
+    employee_id: 'L10010',
+    department: 'Personal',
+    office_number: 'C-102',
+    working_time_model: 'EXTERNAL',
+    field_chair: 'Psychologie',
+    title: 'Prof.',
+    employment_status: 'VISITING',
+  },
+];
 
-// Beispiel-Mockupdaten für User
-
-*/
+export const users = [{}];

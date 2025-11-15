@@ -15,8 +15,8 @@ const Home = () => {
   const navigate = useNavigate();
   const { message, setMessage } = useMessage();
 
-  // Ref, um auf die ausgewählten IDs aus der Tabelle zuzugreifen
-  const selectedUserIdsRef = useRef<number[]>([]);
+  // Ref, um auf die ausgewählten IDs aus der Tabelle zuzugreifen (strings, da die Tabelle string-IDs liefert)
+  const selectedUserIdsRef = useRef<string[]>([]);
 
   // Popup-Status für CSV-Import
   const [csvImportOpen, setCsvImportOpen] = useState(false);
@@ -29,8 +29,8 @@ const Home = () => {
 
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
-  // Callback, das von der Tabelle gesetzt wird
-  const handleSelectedUserIdsChange = (ids: number[]) => {
+  // Callback, das von der Tabelle gesetzt wird (Tabelle liefert string[] IDs)
+  const handleSelectedUserIdsChange = (ids: string[]) => {
     selectedUserIdsRef.current = ids;
   };
 
@@ -109,8 +109,10 @@ const Home = () => {
       </Box>
       <UserDataTableComponent
         onSelectedUserIdsChange={handleSelectedUserIdsChange}
-        selectedUserId={selectedUserId}
-        setSelectedUserId={setSelectedUserId}
+        selectedUserId={selectedUserId !== null ? String(selectedUserId) : null}
+        setSelectedUserId={(id: string | null) =>
+          setSelectedUserId(id ? Number(id) : null)
+        }
         onShowMessage={handleShowMessage}
       />
       {/* CSV Import Modal mit Shared Component */}

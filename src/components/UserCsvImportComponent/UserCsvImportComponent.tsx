@@ -12,7 +12,7 @@ import {
   Checkbox,
 } from '@mui/joy';
 import { useTranslation } from 'react-i18next';
-import { useRef, useState, useMemo, type SetStateAction } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import {
   getAvailableRoles,
   getPage1DynamicFields,
@@ -23,13 +23,22 @@ import {
   generateCsvTemplateForRole,
   downloadCSV,
   isCsvHeaderCompatible,
-  getExpectedCsvHeaderForRole,
+  canonicalLabel,
 } from '@/utils/csvimportexport';
 import { Dropzone } from '@agile-software/shared-components';
 
 type CsvRow = { [key: string]: string };
 
 const NOVALUE = '#novalue';
+
+// Lokaler Typ für dynamische Feld-Definitionen
+interface FieldConfig {
+  name: string;
+  label: string;
+  type?: string;
+  options?: { label: string; value: string }[];
+  required?: boolean;
+}
 
 function getTextWidth(text: string, font = '16px Arial') {
   if (typeof document === 'undefined') return 200;
@@ -66,29 +75,42 @@ const UserCsvImportComponent = ({
   onShowMessage?: (type: 'success' | 'error', text: string) => void;
   onFailedCsv?: (csv: string, filename: string) => void;
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // --- State-/Ref-Deklarationen ---
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [step, setStep] = useState<'select' | 'preview' | 'edit'>('select');
+
   const [csvRowsObj, setCsvRowsObj] = useState<Record<number, CsvRow>>({});
   const [csvHeader, setCsvHeader] = useState<string[]>([]);
   const [requiredFields, setRequiredFields] = useState<string[]>([]);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [headerError, setHeaderError] = useState<string | null>(null);
+
   const [editRows, setEditRows] = useState<number[]>([]);
   const [editRowsObj, setEditRowsObj] = useState<Record<number, CsvRow>>({});
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
+
   const roles = getAvailableRoles();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // --- Ende Ergänzungen ---
 
   // CSV-Template für die ausgewählte Rolle generieren (ohne Rollen-Spalte)
   const { csvString, filename } = useMemo(() => {
     if (!selectedRole) return { csvString: '', filename: '' };
-    const csvString = generateCsvTemplateForRole(selectedRole);
+    const lang =
+      i18n?.language && i18n.language.toLowerCase().startsWith('en')
+        ? 'en'
+        : 'de';
+    const csvString = generateCsvTemplateForRole(
+      selectedRole,
+      lang as 'de' | 'en'
+    );
     const filename = `${selectedRole}_SAU_IMPORT.csv`;
     return { csvString, filename };
-  }, [selectedRole]);
+  }, [selectedRole, i18n]);
 
   const handleDownloadTemplate = () => {
     if (csvString && filename) {
@@ -99,8 +121,8 @@ const UserCsvImportComponent = ({
   // Spaltennamen für Vorschau
   const previewColumns = useMemo(() => {
     if (!selectedRole) return [];
-    const page1Fields = getPage1DynamicFields();
-    const roleFields = dynamicInputFields(selectedRole).fields;
+    const page1Fields = getPage1DynamicFields() as FieldConfig[];
+    const roleFields = dynamicInputFields(selectedRole).fields as FieldConfig[];
     return [
       'Vorname',
       'Nachname',
@@ -110,19 +132,95 @@ const UserCsvImportComponent = ({
     ];
   }, [selectedRole]);
 
-  // Hilfsfunktion: CSV parsen (nur einfache CSV, keine Sonderzeichen/Quotes)
-  function parseCsv(text: string): string[][] {
-    return text
-      .split(/\r?\n/)
-      .map((line) => line.split(',').map((cell) => cell.trim()))
-      .filter((row) => row.some((cell) => cell.length > 0));
+  // Optionen pro Spalten-Label (für Edit-Modus dropdowns)
+  const selectOptionsMap = useMemo<Record<string, string[]>>(() => {
+    const map: Record<string, string[]> = {};
+    if (!selectedRole) return map;
+    const page1 = getPage1DynamicFields() as FieldConfig[];
+    page1.forEach((f) => {
+      if (f.type === 'select' && Array.isArray(f.options)) {
+        map[f.label] = (f.options as { label: string; value: string }[]).map(
+          (o) => o.value
+        );
+      }
+    });
+    const roleFields = dynamicInputFields(selectedRole).fields as FieldConfig[];
+    roleFields.forEach((f) => {
+      if (f.type === 'select' && Array.isArray(f.options)) {
+        map[f.label] = (f.options as { label: string; value: string }[]).map(
+          (o) => o.value
+        );
+      }
+    });
+    return map;
+  }, [selectedRole]);
+
+  // Hilfsfunktion: CSV parsen (Semikolon-Delimiter, vollständiger Quote-aware Parser)
+  // eslint-disable-next-line func-style
+  function parseCsv(text: string, delimiter = ';'): string[][] {
+    const rows: string[][] = [];
+    let curRow: string[] = [];
+    let curCell = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      const next = text[i + 1];
+
+      if (ch === '"') {
+        if (inQuotes && next === '"') {
+          // escaped quote
+          curCell += '"';
+          i++; // skip next
+        } else {
+          // toggle quote state
+          inQuotes = !inQuotes;
+        }
+        continue;
+      }
+
+      if (!inQuotes && ch === delimiter) {
+        curRow.push(curCell);
+        curCell = '';
+        continue;
+      }
+
+      // handle CRLF / LF newlines when not in quotes
+      if (!inQuotes && ch === '\r' && next === '\n') {
+        curRow.push(curCell);
+        rows.push(curRow);
+        curRow = [];
+        curCell = '';
+        i++; // skip \n
+        continue;
+      }
+      if (!inQuotes && (ch === '\n' || ch === '\r')) {
+        curRow.push(curCell);
+        rows.push(curRow);
+        curRow = [];
+        curCell = '';
+        continue;
+      }
+
+      curCell += ch;
+    }
+
+    // push last cell/row
+    if (inQuotes) {
+      inQuotes = false;
+    }
+    curRow.push(curCell);
+    if (curRow.length > 1 || curRow[0].trim() !== '' || rows.length === 0) {
+      rows.push(curRow);
+    }
+
+    return rows.map((r) => r.map((c) => c.trim()));
   }
 
   // Hilfsfunktion: Validierung der Pflichtfelder
   function getRequiredFields(): string[] {
     if (!selectedRole) return [];
-    const page1Fields = getPage1DynamicFields();
-    const roleFields = dynamicInputFields(selectedRole).fields;
+    const page1Fields = getPage1DynamicFields() as FieldConfig[];
+    const roleFields = dynamicInputFields(selectedRole).fields as FieldConfig[];
     return [
       'Vorname',
       'Nachname',
@@ -147,15 +245,27 @@ const UserCsvImportComponent = ({
       fileInputRef.current.value = '';
     }
   };
-  /*
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
-    } else {
-      setSelectedFile(null);
+
+  function findHeaderIndex(
+    rows: string[][],
+    role: string,
+    maxSearchRows = 200
+  ): number {
+    const limit = Math.min(rows.length, maxSearchRows);
+    for (let i = 0; i < limit; i++) {
+      const candidate = rows[i];
+      try {
+        if (isCsvHeaderCompatible(candidate, role)) {
+          return i;
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Header check error at row', i, e);
+        continue;
+      }
     }
-  };
-  */
+    return -1;
+  }
 
   // Weiter-Button: CSV einlesen und in Tabelle anzeigen
   const handleNext = async () => {
@@ -163,107 +273,166 @@ const UserCsvImportComponent = ({
     if (!selectedFile || !selectedRole) return;
     setImporting(true);
 
-    const text = await selectedFile.text();
-    let rows = parseCsv(text);
-    if (rows.length < 1) {
-      setImporting(false);
-      alert(t('components.userCsvImportComponent.importerrorempty'));
-      return;
-    }
-    let header = rows[0];
+    try {
+      const text = await selectedFile.text();
+      let rows = parseCsv(text);
+      if (rows.length < 1) {
+        alert(t('components.userCsvImportComponent.importerrorempty'));
+        setImporting(false);
+        return;
+      }
 
-    // Prüfe, ob es sich um einen Export handelt (Rollen-Spalte vorhanden)
-    const expectedHeader = getExpectedCsvHeaderForRole(selectedRole);
-    if (
-      header.length === expectedHeader.length + 1 &&
-      header.includes('Rollen')
-    ) {
-      // Entferne die Rollen-Spalte aus Header und allen Datenzeilen
-      const rollenIdx = header.indexOf('Rollen');
-      header = header.filter((h) => h !== 'Rollen');
-      rows = rows.map((row) => row.filter((_, idx) => idx !== rollenIdx));
-    }
+      let headerIndex = findHeaderIndex(rows, selectedRole, 200);
+      if (headerIndex === -1) {
+        headerIndex = 0;
+      }
 
-    // Header-Kompatibilität prüfen
-    if (!isCsvHeaderCompatible(header, selectedRole)) {
-      setImporting(false);
-      setHeaderError(t('components.userCsvImportComponent.headerincompatible'));
-      return;
-    }
+      let header = rows[headerIndex];
 
-    const dataRows = rows.slice(1);
+      const headerCanon = header.map(canonicalLabel);
+      const roleIdx = headerCanon.findIndex((h) => h === 'role');
+      if (roleIdx !== -1) {
+        rows = rows.map((row) => row.filter((_, idx) => idx !== roleIdx));
+        header = header.filter((_, idx) => idx !== roleIdx);
+        if (headerIndex >= rows.length) headerIndex = 0;
+      }
 
-    const reqFields = getRequiredFields();
+      if (!isCsvHeaderCompatible(header, selectedRole)) {
+        setHeaderError(
+          t('components.userCsvImportComponent.headerincompatible')
+        );
+        setImporting(false);
+        return;
+      }
 
-    // Zeilen als Objekt
-    const csvRowsObj: Record<number, CsvRow> = {};
-    dataRows.forEach((row, idx) => {
-      const obj: CsvRow = {};
-      header.forEach((col, colIdx) => {
-        obj[col] = row[colIdx] ?? '';
+      const dataRows = rows.slice(headerIndex + 1);
+      const reqFields = getRequiredFields();
+
+      // Erzeuge Map mit erlaubten Werten für Select-Spalten (Label -> allowedValues[])
+      const allowedValuesMap: Record<string, string[] | undefined> = {};
+      {
+        const page1Fields = getPage1DynamicFields() as FieldConfig[];
+        const roleFields = dynamicInputFields(selectedRole).fields as FieldConfig[];
+        page1Fields.forEach((f) => {
+          if (f.type === 'select' && Array.isArray(f.options)) {
+            allowedValuesMap[f.label] = (f.options as { label: string; value: string }[]).map(
+              (o) => o.value
+            );
+          }
+        });
+        roleFields.forEach((f) => {
+          if (f.type === 'select' && Array.isArray(f.options)) {
+            allowedValuesMap[f.label] = (f.options as { label: string; value: string }[]).map(
+              (o) => o.value
+            );
+          }
+        });
+      }
+
+      // Zeilen als Objekt (vorsichtig und robust bauen)
+      const csvRowsObjLocal: Record<number, CsvRow> = {};
+      dataRows.forEach((row, idx) => {
+        const obj: CsvRow = {};
+        const safeRow = Array.isArray(row) ? row : [];
+        header.forEach((col, colIdx) => {
+          const raw = safeRow[colIdx] ?? '';
+          const allowed = allowedValuesMap[col];
+          if (allowed && allowed.length > 0) {
+            obj[col] = raw && allowed.includes(raw) ? raw : NOVALUE;
+          } else {
+            obj[col] = raw;
+          }
+        });
+        reqFields.forEach((field) => {
+          if (!obj[field] || obj[field].trim() === '') {
+            obj[field] = NOVALUE;
+          }
+        });
+        csvRowsObjLocal[idx] = obj;
       });
-      reqFields.forEach((field) => {
-        if (!obj[field] || obj[field].trim() === '') {
-          obj[field] = NOVALUE;
-        }
-      });
-      csvRowsObj[idx] = obj;
-    });
 
-    setCsvHeader(header);
-    setCsvRowsObj(csvRowsObj);
-    setRequiredFields(reqFields);
-    setStep('preview');
-    setImporting(false);
+      if (Object.keys(csvRowsObjLocal).length === 0) {
+        setHeaderError(t('components.userCsvImportComponent.importerrorempty'));
+        setImporting(false);
+        return;
+      }
 
-    setColumnWidths(getColumnWidths(header, Object.values(csvRowsObj)));
+      setCsvHeader(header);
+      setCsvRowsObj(csvRowsObjLocal);
+      setRequiredFields(reqFields);
+      setStep('preview');
+
+      try {
+        setColumnWidths(getColumnWidths(header, Object.values(csvRowsObjLocal)));
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('Column width calc failed, using defaults', err);
+        const fallback: Record<string, number> = {};
+        header.forEach((h) => {
+          fallback[h] = 140;
+        });
+        setColumnWidths(fallback);
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Import error', err);
+      setHeaderError(t('components.userCsvImportComponent.importerror'));
+    } finally {
+      setImporting(false);
+    }
   };
 
-  // Prüfe, ob noch Pflichtfelder fehlen
-  const missingRequiredCells: { row: number; col: string }[] = [];
-  Object.entries(csvRowsObj).forEach(([rowIdx, row]) => {
-    requiredFields.forEach((field) => {
-      if (row[field] === NOVALUE) {
-        missingRequiredCells.push({ row: Number(rowIdx), col: field });
-      }
-    });
-  });
-
-  const hasMissingRequired = missingRequiredCells.length > 0;
-
   // Import-Funktion
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!selectedRole) return;
     setImporting(true);
 
-    // Reihenfolge der Felder für createUser
     const allLabels = previewColumns;
 
-    // Nutzer, die nicht importiert werden konnten
+    const headerCanon = csvHeader.map(canonicalLabel);
+    const previewCanon = allLabels.map(canonicalLabel);
+    const headerForPreview: (string | null)[] = previewCanon.map((pc) => {
+      const idx = headerCanon.indexOf(pc);
+      return idx >= 0 ? csvHeader[idx] : null;
+    });
+
     const failedRows: string[][] = [];
     let successCount = 0;
 
-    for (const row of Object.values(csvRowsObj)) {
-      // Prüfe auf Pflichtfelder
-      if (
-        requiredFields.some(
-          (field) =>
-            row[field] === NOVALUE || !row[field] || row[field].trim() === ''
-        )
-      ) {
-        failedRows.push(allLabels.map((label) => row[label] ?? ''));
+    for (const rowObj of Object.values(csvRowsObj)) {
+      const missing = requiredFields.some((fieldLabel) => {
+        const idx = allLabels.indexOf(fieldLabel);
+        const mappedHeader = headerForPreview[idx];
+        const val = mappedHeader ? rowObj[mappedHeader] : '';
+        return val === NOVALUE || !val || val.trim() === '';
+      });
+
+      if (missing) {
+        failedRows.push(
+          allLabels.map((_label, i) => {
+            const mapped = headerForPreview[i];
+            return mapped ? (rowObj[mapped] ?? '') : '';
+          })
+        );
         continue;
       }
-      // Werte in der richtigen Reihenfolge für createUser
-      // FIX: Die Rolle wird NICHT aus der CSV genommen, sondern aus selectedRole!
-      const userData: string[] = allLabels.map((label) => row[label] ?? '');
-      // Die Rolle als letztes Feld anhängen
-      userData.push(selectedRole);
 
-      // createUser aufrufen
-      const result = createUser(userData, selectedRole);
+      const userData: string[] = allLabels.map((_label, i) => {
+        const mapped = headerForPreview[i];
+        return mapped ? (rowObj[mapped] ?? '') : '';
+      });
+
+      userData.push(selectedRole!);
+
+      // createUser aufrufen (await)
+      const result = await createUser(userData, selectedRole!);
       if (!result) {
-        failedRows.push(allLabels.map((label) => row[label] ?? ''));
+        failedRows.push(
+          allLabels.map((_label, i) => {
+            const mapped = headerForPreview[i];
+            return mapped ? (rowObj[mapped] ?? '') : '';
+          })
+        );
       } else {
         successCount++;
       }
@@ -272,17 +441,16 @@ const UserCsvImportComponent = ({
     setImporting(false);
 
     if (failedRows.length > 0) {
-      // Fehlerhafte Zeilen als CSV zum Download bereitstellen (nicht automatisch downloaden)
       const failedCsv = [allLabels, ...failedRows]
         .map((row) =>
           row
             .map((val) =>
               typeof val === 'string' &&
-              (val.includes(',') || val.includes('"') || val.includes('\n'))
+              (val.includes(';') || val.includes('"') || val.includes('\n'))
                 ? `"${val.replace(/"/g, '""')}"`
                 : val
             )
-            .join(',')
+            .join(';')
         )
         .join('\r\n');
       const errorFileName = `${t('components.userCsvImportComponent.importerrorfilename')}${selectedRole}_SAU.csv`;
@@ -395,6 +563,27 @@ const UserCsvImportComponent = ({
     });
   });
 
+  // --- fehlende Pflichtfelder in der Vorschau ---
+  const missingRequiredCells = useMemo(() => {
+    const missing: { row: number; col: string }[] = [];
+    Object.entries(csvRowsObj).forEach(([rowIdx, row]) => {
+      requiredFields.forEach((field) => {
+        const val = (row ?? {})[field];
+        if (
+          val === NOVALUE ||
+          val === undefined ||
+          (typeof val === 'string' && val.trim() === '')
+        ) {
+          missing.push({ row: Number(rowIdx), col: field });
+        }
+      });
+    });
+    return missing;
+  }, [csvRowsObj, requiredFields]);
+
+  const hasMissingRequired = missingRequiredCells.length > 0;
+  // --- Ende ---
+
   return (
     <Card>
       {/* Kompakter Header, sticky */}
@@ -448,12 +637,12 @@ const UserCsvImportComponent = ({
               <Dropzone
                 types={['CSV']}
                 multiple={false}
-                onFileSelect={(file: any[] | SetStateAction<File | null>) => {
-                  // file ist entweder File oder File[]
+                onFileSelect={(file: unknown) => {
                   if (Array.isArray(file)) {
-                    setSelectedFile(file[0] ?? null);
+                    const f = file[0] as File | undefined;
+                    setSelectedFile(f ?? null);
                   } else {
-                    setSelectedFile(file);
+                    setSelectedFile(file as File | null);
                   }
                 }}
                 dragDropText={t(
@@ -606,14 +795,10 @@ const UserCsvImportComponent = ({
                               maxWidth: columnWidths[col],
                             }}
                           >
-                            {row[col] === NOVALUE ? (
-                              <span
-                                style={{ color: '#d32f2f', fontWeight: 500 }}
-                              >
-                                {NOVALUE}
-                              </span>
+                            {((row ?? {})[col] === NOVALUE) ? (
+                              <span style={{ color: '#d32f2f', fontWeight: 500 }}>{NOVALUE}</span>
                             ) : (
-                              row[col]
+                              (row ?? {})[col] ?? ''
                             )}
                           </td>
                         ))}
@@ -721,40 +906,77 @@ const UserCsvImportComponent = ({
                       <td>{rowIdx + 1}</td>
                       {csvHeader.map((col) => (
                         <td key={col}>
-                          <Input
-                            value={
-                              editRowsObj[rowIdx][col] === NOVALUE
-                                ? ''
-                                : editRowsObj[rowIdx][col]
-                            }
-                            color={
-                              requiredFields.includes(col) &&
-                              editRowsObj[rowIdx][col] === NOVALUE
-                                ? 'danger'
-                                : 'neutral'
-                            }
-                            placeholder={
-                              editRowsObj[rowIdx][col] === NOVALUE
-                                ? NOVALUE
-                                : ''
-                            }
-                            onChange={(e) =>
-                              handleEditCellChange(rowIdx, col, e.target.value)
-                            }
-                            sx={{
-                              width: '100%',
-                              minWidth: columnWidths[col] - 16,
-                              maxWidth: columnWidths[col] - 16,
-                              ...(requiredFields.includes(col) &&
-                              editRowsObj[rowIdx][col] === NOVALUE
-                                ? {
-                                    borderColor: '#d32f2f',
-                                    color: '#d32f2f',
-                                    background: '#fff0f0',
-                                  }
-                                : {}),
-                            }}
-                          />
+                          {selectOptionsMap[col] && selectOptionsMap[col].length > 0 ? (
+                            <Select
+                              value={
+                                (editRowsObj[rowIdx] ?? {})[col] === NOVALUE
+                                  ? ''
+                                  : (editRowsObj[rowIdx] ?? {})[col] ?? ''
+                              }
+                              onChange={(_, value) =>
+                                handleEditCellChange(rowIdx, col, (value as string) ?? '')
+                              }
+                              color={
+                                requiredFields.includes(col) &&
+                                (editRowsObj[rowIdx] ?? {})[col] === NOVALUE
+                                  ? 'danger'
+                                  : 'neutral'
+                              }
+                              sx={{
+                                width: '100%',
+                                minWidth: (columnWidths[col] ?? 120) - 16,
+                                maxWidth: (columnWidths[col] ?? 320) - 16,
+                                ...(requiredFields.includes(col) &&
+                                (editRowsObj[rowIdx] ?? {})[col] === NOVALUE
+                                  ? {
+                                      borderColor: '#d32f2f',
+                                      color: '#d32f2f',
+                                      background: '#fff0f0',
+                                    }
+                                  : {}),
+                              }}
+                            >
+                              <Option value="">--</Option>
+                              {selectOptionsMap[col].map((opt) => (
+                                <Option key={opt} value={opt}>
+                                  {opt}
+                                </Option>
+                              ))}
+                            </Select>
+                          ) : (
+                            <Input
+                              value={
+                                (editRowsObj[rowIdx] ?? {})[col] === NOVALUE
+                                  ? ''
+                                  : (editRowsObj[rowIdx] ?? {})[col]
+                              }
+                              color={
+                                requiredFields.includes(col) &&
+                                (editRowsObj[rowIdx] ?? {})[col] === NOVALUE
+                                  ? 'danger'
+                                  : 'neutral'
+                              }
+                              placeholder={
+                                (editRowsObj[rowIdx] ?? {})[col] === NOVALUE ? NOVALUE : ''
+                              }
+                              onChange={(e) =>
+                                handleEditCellChange(rowIdx, col, e.target.value)
+                              }
+                              sx={{
+                                width: '100%',
+                                minWidth: (columnWidths[col] ?? 120) - 16,
+                                maxWidth: (columnWidths[col] ?? 320) - 16,
+                                ...(requiredFields.includes(col) &&
+                                (editRowsObj[rowIdx] ?? {})[col] === NOVALUE
+                                  ? {
+                                      borderColor: '#d32f2f',
+                                      color: '#d32f2f',
+                                      background: '#fff0f0',
+                                    }
+                                  : {}),
+                              }}
+                            />
+                          )}
                         </td>
                       ))}
                     </tr>
