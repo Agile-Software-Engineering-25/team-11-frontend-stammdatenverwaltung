@@ -1,6 +1,6 @@
 //Sämtliche Datenklassen und Konfigurationen für Benutzerverwaltung
 // Definition der Option-Schnittstelle
-import useAxiosInstance from '../hooks/useAxiosInstance';
+//import useAxiosInstance from '../hooks/useAxiosInstance';
 
 // Alle verfügbaren Rollen
 export const availableRoles = ['Student', 'Lecturer', 'Employees'];
@@ -17,6 +17,7 @@ export const departments = [
 ];
 // Axios-Instance für API-Aufrufe (Basis-URL wie gewünscht)
 // eslint-disable-next-line react-hooks/rules-of-hooks
+/*
 const axiosInstance = useAxiosInstance('https://sau-portal.de/team-11-api');
 
 // verfügbares Cohorts-Array (wird per API befüllt)
@@ -44,6 +45,7 @@ async function fetchGroups(): Promise<void> {
 }
 // sofort ausführen (top-level)
 void fetchGroups();
+*/
 
 export const availableGroups = [
   'Mitarbeiter',
