@@ -18,7 +18,7 @@ import {
 } from '../../utils/showuserdatafunctions';
 import { useUsers } from '../../hooks/useUsers';
 import { formatDateForDisplay } from '../../utils/showuserdatafunctions';
-import type { User as UserType } from '../../utils/showuserdatafunctions';
+
 
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,
