@@ -103,6 +103,33 @@ const UserDataCardComponent = ({
     return map;
   }, [rolesForCards]);
 
+  // helper: konvertiere unterschiedlichen Datum-Formate in ISO 'YYYY-MM-DD' für <input type="date">
+  const toIsoDate = (val: unknown): string => {
+    if (val === undefined || val === null || val === '') return '';
+    if (typeof val === 'number') {
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return '';
+      return d.toISOString().slice(0, 10);
+    }
+    if (typeof val === 'string') {
+      const s = val.trim();
+      // schon ISO yyyy-mm-dd
+      const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+      // dd.mm.yyyy -> convert
+      const dmy = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+      if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
+      // dd/mm/yyyy
+      const dmy2 = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (dmy2) return `${dmy2[3]}-${dmy2[2]}-${dmy2[1]}`;
+      // try Date.parse fallback
+      const parsed = Date.parse(s);
+      if (!isNaN(parsed)) return new Date(parsed).toISOString().slice(0, 10);
+      return '';
+    }
+    return '';
+  };
+
   useEffect(() => {
     if (!user) return;
     // setze aktive Karte (bei Benutzerwechsel auf erste Karte zurück) und editMode zurücksetzen
@@ -115,11 +142,26 @@ const UserDataCardComponent = ({
     );
     const fullValues: Record<string, string> = {};
     allKeys.forEach((k) => {
-      fullValues[k] = String((user as any)[k] ?? '');
+      // wenn Feld als Datum definiert ist, konvertiere in ISO für <input type="date">
+      const def = fieldDefsMap[k] as any;
+      if (def && def.type === 'date') {
+        // prüfe direkte Felder und mögliche Aliase in user
+        const raw =
+          (user as any)[k] ??
+          (user as any)['dateOfBirth'] ??
+          (user as any)['date_of_birth'] ??
+          (user as any)['date'] ??
+          (user as any)['birthdate'] ??
+          (user as any)['birth_date'] ??
+          '';
+        fullValues[k] = toIsoDate(raw);
+      } else {
+        fullValues[k] = String((user as any)[k] ?? '');
+      }
     });
     setInputValues(fullValues);
     // nur neu ausführen, wenn sich der User ändert oder sich die Anzahl der Cards ändert
-  }, [user, cards.length]);
+  }, [user, cards.length, fieldDefsMap]);
 
   if (!user) return null;
 
@@ -180,7 +222,17 @@ const UserDataCardComponent = ({
         // Typkonvertierung für number-Felder falls definiert
         const roleDef = (roleFields as any[]).find((f: any) => f.name === k);
         const page1Def = (page1 as any[]).find((f: any) => f.name === k);
-        if (
+
+        // DATE-Feld: sende ISO-String (oder leeren String -> null/undefined)
+        const isDate =
+          (roleDef && (roleDef as any).type === 'date') ||
+          (page1Def && (page1Def as any).type === 'date');
+
+        if (isDate) {
+          // payload erwartet ISO 'YYYY-MM-DD' oder backend-spezifisches Format.
+          // input liefert 'YYYY-MM-DD' (von toIsoDate / input[type=date]).
+          payload[k] = afterStr === '' ? null : String(afterStr);
+        } else if (
           (roleDef && (roleDef as any).type === 'number') ||
           (page1Def && (page1Def as any).type === 'number')
         ) {
