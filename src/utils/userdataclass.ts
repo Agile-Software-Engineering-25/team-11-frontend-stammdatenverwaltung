@@ -5,7 +5,7 @@
 // Alle verfügbaren Rollen
 export const availableRoles = ['Student', 'Lecturer', 'Employees'];
 export const cohorts = ['2018', '2019', '2020', '2021', '2022', '2023'];
-export const departments = [
+export const studyprogramms = [
   'Business Informatics',
   'Computer Science',
   'Analytical Chemistry',
@@ -14,6 +14,12 @@ export const departments = [
   'Electrical Engineering',
   'Business Administration',
   'Economics',
+];
+export const departments = [
+  'Department of Computer Science',
+  'Department of Chemistry',
+  'Department of Engineering',
+  'Department of Business',
 ];
 // Axios-Instance für API-Aufrufe (Basis-URL wie gewünscht)
 // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -127,8 +133,9 @@ export const roleFieldConfigs = {
       name: 'degreeProgram',
       label: 'Studiengang',
       labeleng: 'Degree Program',
-      type: 'text',
+      type: 'select',
       required: false,
+      options: toOptions(studyprogramms),
     },
     {
       name: 'semester',
