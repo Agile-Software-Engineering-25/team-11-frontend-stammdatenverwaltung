@@ -153,10 +153,14 @@ const CreateUser = ({ onClose }: { onClose?: () => void }) => {
       if (onClose) onClose();
       navigate('/');
     } else {
+      // Bei Fehlschlag: zur Home-Seite leiten und Error-Message dort anzeigen
       setMessage({
         type: 'error',
         text: t('components.createusermanually.errorcreate'),
       });
+      setForm(initialState);
+      if (onClose) onClose();
+      navigate('/');
     }
   };
   const cancel = () => {
