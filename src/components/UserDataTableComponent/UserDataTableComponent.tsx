@@ -113,10 +113,7 @@ const UserDataTableComponent = ({
         const newIds = event.target.checked
           ? Array.from(new Set([...prev, resolvedId]))
           : prev.filter((id) => id !== resolvedId);
-        if (onSelectedUserIdsChange) onSelectedUserIdsChange(newIds);
-        return newIds;
       });
-    };
 
   // Alle auswählen
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,13 +124,12 @@ const UserDataTableComponent = ({
         .filter((id) => id !== '');
     }
     setSelectedUserIds(newIds);
-    if (onSelectedUserIdsChange) onSelectedUserIdsChange(newIds);
   };
 
+  // Informiere Parent bei jeder Änderung der Auswahl
   useEffect(() => {
     if (onSelectedUserIdsChange) onSelectedUserIdsChange(selectedUserIds);
-    // eslint-disable-next-line
-  }, []);
+  }, [selectedUserIds, onSelectedUserIdsChange]);
 
   const allChecked =
     filteredUsers.length > 0 &&
