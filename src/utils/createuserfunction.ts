@@ -166,7 +166,12 @@ export async function createUser(
     semester:
       typeof anyUser.semester === 'number'
         ? anyUser.semester
-        : anyUser.semester ?? undefined,
+        : (typeof anyUser.semester === 'string' && anyUser.semester.trim() !== ''
+          ? ((): number | undefined => {
+              const n = Number(anyUser.semester.replace(',', '.').trim());
+              return Number.isNaN(n) ? undefined : n;
+            })()
+          : undefined),
     studyStatus: anyUser.studyStatus ?? anyUser.study_status ?? '',
     cohort: anyUser.cohort ?? '',
     employmentStatus:
