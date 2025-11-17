@@ -1,5 +1,4 @@
 import { Box, Typography } from '@mui/joy';
-import LanguageSelectorComponent from '@components/LanguageSelectorComponent/LanguageSelectorComponent';
 import { useTranslation } from 'react-i18next';
 import CreateUserManualyComponent from '@/components/CreateUserManualyComponent/CreateUserManualyComponent';
 
@@ -11,7 +10,6 @@ const CreateUser = () => {
       <Typography level="h2">
         {t('pages.create_user_manually.title')}
       </Typography>
-      <LanguageSelectorComponent />
       <Typography level="h4">
         {t('pages.create_user_manually.description')}
       </Typography>

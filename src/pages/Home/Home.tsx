@@ -1,7 +1,6 @@
 /* eslint-disable max-lines-per-function */
 import { Box, Typography, Button } from '@mui/joy';
 import { Card, Modal as SharedModal } from '@agile-software/shared-components';
-import LanguageSelectorComponent from '@components/LanguageSelectorComponent/LanguageSelectorComponent';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import UserDataTableComponent from '@/components/UserDataTableComponent/UserDataTableComponent';
@@ -9,6 +8,7 @@ import { useState, useRef } from 'react';
 import { exportUsersToCSV, downloadCSV } from '@/utils/csvimportexport';
 import UserCsvImportComponent from '@/components/UserCsvImportComponent/UserCsvImportComponent';
 import { useMessage } from '@/components/MessageProvider/MessageProvider';
+
 
 const Home = () => {
   const { t } = useTranslation();
@@ -67,7 +67,6 @@ const Home = () => {
   return (
     <Box sx={{ padding: 2, maxWidth: 1500, mx: 'auto' }}>
       <Typography level="h3">{t('pages.home.title')}</Typography>
-      <LanguageSelectorComponent />
       <Box sx={{ display: 'flex', gap: 2, my: 2 }}>
         <Button onClick={handleOpenCreateUser}>
           {t('pages.home.createmanuell')}
