@@ -22,11 +22,15 @@ import { formatDateForDisplay } from '../../utils/showuserdatafunctions';
 
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,
+  selectedUserIds: selectedUserIdsProp,
+  setSelectedUserIds: setSelectedUserIdsProp,
   selectedUserId,
   setSelectedUserId,
   onShowMessage,
 }: {
   onSelectedUserIdsChange?: (ids: string[]) => void;
+  selectedUserIds?: string[];
+  setSelectedUserIds?: (ids: string[]) => void;
   selectedUserId?: string | null;
   setSelectedUserId?: (id: string | null) => void;
   onShowMessage?: (type: 'success' | 'error', text: string) => void;
@@ -35,7 +39,18 @@ const UserDataTableComponent = ({
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('alle');
   const { users, refresh } = useUsers();
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  // lokaler state nur wenn Parent keinen State liefert
+  const [localSelectedUserIds, setLocalSelectedUserIds] = useState<string[]>(
+    []
+  );
+
+  // helper: einheitlicher getter/setter (Parent-Prop hat Priorität)
+  const selectedUserIds = selectedUserIdsProp ?? localSelectedUserIds;
+  const setSelectedUserIds = (ids: string[]) => {
+    if (setSelectedUserIdsProp) setSelectedUserIdsProp(ids);
+    else setLocalSelectedUserIds(ids);
+    if (onSelectedUserIdsChange) onSelectedUserIdsChange(ids);
+  };
 
   useEffect(() => {
     refresh();
@@ -109,36 +124,31 @@ const UserDataTableComponent = ({
   // Checkbox-Handler (erhält bereits aufgelöste id)
   const handleCheckboxChange =
     (resolvedId: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      setSelectedUserIds((prev) => {
-        const newIds = event.target.checked
-          ? Array.from(new Set([...prev, resolvedId]))
-          : prev.filter((id) => id !== resolvedId);
-        // Wichtig: neues Array zurückgeben, sonst ändert sich der State nicht
-        return newIds;
-      });
+      const newIds = event.target.checked
+        ? Array.from(new Set([...(selectedUserIds ?? []), resolvedId]))
+        : (selectedUserIds || []).filter((id) => id !== resolvedId);
+      setSelectedUserIds(newIds);
     };
 
   // Alle auswählen
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
-    let newIds: string[] = [];
-    if (event.target.checked) {
-      newIds = filteredUsers
-        .map((user) => resolveUserId(user))
-        .filter((id) => id !== '');
-    }
+    const newIds: string[] = event.target.checked
+      ? filteredUsers.map((user) => resolveUserId(user)).filter((id) => id !== '')
+      : [];
     setSelectedUserIds(newIds);
   };
 
-  // Informiere Parent bei jeder Änderung der Auswahl
+  // Debug: Auswahl-Changes loggen (hilft beim Debuggen)
   useEffect(() => {
-    if (onSelectedUserIdsChange) onSelectedUserIdsChange(selectedUserIds);
-  }, [selectedUserIds, onSelectedUserIdsChange]);
+    // eslint-disable-next-line no-console
+    console.debug('UserDataTableComponent: selectedUserIds', selectedUserIds);
+  }, [selectedUserIds]);
 
   const allChecked =
     filteredUsers.length > 0 &&
-    filteredUsers.every((user) => selectedUserIds.includes(resolveUserId(user)));
+    filteredUsers.every((user) => (selectedUserIds || []).includes(resolveUserId(user)));
   const someChecked =
-    filteredUsers.some((user) => selectedUserIds.includes(resolveUserId(user))) &&
+    (filteredUsers || []).some((user) => (selectedUserIds || []).includes(resolveUserId(user))) &&
     !allChecked;
 
   // Ersetze eigenen State durch Props, falls vorhanden

@@ -4,7 +4,7 @@ import { Card, Modal as SharedModal } from '@agile-software/shared-components';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import UserDataTableComponent from '@/components/UserDataTableComponent/UserDataTableComponent';
-import { useState, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { exportUsersToCSV, downloadCSV } from '@/utils/csvimportexport';
 import UserCsvImportComponent from '@/components/UserCsvImportComponent/UserCsvImportComponent';
 import { useMessage } from '@/components/MessageProvider/MessageProvider';
@@ -15,8 +15,13 @@ const Home = () => {
   const navigate = useNavigate();
   const { message, setMessage } = useMessage();
 
-  // Ref, um auf die ausgewählten IDs aus der Tabelle zuzugreifen (strings, da die Tabelle string-IDs liefert)
-  const selectedUserIdsRef = useRef<string[]>([]);
+  // Auswahl-IDs nun im Parent state (zuverlässig für Export)
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  // Debug: Auswahländerungen im Console-Log
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.debug('Home: selectedUserIds changed', selectedUserIds);
+  }, [selectedUserIds]);
 
   // Popup-Status für CSV-Import
   const [csvImportOpen, setCsvImportOpen] = useState(false);
@@ -31,12 +36,12 @@ const Home = () => {
 
   // Callback, das von der Tabelle gesetzt wird (Tabelle liefert string[] IDs)
   const handleSelectedUserIdsChange = (ids: string[]) => {
-    selectedUserIdsRef.current = ids;
+    setSelectedUserIds(ids);
   };
 
   // CSV Export
   const handleExport = () => {
-    const csv = exportUsersToCSV(selectedUserIdsRef.current);
+    const csv = exportUsersToCSV(selectedUserIds);
     if (csv) {
       downloadCSV(csv, t('pages.home.userdatafilename'));
       setMessage({ type: 'success', text: t('pages.home.successcsvexport') });
@@ -108,6 +113,8 @@ const Home = () => {
       </Box>
       <UserDataTableComponent
         onSelectedUserIdsChange={handleSelectedUserIdsChange}
+        selectedUserIds={selectedUserIds}
+        setSelectedUserIds={setSelectedUserIds}
         selectedUserId={selectedUserId}
         setSelectedUserId={setSelectedUserId}
         onShowMessage={handleShowMessage}
