@@ -54,6 +54,31 @@ const UserDataCardComponent = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [, forceUpdate] = useState(0);
 
+  // HELPER: sichere Ermittlung der Nutzer-ID aus verschiedenen möglichen Keys / Strukturen
+  const resolveUserId = (u: any): string | null => {
+    if (!u || typeof u !== 'object') return null;
+    const tryKeys = ['id', '_id', 'userId', 'user_id', 'uid', 'uuid'];
+    for (const k of tryKeys) {
+      if (u[k] !== undefined && u[k] !== null && String(u[k]).trim() !== '') {
+        return String(u[k]);
+      }
+    }
+    // mögliche Nested-Varianten prüfen
+    if (u.user && (u.user.id || u.user._id || u.user.userId)) {
+      return String(u.user.id ?? u.user._id ?? u.user.userId);
+    }
+    if (u.details && (u.details.id || u.details.userId)) {
+      return String(u.details.id ?? u.details.userId);
+    }
+    // fallback: falls Objekt ein Feld enthält das wie UUID aussieht (vereinfachte Prüfung)
+    for (const v of Object.values(u)) {
+      if (typeof v === 'string' && v.length >= 8 && /[0-9a-fA-F\-]{6,}/.test(v)) {
+        return v;
+      }
+    }
+    return null;
+  };
+
   // Rollen aus Daten ableiten und für Card-Generierung verwenden
   const rolesForCards = user ? inferRolesFromUser(user as any) : [];
   const cards: CardType[] = user ? getCardsForRoles(rolesForCards) : [];
@@ -114,7 +139,7 @@ const UserDataCardComponent = ({
 
   const handleSave = async () => {
     console.debug('UserDataCardComponent: handleSave START', {
-      userId: (user as any)?.id,
+      userId: resolveUserId(user),
       editMode,
       inputValues,
     });
@@ -184,7 +209,11 @@ const UserDataCardComponent = ({
 
     // updateUserData ist async -> await und casten des payload
     try {
-      const result = await updateUserData(String((user as any).id), payload as any);
+      const resolvedId = resolveUserId(user);
+      if (!resolvedId) {
+        throw new Error('Could not resolve user id for update');
+      }
+      const result = await updateUserData(resolvedId, payload as any);
       console.debug('UserDataCardComponent: updateUserData result', { result });
 
       if (result) {
@@ -193,7 +222,7 @@ const UserDataCardComponent = ({
         if (onUserUpdate) onUserUpdate();
         if (onShowMessage)
           onShowMessage('success', t('components.userDataTable.successupdate'));
-        if (onSaveSuccess) onSaveSuccess(String((user as any).id));
+        if (onSaveSuccess) onSaveSuccess(resolvedId);
         // Card schließen zuletzt
         if (onClose) onClose();
       } else {
@@ -228,7 +257,14 @@ const UserDataCardComponent = ({
 
   const confirmDelete = async () => {
     try {
-      const result = await deleteUserById(String((user as any).id));
+      const resolvedId = resolveUserId(user);
+      if (!resolvedId) {
+        if (onShowMessage)
+          onShowMessage('error', t('components.userDataTable.errordelete'));
+        setShowDeleteDialog(false);
+        return;
+      }
+      const result = await deleteUserById(resolvedId);
       setShowDeleteDialog(false);
       if (result) {
         if (onUserUpdate) onUserUpdate();
