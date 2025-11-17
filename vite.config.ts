@@ -9,7 +9,7 @@ const PORT = parseInt(process.env.PORT ?? "5173");
 const ENTRY_POINT = "src/singleSpa.tsx";
 
 // Add React and ReactDOM to externals
-const NPM_EXTERNALS: string[] = ["react", "react-dom", "react-dom/client"];
+const NPM_EXTERNALS: string[] = [/*"react", "react-dom", "react-dom/client"*/];
 
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({

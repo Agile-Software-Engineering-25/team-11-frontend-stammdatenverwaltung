@@ -1,20 +1,30 @@
+import { useState, useEffect } from 'react';
+import { User } from 'oidc-client-ts';
 import { jwtDecode } from 'jwt-decode';
-import { useAuthContext } from '@/context/AuthContext';
 
-// Minimal typings for the parts of the JWT we access
-type KeycloakRealmAccess = {
-  roles?: string[];
+// Global user state
+let globalUser: User | null = null;
+let subscribers: Array<(user: User | null) => void> = [];
+
+// Function to set user data (called from singleSpa.tsx)
+export const setGlobalUser = (user: User | null) => {
+  globalUser = user;
+  subscribers.forEach((callback) => callback(user));
 };
 
-type DecodedToken = {
-  realm_access?: KeycloakRealmAccess;
-  resource_access?: Record<string, KeycloakRealmAccess>;
-  // Allow unknown extra fields without using `any`
-  [key: string]: unknown;
-};
-
+// Custom hook to access user data
 export const useUser = () => {
-  const { user } = useAuthContext();
+  const [user, setUser] = useState<User | null>(globalUser);
+
+  useEffect(() => {
+    const unsubscribe = (newUser: User | null) => {
+      setUser(newUser);
+    };
+    subscribers.push(unsubscribe);
+    return () => {
+      subscribers = subscribers.filter((callback) => callback !== unsubscribe);
+    };
+  }, []);
 
   const getUserId = (): string => {
     return user?.profile.sub ?? '';
@@ -46,13 +56,18 @@ export const useUser = () => {
     if (!token) return false;
 
     // Decode JWT to extract roles
-    const decoded = jwtDecode<DecodedToken>(token);
-    const roles: string[] = decoded?.realm_access?.roles ?? [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const decoded: any = jwtDecode(token);
+    const roles: string[] = decoded?.realm_access?.roles || [];
 
     if (!Array.isArray(roles) || roles.length === 0) return false;
     return roles.includes(role);
   };
-
+  const getRole = (): string => {
+    if (hasRole('student')) return 'student';
+    if (hasRole('lecturer')) return 'lecturer';
+    return 'employee';
+  };
   return {
     user,
     getUserId,
@@ -62,6 +77,7 @@ export const useUser = () => {
     getEmail,
     getAccessToken,
     hasRole,
+    getRole,
   };
 };
 
