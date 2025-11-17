@@ -256,12 +256,53 @@ export function generateCsvTemplateForRole(
 // Dynamischer Export der ausgewählten Nutzer als CSV (inkl. Basisdaten und rollenspezifischer Felder)
 // Wichtig: Export-Kopfzeile enthält keine Optionen in Klammern (nur reine Labels)
 export function exportUsersToCSV(selectedUserIds: string[]): string {
-  // Nutzer aus dem zentralen Cache/API holen
-  const allUsers = getAllUsers();
-  // Filtere die User (IDs als strings) — benutze resolveUserId um Übereinstimmung sicherzustellen
-  const selectedUsers = allUsers.filter((u) =>
-    selectedUserIds.includes(resolveUserId(u))
+  // Normalisiere und dedupliziere ausgewählte IDs
+  const normalizedSelectedIds = Array.from(
+    new Set(
+      (selectedUserIds || [])
+        .map((id) => (id === null || id === undefined ? '' : String(id).trim()))
+        .filter((id) => id !== '')
+    )
   );
+
+  if (normalizedSelectedIds.length === 0) return '';
+
+  // Alle Nutzer aus dem zentralen Cache/API holen
+  const allUsers = getAllUsers();
+
+  // Erstelle Lookup-Map: resolveUserId(user) -> user
+  const userById = new Map<string, UserType>();
+  allUsers.forEach((u) => {
+    const id = resolveUserId(u);
+    if (id) userById.set(id, u);
+  });
+
+  // Versuche für jede ausgewählte id den passenden User zu finden.
+  // Behalte die Reihenfolge der ausgewählten IDs bei.
+  const selectedUsers: UserType[] = [];
+  normalizedSelectedIds.forEach((selId) => {
+    let found = userById.get(selId);
+    if (!found) {
+      // Fallback: durchsuchen aller Nutzer-Felder nach Matching-String (robust gegenüber verschiedenen Formen)
+      const lowerSel = selId.toLowerCase();
+      found = allUsers.find((u) =>
+        Object.values(u).some((v) => {
+          if (v === null || v === undefined) return false;
+          if (typeof v === 'object') {
+            // flacher Scan für nested objects (z. B. details)
+            return Object.values(v).some((nv) =>
+                nv !== null &&
+                nv !== undefined &&
+                String(nv).toLowerCase() === lowerSel
+            );
+          }
+          return String(v).toLowerCase() === lowerSel;
+        })
+      ) as UserType | undefined;
+    }
+    if (found) selectedUsers.push(found);
+  });
+
   if (selectedUsers.length === 0) return '';
 
   // Basisfelder (wie in generateCsvTemplateForRole, aber inkl. Rollen)
@@ -300,9 +341,9 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
 
   const roleFields = Array.from(roleFieldSet).map((fieldName) => {
     for (const role in roleFieldConfigs) {
-      const found = roleFieldConfigs[
-        role as keyof typeof roleFieldConfigs
-      ]?.find((f: FieldConfig) => f.name === fieldName);
+      const found = roleFieldConfigs[role as keyof typeof roleFieldConfigs]?.find(
+        (f: FieldConfig) => f.name === fieldName
+      );
       if (found)
         return {
           key: fieldName,
@@ -328,15 +369,14 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
         : inferRolesFromUser(user);
 
     const base = [
-      user.firstname ?? '',
-      user.lastname ?? '',
-      user.email ?? '',
+      (user.firstname ?? user.firstName ?? '') as string,
+      (user.lastname ?? user.lastName ?? '') as string,
+      (user.email ?? '') as string,
       rolesArr.join(', '),
     ];
 
     const page1 = page1Fields.map((f) =>
-      user[f.key as keyof UserType] !== undefined &&
-      user[f.key as keyof UserType] !== null
+      user[f.key as keyof UserType] !== undefined && user[f.key as keyof UserType] !== null
         ? String(user[f.key as keyof UserType])
         : ''
     );
@@ -358,8 +398,7 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
     .map((row) =>
       row
         .map((val) =>
-          typeof val === 'string' &&
-          (val.includes(';') || val.includes('"') || val.includes('\n'))
+          typeof val === 'string' && (val.includes(';') || val.includes('"') || val.includes('\n'))
             ? `"${val.replace(/"/g, '""')}"`
             : val
         )
