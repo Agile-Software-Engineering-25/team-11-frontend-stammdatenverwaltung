@@ -17,20 +17,31 @@ interface FieldConfig {
   options?: { label: string; value: string }[];
 }
 
-// Hilfs: label mit Optionen für Select-Felder (Optionen durch | getrennt in Klammer)
-/*
-function labelWithOptions(f?: {
-  label: string;
-  type?: string;
-  options?: { label: string; value: string }[];
-}) {
-  if (!f) return '';
-  if (f.type === 'select' && f.options && f.options.length > 0) {
-    return `${f.label} (${f.options.map((o) => o.value).join('|')})`;
+// --------------------- NEU: resolveUserId (gleiches Verhalten wie in Table) ---------------------
+function resolveUserId(u: any): string {
+  if (!u || typeof u !== 'object') return '';
+  const tryKeys = [
+    'id',
+    '_id',
+    'userId',
+    'user_id',
+    'uid',
+    'uuid',
+  ];
+  for (const k of tryKeys) {
+    if (u[k] !== undefined && u[k] !== null && String(u[k]).trim() !== '') {
+      return String(u[k]);
+    }
   }
-  return f.label;
+  if (u.user && (u.user.id || u.user._id || u.user.userId)) {
+    return String(u.user.id ?? u.user._id ?? u.user.userId);
+  }
+  if (u.details && (u.details.id || u.details.userId)) {
+    return String(u.details.id ?? u.details.userId);
+  }
+  return '';
 }
-*/
+// --------------------- ENDE NEU ---------------------------------------------------------------
 
 // Normalisiert Header-Label: BOM/Quotes entfernen, angehängte "(...)" Teile entfernen, Leerzeichen zusammenfassen, trim
 export function normalizeHeaderLabel(label: string): string {
@@ -247,9 +258,9 @@ export function generateCsvTemplateForRole(
 export function exportUsersToCSV(selectedUserIds: string[]): string {
   // Nutzer aus dem zentralen Cache/API holen
   const allUsers = getAllUsers();
-  // Filtere die User (IDs als strings)
+  // Filtere die User (IDs als strings) — benutze resolveUserId um Übereinstimmung sicherzustellen
   const selectedUsers = allUsers.filter((u) =>
-    selectedUserIds.includes(String((u as any).id))
+    selectedUserIds.includes(resolveUserId(u))
   );
   if (selectedUsers.length === 0) return '';
 
@@ -260,16 +271,13 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
     { key: 'email', label: 'E-Mail' },
     { key: 'roles', label: 'Rollen' },
   ];
-  // Dynamische Felder (Seite 1)
   const page1Fields = page1DynamicFieldsConfig.map((f) => ({
     key: f.name,
-    // Export benutzt hier deutsches Label (kein `lang` im Scope)
     label: f.label,
     type: f.type,
     options: (f as any).options,
   }));
 
-  // Alle rollenspezifischen Felder, die bei mindestens einem User vorkommen
   const roleFieldSet = new Set<string>();
   selectedUsers.forEach((user) => {
     const userRoles: string[] = Array.isArray(user.roles)
@@ -285,15 +293,12 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
       }
     });
 
-    // Auch Felder aus details aufnehmen, falls sie nicht in der Config stehen
     if (user.details) {
       Object.keys(user.details).forEach((key) => roleFieldSet.add(key));
     }
   });
 
-  // Rollenspezifische Felder als Array mit Label + type/options wenn vorhanden
   const roleFields = Array.from(roleFieldSet).map((fieldName) => {
-    // Label + type/options suchen
     for (const role in roleFieldConfigs) {
       const found = roleFieldConfigs[
         role as keyof typeof roleFieldConfigs
@@ -306,18 +311,15 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
           options: found.options,
         };
     }
-    // Fallback: Feldname als Label
     return { key: fieldName, label: fieldName };
   });
 
-  // EXPORT-Header: hier keine Optionen anzeigen, nur reine Labels
   const header = [
     ...baseFields.map((f) => f.label),
     ...page1Fields.map((f) => f.label),
     ...roleFields.map((f) => f.label),
   ];
 
-  // Zeilen
   const rows = selectedUsers.map((user) => {
     const rolesArr: string[] = Array.isArray(user.roles)
       ? user.roles

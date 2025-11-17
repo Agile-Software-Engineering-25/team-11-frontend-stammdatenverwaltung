@@ -43,6 +43,24 @@ const UserDataTableComponent = ({
 
   const allRoles = getAllRoles();
 
+  // robust: ermittelt die "richtige" id aus möglichen Feldern / nested Strukturen
+  const resolveUserId = (u: any): string => {
+    if (!u || typeof u !== 'object') return '';
+    const tryKeys = ['id', '_id', 'userId', 'user_id', 'uid', 'uuid'];
+    for (const k of tryKeys) {
+      if (u[k] !== undefined && u[k] !== null && String(u[k]).trim() !== '') {
+        return String(u[k]);
+      }
+    }
+    if (u.user && (u.user.id || u.user._id || u.user.userId)) {
+      return String(u.user.id ?? u.user._id ?? u.user.userId);
+    }
+    if (u.details && (u.details.id || u.details.userId)) {
+      return String(u.details.id ?? u.details.userId);
+    }
+    return '';
+  };
+
   // Hilfsfunktion: normalisiere Vor-/Nachname für konsistente Sortierung
   const normalizeName = (u: any) =>
     `${String(u.firstName ?? u.firstname ?? '').trim()} ${String(u.lastName ?? u.lastname ?? '').trim()}`
@@ -88,13 +106,13 @@ const UserDataTableComponent = ({
     }
   };
 
-  // Checkbox-Handler
+  // Checkbox-Handler (erhält bereits aufgelöste id)
   const handleCheckboxChange =
-    (userId: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    (resolvedId: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
       setSelectedUserIds((prev) => {
         const newIds = event.target.checked
-          ? Array.from(new Set([...prev, userId]))
-          : prev.filter((id) => id !== userId);
+          ? Array.from(new Set([...prev, resolvedId]))
+          : prev.filter((id) => id !== resolvedId);
         if (onSelectedUserIdsChange) onSelectedUserIdsChange(newIds);
         return newIds;
       });
@@ -102,11 +120,11 @@ const UserDataTableComponent = ({
 
   // Alle auswählen
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
-    let newIds: string[];
+    let newIds: string[] = [];
     if (event.target.checked) {
-      newIds = filteredUsers.map((user) => String(user.id));
-    } else {
-      newIds = [];
+      newIds = filteredUsers
+        .map((user) => resolveUserId(user))
+        .filter((id) => id !== '');
     }
     setSelectedUserIds(newIds);
     if (onSelectedUserIdsChange) onSelectedUserIdsChange(newIds);
@@ -119,9 +137,9 @@ const UserDataTableComponent = ({
 
   const allChecked =
     filteredUsers.length > 0 &&
-    filteredUsers.every((user) => selectedUserIds.includes(String(user.id)));
+    filteredUsers.every((user) => selectedUserIds.includes(resolveUserId(user)));
   const someChecked =
-    filteredUsers.some((user) => selectedUserIds.includes(String(user.id))) &&
+    filteredUsers.some((user) => selectedUserIds.includes(resolveUserId(user))) &&
     !allChecked;
 
   // Ersetze eigenen State durch Props, falls vorhanden
@@ -129,7 +147,7 @@ const UserDataTableComponent = ({
     string | null
   >(null);
   const activeUserId =
-    selectedUserId !== undefined ? selectedUserId : internalSelectedUserId;
+    selectedUserId !== undefined && selectedUserId !== null ? selectedUserId : internalSelectedUserId;
   const changeSelectedUserId = (id: string | null) => {
     if (setSelectedUserId) setSelectedUserId(id);
     else internalSetSelectedUserId(id);
@@ -211,6 +229,7 @@ const UserDataTableComponent = ({
             const freshUser =
               users.find((u) => String((u as any).id) === String((user as any).id)) ?? user;
             const fu = freshUser as any;
+            const resolvedId = resolveUserId(freshUser);
             const displayName = `${String(fu.firstName ?? fu.firstname ?? '')} ${String(
               fu.lastName ?? fu.lastname ?? ''
             )}`.trim();
@@ -220,15 +239,13 @@ const UserDataTableComponent = ({
 
             const rows = [
               <tr
-                key={String((user as any).id)}
+                key={resolvedId || String((user as any).id)}
                 style={{
                   cursor: 'pointer',
-                  background: activeUserId === String((user as any).id) ? 50 : undefined,
+                  background: activeUserId === resolvedId ? 50 : undefined,
                 }}
                 onClick={() =>
-                  changeSelectedUserId(
-                    activeUserId === String((user as any).id) ? null : String((user as any).id)
-                  )
+                  changeSelectedUserId(activeUserId === resolvedId ? null : resolvedId)
                 }
               >
                 <td
@@ -236,8 +253,8 @@ const UserDataTableComponent = ({
                   style={{ textAlign: 'center', width: 36 }}
                 >
                   <Checkbox
-                    checked={selectedUserIds.includes(String((user as any).id))}
-                    onChange={handleCheckboxChange(String((user as any).id))}
+                    checked={resolvedId !== '' && selectedUserIds.includes(resolvedId)}
+                    onChange={handleCheckboxChange(resolvedId)}
                     aria-label={`User ${displayName} auswählen`}
                   />
                 </td>
@@ -285,9 +302,9 @@ const UserDataTableComponent = ({
                 <td>{displayPhone}</td>
               </tr>,
             ];
-            if (activeUserId === String(user.id)) {
+            if (activeUserId === resolvedId) {
               rows.push(
-                <tr key={String(user.id) + '-details'}>
+                <tr key={String(resolvedId) + '-details'}>
                   <td colSpan={5} style={{ padding: 0 }}>
                     <UserDataCardComponent
                       user={freshUser}
