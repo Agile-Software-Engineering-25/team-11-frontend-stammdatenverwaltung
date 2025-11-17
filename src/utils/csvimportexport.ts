@@ -255,19 +255,23 @@ export function generateCsvTemplateForRole(
 
 // Dynamischer Export der ausgewählten Nutzer als CSV (inkl. Basisdaten und rollenspezifischer Felder)
 // Wichtig: Export-Kopfzeile enthält keine Optionen in Klammern (nur reine Labels)
-export function exportUsersToCSV(selectedUserIds: string[]): string {
-  // Normalisiere und dedupliziere ausgewählte IDs
-  const normalizedSelectedIds = Array.from(
-    new Set(
-      (selectedUserIds || [])
-        .map((id) => (id === null || id === undefined ? '' : String(id).trim()))
-        .filter((id) => id !== '')
-    )
-  );
+export function exportUsersToCSV(selectedUserIds: Array<string | number | UserType | null | undefined>): string {
+  // Akzeptiere sowohl string/number IDs als auch komplette User-Objekte
+  const rawSelected = Array.isArray(selectedUserIds) ? selectedUserIds : [];
 
-  if (normalizedSelectedIds.length === 0) return '';
+  // Falls komplette User-Objekte übergeben wurden -> sammle sie direkt
+  const directSelectedUsers: UserType[] = rawSelected.filter((s): s is UserType => typeof s === 'object' && s !== null);
 
-  // Alle Nutzer aus dem zentralen Cache/API holen
+  // Für ID-Werte: normalisieren zu Strings
+  const selectedIdStrings = rawSelected
+    .filter((s) => typeof s === 'string' || typeof s === 'number')
+    .map((s) => String(s).trim())
+    .filter((s) => s !== '');
+
+  // dedupliziere
+  const normalizedSelectedIds = Array.from(new Set(selectedIdStrings));
+
+  // Sammle alle Nutzer aus dem Cache
   const allUsers = getAllUsers();
 
   // Erstelle Lookup-Map: resolveUserId(user) -> user
@@ -277,33 +281,45 @@ export function exportUsersToCSV(selectedUserIds: string[]): string {
     if (id) userById.set(id, u);
   });
 
-  // Versuche für jede ausgewählte id den passenden User zu finden.
-  // Behalte die Reihenfolge der ausgewählten IDs bei.
+  // Wenn direkte User-Objekte übergeben wurden, nutze diese zuerst (erhält Reihenfolge)
   const selectedUsers: UserType[] = [];
+  directSelectedUsers.forEach((u) => selectedUsers.push(u));
+
+  // Versuche jede ID über Lookup-Map aufzulösen (erhält Reihenfolge)
   normalizedSelectedIds.forEach((selId) => {
-    let found = userById.get(selId);
-    if (!found) {
-      // Fallback: durchsuchen aller Nutzer-Felder nach Matching-String (robust gegenüber verschiedenen Formen)
-      const lowerSel = selId.toLowerCase();
-      found = allUsers.find((u) =>
-        Object.values(u).some((v) => {
-          if (v === null || v === undefined) return false;
-          if (typeof v === 'object') {
-            // flacher Scan für nested objects (z. B. details)
-            return Object.values(v).some((nv) =>
-                nv !== null &&
-                nv !== undefined &&
-                String(nv).toLowerCase() === lowerSel
-            );
-          }
-          return String(v).toLowerCase() === lowerSel;
-        })
-      ) as UserType | undefined;
+    const byId = userById.get(selId);
+    if (byId) {
+      // vermeide doppelte Einträge
+      if (!selectedUsers.includes(byId)) selectedUsers.push(byId);
+      return;
     }
-    if (found) selectedUsers.push(found);
+    // Fallback: Suche robust in allen Feldern (inkl. nested)
+    const lowerSel = selId.toLowerCase();
+    const found = allUsers.find((u) =>
+      Object.values(u).some((v) => {
+        if (v === null || v === undefined) return false;
+        if (typeof v === 'object') {
+          return Object.values(v).some((nv) =>
+            nv !== null && nv !== undefined && String(nv).toLowerCase() === lowerSel
+          );
+        }
+        return String(v).toLowerCase() === lowerSel;
+      })
+    );
+    if (found && !selectedUsers.includes(found)) selectedUsers.push(found);
   });
 
-  if (selectedUsers.length === 0) return '';
+  // Nochmal: falls keine User gefunden, gib Debug-Info und return ''
+  if (selectedUsers.length === 0) {
+    // eslint-disable-next-line no-console
+    console.debug('exportUsersToCSV: no users resolved for export', {
+      receivedSelection: rawSelected,
+      normalizedSelectedIds,
+      availableUserIds: allUsers.map((u) => resolveUserId(u)).filter(Boolean),
+      sampleUsers: allUsers.slice(0, 5),
+    });
+    return '';
+  }
 
   // Basisfelder (wie in generateCsvTemplateForRole, aber inkl. Rollen)
   const baseFields = [
