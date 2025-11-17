@@ -141,6 +141,14 @@ export async function createUser(
   };
 
   const anyUser = userObj as any;
+  const drivesCarRaw =
+    anyUser.drives_car ?? anyUser.drivesCar ?? anyUser['drives car'];
+  const drivesCar =
+    typeof drivesCarRaw === 'boolean'
+      ? drivesCarRaw
+      : typeof drivesCarRaw === 'string' && drivesCarRaw.trim() !== ''
+        ? drivesCarRaw.trim().toLowerCase() === 'true'
+        : undefined;
   const payload: Record<string, any> = {
     username: anyUser.email ?? '',
     firstName: anyUser.firstname ?? '',
@@ -167,10 +175,11 @@ export async function createUser(
       anyUser.workingTimeModel ?? anyUser.working_time_model ?? '',
     department: anyUser.department ?? '',
     officeNumber: anyUser.officeNumber ?? anyUser.office_number ?? '',
-    titel: anyUser.titel ?? anyUser.title ?? undefined,
+    title: anyUser.title ?? anyUser.titel ?? undefined,
     fieldChair: anyUser.fieldChair ?? anyUser.field_chair ?? undefined,
     employeeNumber:
       anyUser.employeeNumber ?? anyUser.employee_number ?? undefined,
+    drives_car: drivesCar ?? true,
   };
 
   Object.keys(payload).forEach((k) => {
