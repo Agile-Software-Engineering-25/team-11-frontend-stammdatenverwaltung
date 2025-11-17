@@ -13,10 +13,10 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import UserDataCardComponent from '../UserDataCardComponent/UserDataCardComponent';
 import {
-  getAllUsers,
   getAllRoles,
   inferRolesFromUser,
 } from '../../utils/showuserdatafunctions';
+import { useUsers } from '../../hooks/useUsers';
 import { formatDateForDisplay } from '../../utils/showuserdatafunctions';
 import type { User as UserType } from '../../utils/showuserdatafunctions';
 
@@ -34,8 +34,12 @@ const UserDataTableComponent = ({
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('alle');
-  const [users, setUsers] = useState<UserType[]>(getAllUsers() as UserType[]);
+  const { users, refresh } = useUsers();
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const allRoles = getAllRoles();
 
@@ -60,7 +64,7 @@ const UserDataTableComponent = ({
 
   // Callback für Detailansicht, um nach dem Speichern/Löschen die Userdaten neu zu laden
   const handleUserUpdate = () => {
-    setUsers(getAllUsers());
+    refresh();
   };
 
   // Card schließen
