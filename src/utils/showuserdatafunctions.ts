@@ -1,13 +1,24 @@
 import {
-  users,
   page1DynamicFieldsConfig,
   roleFieldConfigs,
   availableRoles,
-  fixedFieldNames,
 } from './mockupdata';
 
 // Typen für dynamische Felder und Karten
-type User = (typeof users)[number];
+export interface User {
+  id: number;
+  firstname: string;
+  lastname: string;
+  email: string;
+  roles: string[];
+  birthdate?: string;
+  street?: string;
+  housenumber?: string;
+  zipcode?: string;
+  city?: string;
+  phone?: string;
+  details?: Record<string, any>;
+}
 
 type CardField = { label: string; key: string };
 type CardConfig = { key: string; title: string; fields: CardField[] };
@@ -18,10 +29,6 @@ function getDynamicUserFields(): CardField[] {
     key: f.name,
     label: f.label,
   }));
-}
-
-function getAllUsers(): User[] {
-  return users;
 }
 
 function getAllRoles(): string[] {
@@ -62,42 +69,5 @@ function getCardsForRoles(roles: string[]): CardConfig[] {
   return cards;
 }
 
-// Userdaten aktualisieren
-function updateUserData(
-  id: number,
-  updatedFields: Record<string, string>
-): boolean {
-  const user = users.find((u) => u.id === id);
-  if (!user) return false;
-  Object.keys(updatedFields).forEach((key) => {
-    if (fixedFieldNames.includes(key)) {
-      (user as Record<string, any>)[key] = updatedFields[key];
-    } else if (page1DynamicFieldsConfig.some((f) => f.name === key)) {
-      (user as Record<string, any>)[key] = updatedFields[key];
-    } else {
-      if (!user.details) user.details = {};
-      (user.details as Record<string, string>)[key] = updatedFields[key];
-    }
-  });
-  return true;
-}
-
-// User löschen
-function deleteUserById(id: number): boolean {
-  const idx = users.findIndex((u) => u.id === id);
-  if (idx !== -1) {
-    users.splice(idx, 1);
-    return true;
-  }
-  return false;
-}
-
-export type { User, CardConfig, CardField };
-export {
-  getAllUsers,
-  getAllRoles,
-  getCardsForRoles,
-  updateUserData,
-  getDynamicUserFields,
-  deleteUserById,
-};
+export type { CardConfig, CardField };
+export { getAllRoles, getCardsForRoles, getDynamicUserFields };

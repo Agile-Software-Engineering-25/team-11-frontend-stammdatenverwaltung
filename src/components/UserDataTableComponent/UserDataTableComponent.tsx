@@ -1,4 +1,3 @@
-/* eslint-disable max-lines-per-function */
 import {
   Box,
   Typography,
@@ -7,28 +6,36 @@ import {
   Select,
   Option,
   Checkbox,
+  CircularProgress,
 } from '@mui/joy';
 import { SearchBar } from '@agile-software/shared-components'; // <--- Import der Shared SearchBar
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import UserDataCardComponent from '../UserDataCardComponent/UserDataCardComponent';
-import { getAllUsers, getAllRoles } from '../../utils/showuserdatafunctions';
+import { getAllRoles, User } from '../../utils/showuserdatafunctions';
 
 const UserDataTableComponent = ({
   onSelectedUserIdsChange,
   selectedUserId,
   setSelectedUserId,
   onShowMessage,
+  users,
+  loading,
+  error,
+  refetch,
 }: {
   onSelectedUserIdsChange?: (ids: number[]) => void;
   selectedUserId?: number | null;
   setSelectedUserId?: (id: number | null) => void;
   onShowMessage?: (type: 'success' | 'error', text: string) => void;
+  users: User[];
+  loading: boolean;
+  error: Error | null;
+  refetch: () => void;
 }) => {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('alle');
-  const [users, setUsers] = useState(getAllUsers());
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
 
   const allRoles = getAllRoles();
@@ -37,7 +44,11 @@ const UserDataTableComponent = ({
   const filteredUsers = users
     .filter((user) => {
       const searchString =
-        `${user.firstname} ${user.lastname} ${user.street ?? ''} ${user.housenumber ?? ''} ${user.zipcode ?? ''} ${user.city ?? ''} ${user.phone ?? ''}`.toLowerCase();
+        `${user.firstname} ${user.lastname} ${user.street ?? ''} ${
+          user.housenumber ?? ''
+        } ${user.zipcode ?? ''} ${user.city ?? ''} ${
+          user.phone ?? ''
+        }`.toLowerCase();
       const matchesSearch = searchString.includes(search.toLowerCase());
       const matchesRole =
         roleFilter === 'alle' || user.roles.includes(roleFilter);
@@ -51,7 +62,7 @@ const UserDataTableComponent = ({
 
   // Callback für Detailansicht, um nach dem Speichern/Löschen die Userdaten neu zu laden
   const handleUserUpdate = () => {
-    setUsers(getAllUsers());
+    refetch();
   };
 
   // Card schließen
@@ -112,6 +123,22 @@ const UserDataTableComponent = ({
   const activeUserId =
     selectedUserId !== undefined ? selectedUserId : internalSelectedUserId;
   const changeSelectedUserId = setSelectedUserId ?? internalSetSelectedUserId;
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Typography color="danger" sx={{ mt: 4, textAlign: 'center' }}>
+        {t('components.userDataTable.error')}
+      </Typography>
+    );
+  }
 
   return (
     <Box sx={{ p: 2 }}>
@@ -251,7 +278,11 @@ const UserDataTableComponent = ({
                 </td>
                 <td>{freshUser.birthdate}</td>
                 <td>
-                  {`${freshUser.street ?? ''} ${freshUser.housenumber ?? ''}, ${freshUser.zipcode ?? ''} ${freshUser.city ?? ''}`.trim()}
+                  {`${freshUser.street ?? ''} ${
+                    freshUser.housenumber ?? ''
+                  }, ${freshUser.zipcode ?? ''} ${
+                    freshUser.city ?? ''
+                  }`.trim()}
                 </td>
                 <td>{freshUser.phone}</td>
               </tr>,

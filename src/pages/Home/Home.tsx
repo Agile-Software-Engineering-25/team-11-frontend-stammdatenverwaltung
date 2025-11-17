@@ -9,11 +9,13 @@ import { useState, useRef } from 'react';
 import { exportUsersToCSV, downloadCSV } from '@/utils/csvimportexport';
 import UserCsvImportComponent from '@/components/UserCsvImportComponent/UserCsvImportComponent';
 import { useMessage } from '@/components/MessageProvider/MessageProvider';
+import useUsers from '@/hooks/useUsers';
 
 const Home = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { message, setMessage } = useMessage();
+  const { users, loading, error, refetch } = useUsers();
 
   // Ref, um auf die ausgewählten IDs aus der Tabelle zuzugreifen
   const selectedUserIdsRef = useRef<number[]>([]);
@@ -36,7 +38,7 @@ const Home = () => {
 
   // CSV Export
   const handleExport = () => {
-    const csv = exportUsersToCSV(selectedUserIdsRef.current);
+    const csv = exportUsersToCSV(users, selectedUserIdsRef.current);
     if (csv) {
       downloadCSV(csv, t('pages.home.userdatafilename'));
       setMessage({ type: 'success', text: t('pages.home.successcsvexport') });
@@ -112,6 +114,10 @@ const Home = () => {
         selectedUserId={selectedUserId}
         setSelectedUserId={setSelectedUserId}
         onShowMessage={handleShowMessage}
+        users={users}
+        loading={loading}
+        error={error}
+        refetch={refetch}
       />
       {/* CSV Import Modal mit Shared Component */}
       <SharedModal

@@ -1,12 +1,6 @@
 /* eslint-disable max-lines-per-function */
-import {
-  users,
-  page1DynamicFieldsConfig,
-  roleFieldConfigs,
-} from './mockupdata';
-
-// Typ für ein User-Objekt
-type UserType = (typeof users)[number];
+import { page1DynamicFieldsConfig, roleFieldConfigs } from './mockupdata';
+import { User } from './showuserdatafunctions';
 
 // Typ für ein Feld
 interface FieldConfig {
@@ -52,7 +46,10 @@ export function generateCsvTemplateForRole(role: string): string {
 }
 
 // Dynamischer Export der ausgewählten Nutzer als CSV (inkl. Basisdaten und rollenspezifischer Felder)
-export function exportUsersToCSV(selectedUserIds: number[]): string {
+export function exportUsersToCSV(
+  users: User[],
+  selectedUserIds: number[]
+): string {
   // Filtere die User
   const selectedUsers = users.filter((u) => selectedUserIds.includes(u.id));
   if (selectedUsers.length === 0) return '';
@@ -113,18 +110,18 @@ export function exportUsersToCSV(selectedUserIds: number[]): string {
       (user.roles ?? []).join(', '),
     ];
     const page1 = page1Fields.map((f) =>
-      user[f.key as keyof UserType] !== undefined &&
-      user[f.key as keyof UserType] !== null
-        ? String(user[f.key as keyof UserType])
+      user[f.key as keyof User] !== undefined &&
+      user[f.key as keyof User] !== null
+        ? String(user[f.key as keyof User])
         : ''
     );
     const roleSpecific = roleFields.map((f) =>
-      user[f.key as keyof UserType] !== undefined &&
-      user[f.key as keyof UserType] !== null
-        ? String(user[f.key as keyof UserType])
+      user[f.key as keyof User] !== undefined &&
+      user[f.key as keyof User] !== null
+        ? String(user[f.key as keyof User])
         : user.details && user.details[f.key]
-          ? user.details[f.key]
-          : ''
+        ? user.details[f.key]
+        : ''
     );
     return [...base, ...page1, ...roleSpecific];
   });

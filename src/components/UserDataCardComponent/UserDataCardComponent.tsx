@@ -2,13 +2,11 @@
 import { Box, Typography, CardContent, Sheet, Input, Button } from '@mui/joy';
 //import { Card } from '@agile-software/shared-components';
 import { useState, useEffect } from 'react';
-import {
-  getCardsForRoles,
-  updateUserData,
-  deleteUserById,
-} from '../../utils/showuserdatafunctions';
+import { getCardsForRoles, User } from '../../utils/showuserdatafunctions';
 import { useTranslation } from 'react-i18next';
 import { Card, Modal as SharedModal } from '@agile-software/shared-components';
+import { updateUser, deleteUser } from '@/utils/userapi';
+import useAxiosInstance from '@/hooks/useAxiosInstance';
 
 interface CardField {
   key: string;
@@ -21,13 +19,6 @@ interface CardType {
   fields: CardField[];
 }
 
-interface UserType {
-  id: number;
-  roles: string[];
-  details?: Record<string, string>;
-  [key: string]: any;
-}
-
 const UserDataCardComponent = ({
   user,
   onUserUpdate,
@@ -35,7 +26,7 @@ const UserDataCardComponent = ({
   onSaveSuccess,
   onShowMessage,
 }: {
-  user: UserType | null;
+  user: User | null;
   onUserUpdate?: () => void;
   onClose?: () => void;
   onSaveSuccess?: (userId: number) => void;
@@ -46,6 +37,7 @@ const UserDataCardComponent = ({
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [, forceUpdate] = useState(0);
+  const axiosInstance = useAxiosInstance();
 
   const cards: CardType[] = user ? getCardsForRoles(user.roles) : [];
   const [activeCard, setActiveCard] = useState<string>(
@@ -69,7 +61,7 @@ const UserDataCardComponent = ({
       const newValues: Record<string, string> = {};
       currentCard.fields.forEach((field) => {
         newValues[field.key] =
-          user[field.key] ??
+          user[field.key as keyof User] ??
           (user.details ? user.details[field.key] : '') ??
           '';
       });
@@ -87,16 +79,16 @@ const UserDataCardComponent = ({
 
   const handleEdit = () => setEditMode(true);
 
-  const handleSave = () => {
-    const result = updateUserData(user.id, inputValues);
-    if (result) {
+  const handleSave = async () => {
+    try {
+      await updateUser(axiosInstance, user.id, inputValues);
       setEditMode(false);
       forceUpdate((n) => n + 1);
       if (onUserUpdate) onUserUpdate();
       if (onShowMessage)
         onShowMessage('success', t('components.userDataTable.successupdate'));
       if (onSaveSuccess) onSaveSuccess(user.id);
-    } else {
+    } catch (error) {
       if (onShowMessage)
         onShowMessage('error', t('components.userDataTable.errorupdate'));
       if (onClose) onClose();
@@ -108,7 +100,7 @@ const UserDataCardComponent = ({
       const newValues: Record<string, string> = {};
       currentCard.fields.forEach((field) => {
         newValues[field.key] =
-          user[field.key] ??
+          user[field.key as keyof User] ??
           (user.details ? user.details[field.key] : '') ??
           '';
       });
@@ -121,15 +113,15 @@ const UserDataCardComponent = ({
     setShowDeleteDialog(true);
   };
 
-  const confirmDelete = () => {
-    const result = deleteUserById(user.id);
-    setShowDeleteDialog(false);
-    if (result) {
+  const confirmDelete = async () => {
+    try {
+      await deleteUser(axiosInstance, user.id);
+      setShowDeleteDialog(false);
       if (onUserUpdate) onUserUpdate();
       if (onShowMessage)
         onShowMessage('success', t('components.userDataTable.successdelete'));
       if (onClose) onClose();
-    } else {
+    } catch (error) {
       if (onShowMessage)
         onShowMessage('error', t('components.userDataTable.errordelete'));
     }
