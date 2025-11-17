@@ -228,10 +228,6 @@ export async function createUser(
 
     // POST an die API
     try {
-      if (!axiosInstance) {
-        console.error('createUser: axiosInstance is not available, cannot send API request.');
-        return null;
-      }
       const res = await axiosInstance.post(endpoint, payload);
       if (res && res.status === 201) {
         console.info(

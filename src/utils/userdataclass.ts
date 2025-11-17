@@ -25,10 +25,6 @@ export const availableCohorts: string[] = [];
 // Lade Gruppennamen von /api/v1/group und fülle availableCohorts mit den group.name-Werten
 async function fetchGroups(): Promise<void> {
   try {
-    if (!axiosInstance) {
-      console.warn('fetchGroups: axiosInstance not available, skipping fetch');
-      return;
-    }
     const res = await axiosInstance.get('/api/v1/group');
     const groups = res?.data?.groups;
     if (Array.isArray(groups)) {
