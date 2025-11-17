@@ -8,12 +8,14 @@ const useAxiosInstance = (baseUrl: string = BACKEND_BASE_URL) => {
   const token = user.getAccessToken();
 
   return useMemo(() => {
+    if (!token) {
+      return null;
+    }
+
     const instance = axios.create({ baseURL: baseUrl });
 
     instance.interceptors.request.use((config) => {
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+      config.headers.Authorization = `Bearer ${token}`;
       return config;
     });
 
