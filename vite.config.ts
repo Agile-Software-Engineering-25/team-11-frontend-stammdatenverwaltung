@@ -8,6 +8,8 @@ const PORT = parseInt(process.env.PORT ?? "5173");
 
 const ENTRY_POINT = "src/singleSpa.tsx";
 
+const NPM_EXTERNALS: string[] = [];
+
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
   base: command === "serve" ? "/" : "/api/ase-11/stammdatenverwaltung/",
@@ -30,6 +32,11 @@ export default defineConfig(({ command }) => ({
       "@hooks": path.resolve(__dirname, "./src/hooks"),
       "@assets": path.resolve(__dirname, "./src/assets"),
       "@stores": path.resolve(__dirname, "./src/stores"),
+    },
+  },
+  build: {
+    rollupOptions: {
+      external: [...NPM_EXTERNALS],
     },
   },
 }));
