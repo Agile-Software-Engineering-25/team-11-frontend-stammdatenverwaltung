@@ -17,6 +17,7 @@ import {
   createUser,
   getPage1DynamicFields,
 } from '@/utils/createuserfunction';
+import { useUsers } from '@/hooks/useUsers';
 import { useMessage } from '@/components/MessageProvider/MessageProvider'; // <--- Context importieren
 
 // Lokaler Typ (anders benannt, damit kein Namenskonflikt mit externen Typen entsteht)
@@ -49,6 +50,8 @@ const initialState: FormState = {
 const requiredFieldsPage1 = ['firstName', 'lastName', 'email'];
 
 const CreateUser = ({ onClose }: { onClose?: () => void }) => {
+  // ensure API handlers are registered even on this page
+  useUsers(false);
   const [step, setStep] = useState<number>(1);
 
   const [form, setForm] = useState<FormState>({
