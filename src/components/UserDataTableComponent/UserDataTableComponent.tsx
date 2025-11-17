@@ -47,7 +47,7 @@ const UserDataTableComponent = ({
   const filteredUsers = users
     .filter((user) => {
       const searchString =
-        `${user.firstname} ${user.lastname} ${user.address ?? ''}`.toLowerCase();
+        `${user.firstName} ${user.lastName} ${user.address ?? ''}`.toLowerCase();
       const matchesSearch = searchString.includes(search.toLowerCase());
       const matchesRole =
         roleFilter === 'alle' ||
