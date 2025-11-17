@@ -21,6 +21,11 @@ const axiosInstance = useAxiosInstance('https://sau-portal.de/team-11-api');
 // Hintergrund-Fetch beim Modul-Import (nicht-blockierend)
 async function fetchUsersFromApi(): Promise<void> {
   try {
+    if (!axiosInstance) {
+      console.warn('fetchUsersFromApi: axiosInstance not available, skipping fetch');
+      cachedUsers = [];
+      return;
+    }
     const res = await axiosInstance.get('/api/v1/users', {
       params: { flag: true },
     });
@@ -144,6 +149,10 @@ async function updateUserData(
   updatedFields: Record<string, string>
 ): Promise<boolean> {
   try {
+    if (!axiosInstance) {
+      console.error('updateUserData: axiosInstance not available');
+      return false;
+    }
     const res = await axiosInstance.put(
       `/api/v1/users/${encodeURIComponent(id)}`,
       updatedFields
@@ -173,6 +182,10 @@ async function updateUserData(
 async function deleteUserById(id: string): Promise<boolean> {
   //const userid = String(id);
   try {
+    if (!axiosInstance) {
+      console.error('deleteUserById: axiosInstance not available');
+      return false;
+    }
     const res = await axiosInstance.post(
       `/api/v1/users/delete/${encodeURIComponent(id)}`
     );

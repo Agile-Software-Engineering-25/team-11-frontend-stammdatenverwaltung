@@ -8,15 +8,7 @@ const PORT = parseInt(process.env.PORT ?? "5173");
 
 const ENTRY_POINT = "src/singleSpa.tsx";
 
-const NPM_EXTERNALS: string[] = [
-  "react",
-  "react-dom",
-  "single-spa",
-  "@mui/material",
-  "@mui/joy",
-  "axios",
-  "i18next",
-];
+const NPM_EXTERNALS: string[] = ["react", "react-dom", "single-spa"];
 
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
