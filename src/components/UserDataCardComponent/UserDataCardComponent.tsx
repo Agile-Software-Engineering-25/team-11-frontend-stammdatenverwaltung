@@ -244,20 +244,6 @@ const UserDataCardComponent = ({
       }
     });
 
-    // NEU: stelle sicher, dass alle date-Felder IMMER im Payload sind
-    // (Backend soll bei Save auch das birthdate erhalten, selbst wenn unverändert)
-    allKeys.forEach((k) => {
-      const roleDef = (roleFields as any[]).find((f: any) => f.name === k);
-      const page1Def = (page1 as any[]).find((f: any) => f.name === k);
-      const isDate =
-        (roleDef && (roleDef as any).type === 'date') ||
-        (page1Def && (page1Def as any).type === 'date');
-      if (isDate && payload[k] === undefined) {
-        const val = inputValues[k] ?? '';
-        payload[k] = val === '' ? null : String(val);
-      }
-    });
-
     if (Object.keys(payload).length === 0) {
       console.debug(
         'UserDataCardComponent: no changes detected, nothing to save'
