@@ -58,18 +58,50 @@ export function useUsers(initialFetch = true) {
   const apiRemove = useCallback(
     async (id: string): Promise<boolean> => {
       if (!axiosInstance) return false;
+      const encoded = encodeURIComponent(id);
+
+      // 1) Versuche konformes DELETE an /api/v1/users/:id
       try {
-        // Backend erwartet POST zum Löschen
-        const res = await axiosInstance.post(`/api/v1/users/delete/${encodeURIComponent(id)}`);
+        const res = await axiosInstance.delete(`/api/v1/users/${encoded}`, {
+          withCredentials: true,
+        });
         if (res && (res.status === 200 || res.status === 204)) {
           setUsers((prev) => prev.filter((u) => String(u.id) !== String(id)));
-          // optional: fetch fresh list
           await apiFetch();
           return true;
         }
-      } catch (err) {
-        console.error('useUsers.apiRemove error', err);
+      } catch (err: any) {
+        console.debug('useUsers.apiRemove: DELETE failed', err?.response?.status);
+        // falls 404 => nächster Fallback unten
+        if (err?.response && (err.response.status === 401 || err.response.status === 403)) {
+          // Auth fehlt — abbrechen, caller soll Auth-Flow anstoßen
+          console.warn('useUsers.apiRemove: authentication required (401/403)');
+          return false;
+        }
       }
+
+      // 2) Fallback: manche Backends erwarten POST /api/v1/users/delete/:id
+      try {
+        const res2 = await axiosInstance.post(
+          `/api/v1/users/delete/${encoded}`,
+          null,
+          { withCredentials: true }
+        );
+        if (res2 && (res2.status === 200 || res2.status === 204)) {
+          setUsers((prev) => prev.filter((u) => String(u.id) !== String(id)));
+          await apiFetch();
+          return true;
+        }
+      } catch (err2: any) {
+        console.error('useUsers.apiRemove fallback POST failed', err2?.response?.status, err2?.response?.data);
+        // bei Auth-Problemen: loggen und false zurückgeben
+        if (err2?.response && (err2.response.status === 401 || err2.response.status === 403)) {
+          console.warn('useUsers.apiRemove: authentication required on fallback (401/403)');
+          return false;
+        }
+      }
+
+      console.error('useUsers.apiRemove: all delete attempts failed for id', id);
       return false;
     },
     [axiosInstance, apiFetch]

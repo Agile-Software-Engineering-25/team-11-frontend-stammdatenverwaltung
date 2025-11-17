@@ -14,8 +14,13 @@ const useAxiosInstance = (baseUrl: string = BACKEND_BASE_URL) => {
 
     const instance = axios.create({ baseURL: baseUrl });
 
+    // send cookies by default (needed when backend relies on session cookies)
+    instance.defaults.withCredentials = true;
+
     instance.interceptors.request.use((config) => {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers = config.headers ?? {};
+      // set Authorization header safely
+      (config.headers as any).Authorization = `Bearer ${token}`;
       return config;
     });
 
