@@ -90,8 +90,7 @@ const UserDataCardComponent = ({
     );
     const fullValues: Record<string, string> = {};
     allKeys.forEach((k) => {
-      fullValues[k] =
-        (user as any)[k] ?? (user as any).details ? (user as any).details?.[k] ?? '' : '';
+      fullValues[k] = String((user as any)[k] ?? '');
     });
     setInputValues(fullValues);
     // nur neu ausführen, wenn sich der User ändert oder sich die Anzahl der Cards ändert
@@ -143,10 +142,7 @@ const UserDataCardComponent = ({
 
     allKeys.forEach((k) => {
       const after = inputValues[k] ?? '';
-      const before =
-        (user as any)[k] ??
-        ((user as any).details ? (user as any).details?.[k] : undefined) ??
-        '';
+      const before = String((user as any)[k] ?? '');
 
       const beforeStr =
         before === undefined || before === null ? '' : String(before);
@@ -219,8 +215,7 @@ const UserDataCardComponent = ({
       );
       const fullValues: Record<string, string> = {};
       allKeys.forEach((k) => {
-        fullValues[k] =
-          (user as any)[k] ?? ((user as any).details ? (user as any).details?.[k] : '') ?? '';
+        fullValues[k] = String((user as any)[k] ?? '');
       });
       setInputValues(fullValues);
     }
