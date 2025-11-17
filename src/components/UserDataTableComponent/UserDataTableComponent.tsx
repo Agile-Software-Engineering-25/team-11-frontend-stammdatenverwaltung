@@ -113,7 +113,10 @@ const UserDataTableComponent = ({
         const newIds = event.target.checked
           ? Array.from(new Set([...prev, resolvedId]))
           : prev.filter((id) => id !== resolvedId);
+        // Wichtig: neues Array zurückgeben, sonst ändert sich der State nicht
+        return newIds;
       });
+    };
 
   // Alle auswählen
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
