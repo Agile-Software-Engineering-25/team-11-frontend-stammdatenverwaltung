@@ -8,7 +8,16 @@ const PORT = parseInt(process.env.PORT ?? "5173");
 
 const ENTRY_POINT = "src/singleSpa.tsx";
 
-const NPM_EXTERNALS: string[] = [];
+const NPM_EXTERNALS: string[] = [
+  /*"react",
+  "react-dom",
+  "single-spa",
+  "@mui/material",
+  "@mui/joy",
+  "axios",
+  "i18next",
+  */
+];
 
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
@@ -19,7 +28,7 @@ export default defineConfig(({ command }) => ({
     vitePluginSingleSpa({
       type: "mife",
       serverPort: PORT,
-      spaEntryPoints: ENTRY_POINT,
+      spaEntryPoints: ENTRY_POINT
     }),
   ],
   resolve: {

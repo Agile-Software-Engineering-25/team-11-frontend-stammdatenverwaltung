@@ -3,59 +3,103 @@ import {
   roleFieldConfigs,
   availableRoles,
 } from './userdataclass';
-import useAxiosInstance from '../hooks/useAxiosInstance';
 
-// Typen für dynamische Felder und Karten
-type User = Record<string, unknown>;
+// Typen
+export type User = Record<string, unknown>;
+export type CardField = { label: string; key: string };
+export type CardConfig = { key: string; title: string; fields: CardField[] };
 
-type CardField = { label: string; key: string };
-type CardConfig = { key: string; title: string; fields: CardField[] };
-
-// --- interne User-Cache (ersetzt bisherigen mockUsers) ---
+// interner Cache
 let cachedUsers: User[] = [];
 
-// Axios-Instance für API-Aufrufe (Basis-URL wie gewünscht)
-// eslint-disable-next-line react-hooks/rules-of-hooks
-const axiosInstance = useAxiosInstance('https://sau-portal.de/team-11-api');
+// API-Handler-Definitionen (werden von useUsers registriert)
+type ShowApiHandlers = {
+  fetch?: () => Promise<User[]>;
+  update?: (id: string, payload: Record<string, any>) => Promise<boolean>;
+  remove?: (id: string) => Promise<boolean>;
+};
+let showApiHandlers: ShowApiHandlers = {};
 
-// Hintergrund-Fetch beim Modul-Import (nicht-blockierend)
-async function fetchUsersFromApi(): Promise<void> {
+// Registrierung
+export function registerShowUserApi(handlers: ShowApiHandlers) {
+  showApiHandlers = handlers ?? {};
+}
+
+// refreshUsers: ruft registrierten fetch-Handler auf (falls vorhanden) und updatet Cache
+export async function refreshUsers(): Promise<void> {
+  if (!showApiHandlers.fetch) {
+    // no-op falls kein Handler registriert
+    return;
+  }
   try {
-    const res = await axiosInstance.get('/api/v1/users', {
-      params: { flag: true },
-    });
-    if (res && res.data && Array.isArray(res.data)) {
-      cachedUsers = res.data;
-      console.debug(
-        'fetchUsersFromApi: loaded users from API, count=',
-        cachedUsers.length
-      );
-    } else {
-      console.warn(
-        'fetchUsersFromApi: unexpected API response shape, falling back to empty list'
-      );
-      cachedUsers = [];
+    const res = await showApiHandlers.fetch();
+    if (Array.isArray(res)) {
+      cachedUsers = res;
     }
   } catch (err) {
-    console.error('fetchUsersFromApi: error fetching users from API', err);
-    cachedUsers = [];
+    console.error('refreshUsers: Handler error', err);
   }
 }
-void fetchUsersFromApi();
 
-// Utility: synchroner Zugriff auf aktuelle Users (wird von Komponenten genutzt)
-function getAllUsers(): User[] {
+// synchronous getters (keine Hooks)
+export function getAllUsers(): User[] {
   return cachedUsers;
 }
-
-function getAllRoles(): string[] {
+export function getAllRoles(): string[] {
   return availableRoles;
 }
 
-/**
- * Rolle(n) aus Benutzerdaten ableiten.
- */
-function inferRolesFromUser(user: Record<string, any>): string[] {
+// updateUserData delegiert an Handler, aktualisiert cache lokal bei Erfolg
+export async function updateUserData(
+  id: string,
+  updatedFields: Record<string, string>
+): Promise<boolean> {
+  if (showApiHandlers.update) {
+    try {
+      const ok = await showApiHandlers.update(id, updatedFields);
+      if (ok) {
+        const idx = cachedUsers.findIndex((u) => String((u as any).id) === String(id));
+        if (idx !== -1) {
+          cachedUsers[idx] = { ...(cachedUsers[idx] || {}), ...updatedFields };
+        }
+      }
+      return ok;
+    } catch (err) {
+      console.error('updateUserData: handler error', err);
+      return false;
+    }
+  }
+  // fallback: nur lokal updaten
+  const idx = cachedUsers.findIndex((u) => String((u as any).id) === String(id));
+  if (idx !== -1) {
+    cachedUsers[idx] = { ...(cachedUsers[idx] || {}), ...updatedFields };
+    return true;
+  }
+  return false;
+}
+
+// deleteUserById delegiert an Handler
+export async function deleteUserById(id: string): Promise<boolean> {
+  if (showApiHandlers.remove) {
+    try {
+      const ok = await showApiHandlers.remove(id);
+      if (ok) {
+        cachedUsers = cachedUsers.filter((u) => String((u as any).id) !== String(id));
+      }
+      return ok;
+    } catch (err) {
+      console.error('deleteUserById: handler error', err);
+      return false;
+    }
+  }
+  // lokal entfernen
+  const before = cachedUsers.length;
+  cachedUsers = cachedUsers.filter((u) => String((u as any).id) !== String(id));
+  return cachedUsers.length < before;
+}
+
+// restliche Helfer / Karten-Logik (wie vorher)
+export function inferRolesFromUser(user: Record<string, any>): string[] {
   const isLecturer =
     Boolean(user.fieldChair) ||
     Boolean(user.title) ||
@@ -95,15 +139,14 @@ function inferRolesFromUser(user: Record<string, any>): string[] {
   return Array.from(roles);
 }
 
-// Karten-Konfiguration für Rollen (bleibt unverändert)
-function getDynamicUserFields(): CardField[] {
+export function getDynamicUserFields(): CardField[] {
   return (page1DynamicFieldsConfig ?? []).map((f: any) => ({
     key: f.name,
     label: f.label,
   }));
 }
 
-function getCardsForRoles(roles: string[]): CardConfig[] {
+export function getCardsForRoles(roles: string[]): CardConfig[] {
   const dynamicFields = getDynamicUserFields();
   const cards: CardConfig[] = [
     {
@@ -132,83 +175,20 @@ function getCardsForRoles(roles: string[]): CardConfig[] {
   return cards;
 }
 
-function getCardsForUser(user: User): CardConfig[] {
-  const inferredRoles = inferRolesFromUser(user);
-  return getCardsForRoles(inferredRoles);
+// kompatibler Alias: getCardsForUser (falls andere Module diesen Namen erwarten)
+export function getCardsForUser(user: User): CardConfig[] {
+  const roles = inferRolesFromUser(user as any);
+  return getCardsForRoles(roles);
 }
 
-// --- API-gestützte Update- und Delete-Operationen ---
-// updateUserData: sendet PUT /api/v1/users/{userid} mit payload (Änderungen)
-async function updateUserData(
-  id: string,
-  updatedFields: Record<string, string>
-): Promise<boolean> {
-  try {
-    const res = await axiosInstance.put(
-      `/api/v1/users/${encodeURIComponent(id)}`,
-      updatedFields
-    );
-    if (res && (res.status === 200 || res.status === 204)) {
-      // lokal cache updaten: merge changes in cachedUsers
-      const idx = cachedUsers.findIndex(
-        (u) => String((u as any).id) === String(id)
-      );
-      if (idx !== -1) {
-        cachedUsers[idx] = { ...(cachedUsers[idx] || {}), ...updatedFields };
-      } else if (res.data) {
-        // falls API das aktualisierte Objekt zurückgibt, ersetzen
-        if (typeof res.data === 'object') cachedUsers.push(res.data);
-      }
-      return true;
-    }
-    console.warn('updateUserData: unexpected response', res?.status);
-    return false;
-  } catch (err) {
-    console.error('updateUserData: api error', err);
-    return false;
-  }
-}
-
-// deleteUserById: sendet POST /api/v1/users/delete mit Body {"user-id": "string"}
-async function deleteUserById(id: string): Promise<boolean> {
-  //const userid = String(id);
-  try {
-    const res = await axiosInstance.post(
-      `/api/v1/users/delete/${encodeURIComponent(id)}`
-    );
-    if (res && (res.status === 200 || res.status === 204)) {
-      // aus lokalem Cache entfernen
-      await refreshUsers();
-      //cachedUsers = cachedUsers.filter(
-      //  (u) => String((u as unknown).id) !== String(id)
-      //);
-      return true;
-    }
-    console.warn('deleteUserById: unexpected response', res?.status);
-    return false;
-  } catch (err) {
-    console.error('deleteUserById: api error', err);
-    return false;
-  }
-}
-
-// Falls Komponenten weiterhin synchronen Aufruf erwarten, zusätzliche helper:
-// refreshUsers: neue Liste vom API laden (async)
-async function refreshUsers(): Promise<void> {
-  await fetchUsersFromApi();
-}
-
-// Hilfsfunktion: Datum für die UI anzeigen im Format tt.mm.jjjj
-function formatDateForDisplay(raw?: string | null): string {
+// Datum-Formatter
+export function formatDateForDisplay(raw?: string | null): string {
   if (!raw) return '';
   const s = String(raw).trim();
-
   const dmy = s.match(/^(\d{2})[.\-\/](\d{2})[.\-\/](\d{4})$/);
   if (dmy) return `${dmy[1]}.${dmy[2]}.${dmy[3]}`;
-
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (iso) return `${iso[3]}.${iso[2]}.${iso[1]}`;
-
   const parsed = Date.parse(s);
   if (!Number.isNaN(parsed)) {
     const d = new Date(parsed);
@@ -217,20 +197,5 @@ function formatDateForDisplay(raw?: string | null): string {
     const yyyy = d.getFullYear();
     return `${dd}.${mm}.${yyyy}`;
   }
-
   return s;
 }
-
-export type { User, CardConfig, CardField };
-export {
-  getAllUsers,
-  getAllRoles,
-  getCardsForRoles,
-  getCardsForUser,
-  inferRolesFromUser,
-  updateUserData,
-  getDynamicUserFields,
-  deleteUserById,
-  formatDateForDisplay,
-  refreshUsers, // optional: kann von Komponenten genutzt werden, um neu zu laden
-};
