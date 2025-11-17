@@ -59,7 +59,8 @@ export function useUsers(initialFetch = true) {
     async (id: string): Promise<boolean> => {
       if (!axiosInstance) return false;
       try {
-        const res = await axiosInstance.delete(`/api/v1/users/delete/${encodeURIComponent(id)}`);
+        // Backend erwartet POST zum Löschen
+        const res = await axiosInstance.post(`/api/v1/users/delete/${encodeURIComponent(id)}`);
         if (res && (res.status === 200 || res.status === 204)) {
           setUsers((prev) => prev.filter((u) => String(u.id) !== String(id)));
           // optional: fetch fresh list
