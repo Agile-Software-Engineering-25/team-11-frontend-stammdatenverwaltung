@@ -43,21 +43,26 @@ const UserDataTableComponent = ({
 
   const allRoles = getAllRoles();
 
-  // Filter-Logik
+  // Hilfsfunktion: normalisiere Vor-/Nachname für konsistente Sortierung
+  const normalizeName = (u: any) =>
+    `${String(u.firstName ?? u.firstname ?? '').trim()} ${String(u.lastName ?? u.lastname ?? '').trim()}`
+      .trim()
+      .toLowerCase();
+
+  // Filter-Logik + alphabetische Sortierung nur nach Name (Name-Spalte)
   const filteredUsers = users
     .filter((user) => {
       const searchString =
-        `${user.firstName} ${user.lastName} ${user.address ?? ''}`.toLowerCase();
+        `${user.firstName ?? user.firstname ?? ''} ${user.lastName ?? user.lastname ?? ''} ${user.address ?? ''}`.toLowerCase();
       const matchesSearch = searchString.includes(search.toLowerCase());
       const userRoles = inferRolesFromUser(user);
-      const matchesRole =
-        roleFilter === 'alle' || userRoles.includes(roleFilter);
+      const matchesRole = roleFilter === 'alle' || userRoles.includes(roleFilter);
       return matchesSearch && matchesRole;
     })
     .sort((a, b) => {
-      const nameA = `${a.firstname} ${a.lastname}`.toLowerCase();
-      const nameB = `${b.firstname} ${b.lastname}`.toLowerCase();
-      return nameA.localeCompare(nameB);
+      const nameA = normalizeName(a);
+      const nameB = normalizeName(b);
+      return nameA.localeCompare(nameB, undefined, { sensitivity: 'base', numeric: true });
     });
 
   // Callback für Detailansicht, um nach dem Speichern/Löschen die Userdaten neu zu laden
