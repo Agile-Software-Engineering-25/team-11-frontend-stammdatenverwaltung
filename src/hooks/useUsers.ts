@@ -80,7 +80,7 @@ export function useUsers(initialFetch = true) {
       const roleKey = String(role ?? '').toLowerCase();
       let endpoint = '/api/v1/users';
       if (roleKey === 'student' || roleKey === 'students') endpoint = '/api/v1/users/students';
-      else if (roleKey === 'lecturer' || roleKey === 'dozent' || roleKey === 'lecturers') endpoint = '/api/v1/users/lecturer';
+      else if (roleKey === 'lecturer' || roleKey === 'dozent' || roleKey === 'lecturers') endpoint = '/api/v1/users/lecturers';
       else if (roleKey === 'employees' || roleKey === 'employee' || roleKey === 'mitarbeiter') endpoint = '/api/v1/users/employees';
 
       try {
