@@ -27,7 +27,7 @@ const Home = () => {
     filename: string;
   } | null>(null);
 
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   // Callback, das von der Tabelle gesetzt wird (Tabelle liefert string[] IDs)
   const handleSelectedUserIdsChange = (ids: string[]) => {
@@ -109,10 +109,8 @@ const Home = () => {
       </Box>
       <UserDataTableComponent
         onSelectedUserIdsChange={handleSelectedUserIdsChange}
-        selectedUserId={selectedUserId !== null ? String(selectedUserId) : null}
-        setSelectedUserId={(id: string | null) =>
-          setSelectedUserId(id ? Number(id) : null)
-        }
+        selectedUserId={selectedUserId}
+        setSelectedUserId={setSelectedUserId}
         onShowMessage={handleShowMessage}
       />
       {/* CSV Import Modal mit Shared Component */}
