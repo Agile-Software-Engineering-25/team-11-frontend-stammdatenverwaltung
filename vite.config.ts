@@ -8,9 +8,6 @@ const PORT = parseInt(process.env.PORT ?? "5173");
 
 const ENTRY_POINT = "src/singleSpa.tsx";
 
-// Add React and ReactDOM to externals
-const NPM_EXTERNALS: string[] = ["react", "react-dom", "react-dom/client"];
-
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
   base: command === "serve" ? "/" : "/api/ase-11/stammdatenverwaltung/",
@@ -20,8 +17,7 @@ export default defineConfig(({ command }) => ({
     vitePluginSingleSpa({
       type: "mife",
       serverPort: PORT,
-      spaEntryPoints: ENTRY_POINT,
-      npmExternals: NPM_EXTERNALS, // Add this line
+      spaEntryPoints: ENTRY_POINT
     }),
   ],
   resolve: {
@@ -34,12 +30,6 @@ export default defineConfig(({ command }) => ({
       "@hooks": path.resolve(__dirname, "./src/hooks"),
       "@assets": path.resolve(__dirname, "./src/assets"),
       "@stores": path.resolve(__dirname, "./src/stores"),
-    },
-  },
-  // Add build configuration to externalize React in production
-  build: {
-    rollupOptions: {
-      external: NPM_EXTERNALS,
     },
   },
 }));
