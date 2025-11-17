@@ -437,7 +437,7 @@ const UserDataCardComponent = ({
                   </Typography>
                   {(() => {
                     // readonly for name/email fields
-                    const readonlyKeys = ['firstName', 'lastName', 'email'];
+                    const readonlyKeys = ['firstName', 'lastName', 'email','dateOfBirth'];
                     const def = fieldDefsMap[field.key] as any;
                     const isReadonly = readonlyKeys.includes(field.key);
 
