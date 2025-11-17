@@ -49,11 +49,9 @@ const UserDataTableComponent = ({
       const searchString =
         `${user.firstName} ${user.lastName} ${user.address ?? ''}`.toLowerCase();
       const matchesSearch = searchString.includes(search.toLowerCase());
+      const userRoles = inferRolesFromUser(user);
       const matchesRole =
-        roleFilter === 'alle' ||
-        (Array.isArray(user.roles)
-          ? user.roles.includes(roleFilter)
-          : user.roles === roleFilter);
+        roleFilter === 'alle' || userRoles.includes(roleFilter);
       return matchesSearch && matchesRole;
     })
     .sort((a, b) => {
