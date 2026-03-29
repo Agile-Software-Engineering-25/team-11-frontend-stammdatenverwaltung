@@ -63,7 +63,11 @@ export const useUser = () => {
     if (!Array.isArray(roles) || roles.length === 0) return false;
     return roles.includes(role);
   };
-
+  const getRole = (): string => {
+    if (hasRole('student')) return 'student';
+    if (hasRole('lecturer')) return 'lecturer';
+    return 'employee';
+  };
   return {
     user,
     getUserId,
@@ -73,6 +77,7 @@ export const useUser = () => {
     getEmail,
     getAccessToken,
     hasRole,
+    getRole,
   };
 };
 
